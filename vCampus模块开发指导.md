@@ -15,11 +15,12 @@ vCampus/
 ```
 
 ### 技术栈
-- **前端**: Java Swing
+- **前端**: Java Swing + FlatLaf现代化UI
 - **后端**: Java Socket编程
 - **数据库**: MySQL 8.0
 - **通信协议**: 自定义消息协议
 - **架构模式**: MVC + 三层架构
+- **UI库**: FlatLaf 3.4.1 (现代化界面设计)
 
 ---
 
@@ -30,6 +31,7 @@ vCampus/
 
 ### 开发人员要求
 - 熟悉Java基础和Swing界面开发
+- 了解FlatLaf UI库的使用和配置
 - 了解MD5加密和用户权限设计
 - **建议分配给**: 有经验的开发者(作为基础模块)
 
@@ -530,6 +532,7 @@ DELETE_FILE_REQUEST/SUCCESS
 2. **类命名**: 使用驼峰命名法，类名首字母大写
 3. **方法命名**: 动词开头，驼峰命名法
 4. **注释规范**: 必须添加类注释和方法注释
+5. **UI规范**: 统一使用FlatLaf主题，保持界面风格一致
 
 ### Git协作流程
 ```bash
@@ -563,14 +566,33 @@ feature/file-management     # 文件资源模块
 
 ### 部署和构建
 ```bash
-# 编译项目
+# 编译项目（包含FlatLaf库）
 compile.bat
 
 # 启动服务器
 start_server.bat
 
-# 启动客户端
+# 启动客户端（将显示现代化FlatLaf界面）
 start_client.bat
+```
+
+### FlatLaf UI配置
+```java
+// 在主程序中设置FlatLaf主题
+try {
+    UIManager.setLookAndFeel(new FlatLightLaf());
+    // 启用圆角边框
+    System.setProperty("flatlaf.uiScale", "1.0");
+    System.setProperty("flatlaf.menuBarEmbedded", "false");
+} catch (Exception ex) {
+    System.err.println("Failed to initialize FlatLaf");
+    // 回退到系统默认主题
+    try {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeel());
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
 ```
 
 ---

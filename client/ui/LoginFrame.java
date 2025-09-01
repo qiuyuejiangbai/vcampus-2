@@ -597,11 +597,24 @@ public class LoginFrame extends JFrame {
      * 主方法
      */
     public static void main(String[] args) {
-        // 设置系统外观
+        // 设置FlatLaf现代化外观
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            // 使用FlatLaf亮色主题
+            UIManager.setLookAndFeel("com.formdev.flatlaf.FlatLightLaf");
+            
+            // 可选：启用一些现代化特性
+            System.setProperty("flatlaf.useRoundedBorders", "true");
+            System.setProperty("flatlaf.menuBarEmbedded", "false");
+            
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            System.err.println("Failed to initialize FlatLaf, using system default");
             e.printStackTrace();
+            // 如果FlatLaf加载失败，回退到系统默认
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
         
         SwingUtilities.invokeLater(() -> {
