@@ -42,7 +42,7 @@ public class UserController {
         // 注册响应监听器
         serverConnection.setMessageListener(MessageType.REGISTER_SUCCESS, message -> {
             if (currentRegisterCallback != null) {
-                currentRegisterCallback.onSuccess("注册成功，请等待管理员激活账户");
+                currentRegisterCallback.onSuccess("注册成功，账户已激活");
                 currentRegisterCallback = null;
             }
         });
@@ -84,7 +84,7 @@ public class UserController {
         
         // 创建登录用户对象
         UserVO loginUser = new UserVO();
-        loginUser.setLoginId(loginId.trim());
+        loginUser.setId(loginId.trim());
         loginUser.setPassword(password);
         
         // 创建登录请求消息
@@ -117,13 +117,8 @@ public class UserController {
             return;
         }
         
-        if (user.getLoginId() == null || user.getLoginId().trim().isEmpty()) {
+        if (user.getId() == null || user.getId().trim().isEmpty()) {
             callback.onFailure("请输入登录ID");
-            return;
-        }
-        
-        if (user.getName() == null || user.getName().trim().isEmpty()) {
-            callback.onFailure("请输入姓名");
             return;
         }
         
@@ -134,6 +129,69 @@ public class UserController {
         
         // 创建注册请求消息
         Message request = new Message(MessageType.REGISTER_REQUEST, user);
+        
+        // 设置回调
+        this.currentRegisterCallback = callback;
+        
+        // 发送注册请求
+        boolean sent = serverConnection.sendMessage(request);
+        if (!sent) {
+            this.currentRegisterCallback = null;
+            callback.onFailure("发送注册请求失败");
+        }
+    }
+    
+    /**
+     * 增强版用户注册 - 支持学生和教师详细信息
+     * @param user 用户基础信息
+     * @param name 姓名
+     * @param phone 电话
+     * @param email 邮箱
+     * @param department 院系
+     * @param major 专业（学生用）
+     * @param title 职称（教师用）
+     * @param callback 注册回调
+     */
+    public void registerWithDetails(UserVO user, String name, String phone, String email, 
+                                   String department, String major, String title, RegisterCallback callback) {
+        if (!serverConnection.isConnected()) {
+            callback.onFailure("未连接到服务器");
+            return;
+        }
+        
+        if (user == null) {
+            callback.onFailure("用户信息不能为空");
+            return;
+        }
+        
+        if (user.getId() == null || user.getId().trim().isEmpty()) {
+            callback.onFailure("请输入登录ID");
+            return;
+        }
+        
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            callback.onFailure("请输入密码");
+            return;
+        }
+        
+        // 创建详细信息对象
+        java.util.Map<String, Object> details = new java.util.HashMap<>();
+        details.put("user", user);
+        details.put("name", name);
+        details.put("phone", phone);
+        details.put("email", email);
+        details.put("department", department);
+        
+        if (user.isStudent() && major != null && !major.trim().isEmpty()) {
+            details.put("major", major);
+        }
+        
+        if (user.isTeacher() && title != null && !title.trim().isEmpty()) {
+            details.put("title", title);
+        }
+        
+        // 创建注册请求消息
+        Message request = new Message(MessageType.REGISTER_REQUEST, details);
         
         // 设置回调
         this.currentRegisterCallback = callback;

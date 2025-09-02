@@ -11,6 +11,15 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.RoundRectangle2D;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
+import javax.swing.border.AbstractBorder;
+import javax.swing.Timer;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * 登录界面
@@ -31,18 +40,45 @@ public class LoginFrame extends JFrame {
     private JLabel eyeIconLabel;
     private boolean passwordVisible = false;
     
+    // 错误提示标签
+    private JLabel loginIdErrorLabel;
+    private JLabel passwordErrorLabel;
+    
+    // 加载状态
+    private boolean isLoading = false;
+    private String originalButtonText;
+    
+    // 连接状态提示
+    private JLabel connectionToast;
+    
     // 控制器
     private UserController userController;
     private ServerConnection serverConnection;
     
-    // 颜色常量
-    private static final Color PRIMARY_GREEN = new Color(52, 124, 84);
-    private static final Color LIGHT_GREEN = new Color(76, 175, 80);
-    private static final Color BACKGROUND_GREEN = new Color(230, 245, 235);
+    // 背景图片
+    private BufferedImage backgroundImage;
+    
+    // 现代化颜色常量 - 提升设计感的主色调
+    private static final Color PRIMARY_COLOR = new Color(55, 161, 101);      // 主色#37A165
+    private static final Color PRIMARY_PRESSED = new Color(46, 139, 87);     // 按下态#2E8B57
+    private static final Color PRIMARY_DISABLED = new Color(167, 215, 190);  // 禁用态#A7D7BE
+    private static final Color SECONDARY_COLOR = new Color(46, 125, 50);     // 次要色
+    private static final Color ACCENT_COLOR = new Color(76, 175, 80);        // 强调色
+    private static final Color BACKGROUND_GRADIENT_START = new Color(240, 248, 240); // 背景渐变起始
+    private static final Color BACKGROUND_GRADIENT_END = new Color(245, 252, 245);   // 背景渐变结束
     private static final Color WHITE = Color.WHITE;
-    private static final Color GRAY_TEXT = new Color(128, 128, 128);
+    private static final Color GRAY_TEXT = new Color(107, 114, 128);         // 副标题灰度#6B7280
+    private static final Color DARK_TEXT = new Color(17, 24, 39);
+    private static final Color BORDER_COLOR = new Color(229, 231, 235);
+    private static final Color SUCCESS_GREEN = new Color(34, 197, 94);
+    private static final Color ERROR_RED = new Color(220, 38, 38);           // 错误红色#DC2626
+    private static final Color WARNING_ORANGE = new Color(245, 158, 11);
+    private static final Color FOCUS_COLOR = new Color(55, 161, 101);        // 聚焦边框色
     
     public LoginFrame() {
+        // 加载背景图片
+        loadBackgroundImage();
+        
         initComponents();
         setupLayout();
         setupEventListeners();
@@ -51,8 +87,49 @@ public class LoginFrame extends JFrame {
         serverConnection = ServerConnection.getInstance();
         userController = new UserController();
         
+        // 启动淡入动画
+        startFadeInAnimation();
+        
         // 尝试连接服务器
         connectToServer();
+    }
+    
+    /**
+     * 加载背景图片
+     */
+    private void loadBackgroundImage() {
+        try {
+            // 尝试多个可能的图片路径和文件名
+            String[] possiblePaths = {
+                "resources/images/bg.png",
+                "resources/images/campus_background.png", 
+                "resources/images/background.png",
+                "../resources/images/bg.png",
+                "../resources/images/campus_background.png",
+                "./resources/images/bg.png",
+                "./resources/images/campus_background.png"
+            };
+            
+            for (String path : possiblePaths) {
+                File imageFile = new File(path);
+                System.out.println("尝试加载背景图片: " + imageFile.getAbsolutePath());
+                
+                if (imageFile.exists()) {
+                    backgroundImage = ImageIO.read(imageFile);
+                    System.out.println("✅ 背景图片加载成功: " + imageFile.getAbsolutePath());
+                    return;
+                } else {
+                    System.out.println("❌ 文件不存在: " + imageFile.getAbsolutePath());
+                }
+            }
+            
+            System.out.println("⚠️ 所有路径都未找到背景图片，使用默认渐变背景");
+            backgroundImage = null;
+            
+        } catch (IOException e) {
+            System.err.println("❌ 加载背景图片失败，使用默认渐变背景: " + e.getMessage());
+            backgroundImage = null;
+        }
     }
     
     /**
@@ -65,36 +142,56 @@ public class LoginFrame extends JFrame {
         setLocationRelativeTo(null);
         setResizable(false);
         
-        // 创建输入框
-        loginIdField = createStyledTextField("请输入学号或教工号");
-        passwordField = createStyledPasswordField("请输入密码");
+        // 创建输入框 - 简化占位文本
+        loginIdField = createStyledTextField("学号/教工号");
+        passwordField = createStyledPasswordField("密码");
         
         // 创建登录按钮
-        loginButton = createStyledButton("登录", PRIMARY_GREEN);
+        loginButton = createStyledButton("登录", PRIMARY_COLOR);
         
-        // 创建注册链接
+        // 创建注册链接 - 统一字体，确保可点击区域≥44px
         registerLabel = new JLabel("<html><u>注册新账户</u></html>");
         registerLabel.setForeground(GRAY_TEXT);
         registerLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        registerLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+        registerLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 14));
         registerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        registerLabel.setPreferredSize(new Dimension(120, 44)); // 确保可点击区域≥44px
+        registerLabel.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16)); // 增加点击区域
         
-        // 创建密码可见性切换图标
-        eyeIconLabel = new JLabel("👁");
+        // 创建密码可见性切换图标 - 统一字体，确保可点击区域≥44px
+        eyeIconLabel = new JLabel("显示");
         eyeIconLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        eyeIconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        eyeIconLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12));
+        eyeIconLabel.setForeground(PRIMARY_COLOR);
+        eyeIconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        eyeIconLabel.setVerticalAlignment(SwingConstants.CENTER);
+        eyeIconLabel.setPreferredSize(new Dimension(44, 44)); // 确保可点击区域≥44px
+        eyeIconLabel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12)); // 增加点击区域
         
-        // 创建连接状态相关组件
+        // 创建连接状态相关组件，确保高度≥44px
         connectButton = new JButton("连接服务器");
-        connectButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        connectButton.setBackground(new Color(255, 140, 0));
+        connectButton.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 12));
+        connectButton.setBackground(WARNING_ORANGE);
         connectButton.setForeground(Color.WHITE);
         connectButton.setBorderPainted(false);
         connectButton.setFocusPainted(false);
+        connectButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        connectButton.setPreferredSize(new Dimension(120, 44)); // 确保高度≥44px
         
         statusLabel = new JLabel("未连接服务器", SwingConstants.CENTER);
-        statusLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        statusLabel.setForeground(Color.RED);
+        statusLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12));
+        statusLabel.setForeground(ERROR_RED);
+        
+        // 创建错误提示标签 - 12px红色小字
+        loginIdErrorLabel = new JLabel(" ");
+        loginIdErrorLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12)); // 12px小字
+        loginIdErrorLabel.setForeground(ERROR_RED); // 红色#DC2626
+        loginIdErrorLabel.setVisible(false);
+        
+        passwordErrorLabel = new JLabel(" ");
+        passwordErrorLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12)); // 12px小字
+        passwordErrorLabel.setForeground(ERROR_RED); // 红色#DC2626
+        passwordErrorLabel.setVisible(false);
         
         // 初始状态
         loginButton.setEnabled(false);
@@ -102,33 +199,45 @@ public class LoginFrame extends JFrame {
     }
     
     /**
-     * 创建样式化的文本框
+     * 创建样式化的文本框 - 统一尺寸44px高度
      */
     private JTextField createStyledTextField(String placeholder) {
-        JTextField field = new JTextField();
-        field.setFont(new Font("微软雅黑", Font.PLAIN, 16));
+        JTextField field = new JTextField() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // 绘制圆角背景
+                g2d.setColor(getBackground());
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+                
+                super.paintComponent(g);
+            }
+        };
+        
+        // 统一字体设置
+        field.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 16));
         field.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
-            BorderFactory.createEmptyBorder(12, 15, 12, 15)
+            new RoundedBorder(BORDER_COLOR, 1, 12),
+            BorderFactory.createEmptyBorder(12, 16, 12, 16) // 统一内边距
         ));
-        field.setPreferredSize(new Dimension(320, 45));
+        field.setPreferredSize(new Dimension(360, 44)); // 恢复输入框宽度360px，统一高度44px
+        field.setBackground(new Color(248, 250, 252));
+        field.setOpaque(false);
         
         // 添加占位符效果
         field.setForeground(GRAY_TEXT);
         field.setText(placeholder);
         
+        // 添加焦点效果和动画
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
-                if (field.getText().equals(placeholder)) {
-                    field.setText("");
-                    field.setForeground(Color.BLACK);
-                }
+                animateFieldFocus(field, true, placeholder);
             }
             public void focusLost(java.awt.event.FocusEvent evt) {
-                if (field.getText().isEmpty()) {
-                    field.setForeground(GRAY_TEXT);
-                    field.setText(placeholder);
-                }
+                animateFieldFocus(field, false, placeholder);
             }
         });
         
@@ -136,17 +245,44 @@ public class LoginFrame extends JFrame {
     }
     
     /**
-     * 创建样式化的密码框
+     * 创建样式化的密码框 - 统一尺寸44px高度
      */
     private JPasswordField createStyledPasswordField(String placeholder) {
-        JPasswordField field = new JPasswordField();
-        field.setFont(new Font("微软雅黑", Font.PLAIN, 16));
+        JPasswordField field = new JPasswordField() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // 绘制圆角背景
+                g2d.setColor(getBackground());
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+                
+                super.paintComponent(g);
+            }
+        };
+        
+        // 统一字体设置
+        field.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 16));
         field.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
-            BorderFactory.createEmptyBorder(12, 15, 12, 45)
+            new RoundedBorder(BORDER_COLOR, 1, 12),
+            BorderFactory.createEmptyBorder(12, 16, 12, 48) // 右侧留空间给眼睛图标
         ));
-        field.setPreferredSize(new Dimension(320, 45));
+        field.setPreferredSize(new Dimension(360, 44)); // 恢复输入框宽度360px，统一高度44px
+        field.setBackground(new Color(248, 250, 252));
+        field.setOpaque(false);
         field.setEchoChar('●');
+        
+        // 添加焦点效果
+        field.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                animatePasswordFieldFocus(field, true);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                animatePasswordFieldFocus(field, false);
+            }
+        });
         
         return field;
     }
@@ -155,27 +291,52 @@ public class LoginFrame extends JFrame {
      * 创建样式化的按钮
      */
     private JButton createStyledButton(String text, Color bgColor) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("微软雅黑", Font.BOLD, 16));
-        button.setBackground(bgColor);
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                int width = getWidth();
+                int height = getHeight();
+                ButtonModel model = getModel();
+                
+                // 创建渐变背景
+                Color startColor = model.isPressed() ? bgColor.darker().darker() : 
+                                 model.isRollover() ? bgColor.darker() : bgColor;
+                Color endColor = model.isPressed() ? SECONDARY_COLOR.darker() :
+                               model.isRollover() ? SECONDARY_COLOR : SECONDARY_COLOR.brighter();
+                
+                GradientPaint gradient = new GradientPaint(0, 0, startColor, width, height, endColor);
+                g2d.setPaint(gradient);
+                g2d.fillRoundRect(0, 0, width, height, 14, 14);
+                
+                // 添加高光效果
+                if (!model.isPressed()) {
+                    g2d.setColor(new Color(255, 255, 255, model.isRollover() ? 60 : 40));
+                    g2d.fillRoundRect(2, 2, width - 4, height / 2, 12, 12);
+                }
+                
+                // 绘制文本
+                g2d.setColor(getForeground());
+                g2d.setFont(getFont());
+                FontMetrics fm = g2d.getFontMetrics();
+                int textX = (width - fm.stringWidth(getText())) / 2;
+                int textY = (height + fm.getAscent() - fm.getDescent()) / 2;
+                g2d.drawString(getText(), textX, textY);
+            }
+        };
+        
+        // 统一字体和尺寸设置
+        button.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 16));
         button.setForeground(WHITE);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(320, 45));
+        button.setContentAreaFilled(false);
+        button.setRolloverEnabled(true);
+        button.setPreferredSize(new Dimension(360, 44)); // 恢复按钮宽度360px，统一高度44px
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
-        // 添加悬停效果
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            Color originalColor = button.getBackground();
-            
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(originalColor.darker());
-            }
-            
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(originalColor);
-            }
-        });
         
         return button;
     }
@@ -186,21 +347,58 @@ public class LoginFrame extends JFrame {
     private void setupLayout() {
         setLayout(new BorderLayout());
         
-        // 创建背景面板（带渐变效果）
+        // 创建现代化背景面板
         JPanel backgroundPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
                 
-                // 创建渐变背景
-                GradientPaint gradient = new GradientPaint(
-                    0, 0, new Color(144, 238, 144),  // 浅绿色
-                    getWidth(), getHeight(), new Color(60, 179, 113)  // 深绿色
-                );
-                g2d.setPaint(gradient);
-                g2d.fillRect(0, 0, getWidth(), getHeight());
+                int width = getWidth();
+                int height = getHeight();
+                
+                if (width <= 0 || height <= 0) {
+                    return;
+                }
+                
+                // 如果有背景图片，使用图片背景；否则使用渐变背景
+                if (backgroundImage != null) {
+                    // 绘制背景图片，缩放以适应窗口大小
+                    g2d.drawImage(backgroundImage, 0, 0, width, height, null);
+                    
+                    // 添加轻磨砂蒙层（白色12-16%透明度），避免与卡片元素"抢对比"
+                    g2d.setColor(new Color(255, 255, 255, 40)); // 白色16%透明度磨砂蒙层
+                    g2d.fillRect(0, 0, width, height);
+                } else {
+                    // 使用原来的渐变背景作为后备方案
+                    GradientPaint gradient = new GradientPaint(
+                        0, 0, BACKGROUND_GRADIENT_START,
+                        width, height, BACKGROUND_GRADIENT_END
+                    );
+                    g2d.setPaint(gradient);
+                    g2d.fillRect(0, 0, width, height);
+                    
+                    // 添加现代化几何装饰元素
+                    if (width > 300 && height > 300) {
+                        // 大圆形装饰
+                        g2d.setColor(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 30));
+                        g2d.fillOval(width - 250, -150, 400, 400);
+                        g2d.fillOval(-150, height - 250, 400, 400);
+                        
+                        // 小圆形装饰
+                        g2d.setColor(new Color(SECONDARY_COLOR.getRed(), SECONDARY_COLOR.getGreen(), SECONDARY_COLOR.getBlue(), 20));
+                        g2d.fillOval(width - 400, 100, 150, 150);
+                        g2d.fillOval(100, height - 400, 150, 150);
+                        
+                        // 绿色点缀
+                        g2d.setColor(new Color(ACCENT_COLOR.getRed(), ACCENT_COLOR.getGreen(), ACCENT_COLOR.getBlue(), 15));
+                        g2d.fillOval(width / 2 - 50, 50, 100, 100);
+                        g2d.fillOval(50, height / 2 - 50, 100, 100);
+                    }
+                }
             }
         };
         backgroundPanel.setLayout(new GridBagLayout());
@@ -218,163 +416,293 @@ public class LoginFrame extends JFrame {
         // 创建状态栏
         JPanel statusPanel = createStatusPanel();
         
+        // 创建连接状态提示（右上角）
+        connectionToast = new JLabel("服务器连接成功", SwingConstants.CENTER);
+        connectionToast.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12));
+        connectionToast.setForeground(WHITE);
+        connectionToast.setBackground(SUCCESS_GREEN);
+        connectionToast.setOpaque(true);
+        connectionToast.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(SUCCESS_GREEN, 1),
+            BorderFactory.createEmptyBorder(8, 16, 8, 16)
+        ));
+        connectionToast.setVisible(false);
+        
+        // 使用LayeredPane来处理Toast叠加
+        JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane.setPreferredSize(new Dimension(FRAME_WIDTH, FRAME_HEIGHT));
+        
+        // 设置主要内容位置
+        backgroundPanel.setBounds(0, 0, FRAME_WIDTH, FRAME_HEIGHT - 40);
+        statusPanel.setBounds(0, FRAME_HEIGHT - 40, FRAME_WIDTH, 40);
+        
+        // 设置Toast位置（右上角）
+        connectionToast.setBounds(FRAME_WIDTH - 200, 16, 180, 40);
+        
+        // 添加到层级面板
+        layeredPane.add(backgroundPanel, JLayeredPane.DEFAULT_LAYER);
+        layeredPane.add(statusPanel, JLayeredPane.DEFAULT_LAYER);
+        layeredPane.add(connectionToast, JLayeredPane.POPUP_LAYER);
+        
         // 添加到主窗口
-        add(backgroundPanel, BorderLayout.CENTER);
-        add(statusPanel, BorderLayout.SOUTH);
+        add(layeredPane, BorderLayout.CENTER);
     }
     
     /**
-     * 创建登录卡片
+     * 创建登录卡片 - 使用GridBagLayout重新设计
      */
     private JPanel createLoginCard() {
         JPanel card = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
                 
-                // 绘制圆角矩形背景
+                int width = getWidth();
+                int height = getHeight();
+                
+                if (width <= 0 || height <= 0) {
+                    return;
+                }
+                
+                // 创建更轻的阴影效果 - rgba(0,0,0,0.08) 0 10px 28px + rgba(0,0,0,0.03) 0 2px 6px
+                // 主阴影层
+                g2d.setColor(new Color(0, 0, 0, 20)); // rgba(0,0,0,0.08)
+                g2d.fill(new RoundRectangle2D.Float(10, 10, width - 10, height - 10, 24, 24));
+                
+                // 次阴影层
+                g2d.setColor(new Color(0, 0, 0, 8)); // rgba(0,0,0,0.03)
+                g2d.fill(new RoundRectangle2D.Float(2, 2, width - 2, height - 2, 24, 24));
+                
+                // 绘制完全不透明的白色卡片背景
                 g2d.setColor(WHITE);
-                g2d.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 20, 20));
+                g2d.fill(new RoundRectangle2D.Float(0, 0, width - 2, height - 2, 24, 24)); // 圆角24px
                 
-                // 绘制阴影效果
-                g2d.setColor(new Color(0, 0, 0, 20));
-                g2d.fill(new RoundRectangle2D.Float(2, 2, getWidth(), getHeight(), 20, 20));
+                // 添加微妙的渐变边框
+                GradientPaint borderGradient = new GradientPaint(
+                    0, 0, new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 80),
+                    width, height, new Color(SECONDARY_COLOR.getRed(), SECONDARY_COLOR.getGreen(), SECONDARY_COLOR.getBlue(), 80)
+                );
+                g2d.setPaint(borderGradient);
+                g2d.setStroke(new BasicStroke(1.5f));
+                g2d.drawRoundRect(1, 1, width - 4, height - 4, 24, 24); // 圆角24px
+                
+                // 添加高光效果
+                g2d.setColor(new Color(255, 255, 255, 80));
+                g2d.fill(new RoundRectangle2D.Float(2, 2, width - 6, height / 2 - 10, 22, 22)); // 圆角22px
             }
         };
+        
         card.setOpaque(false);
-        card.setPreferredSize(new Dimension(400, 500));
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(new EmptyBorder(40, 40, 40, 40));
+        card.setPreferredSize(new Dimension(440, 580)); // 恢复到合适的卡片宽度440px
+        card.setLayout(new GridBagLayout());
+        card.setBorder(new EmptyBorder(32, 32, 32, 32)); // 卡片内边距32px
         
-        // 创建毕业帽图标
-        JPanel iconPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        iconPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 0, 8, 0); // 采用8pt网格间距
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.gridx = 0;
         
-        JLabel iconLabel = new JLabel() {
+        // 创建现代化图标
+        JPanel iconContainer = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                // 绘制绿色圆形背景
-                g2d.setColor(PRIMARY_GREEN);
-                g2d.fillOval(0, 0, 60, 60);
+                int size = Math.min(getWidth(), getHeight());
+                int x = (getWidth() - size) / 2;
+                int y = (getHeight() - size) / 2;
                 
-                // 绘制毕业帽图标 (简化版)
-                g2d.setColor(WHITE);
-                g2d.setStroke(new BasicStroke(2));
-                // 帽子底部
-                g2d.drawLine(15, 35, 45, 35);
-                // 帽子顶部
-                g2d.drawLine(20, 25, 40, 25);
-                // 连接线
-                g2d.drawLine(30, 25, 30, 35);
-                // 流苏
-                g2d.drawLine(40, 25, 45, 20);
+                // 创建渐变圆形背景
+                GradientPaint gradient = new GradientPaint(
+                    x, y, PRIMARY_COLOR,
+                    x + size, y + size, SECONDARY_COLOR
+                );
+                g2d.setPaint(gradient);
+                g2d.fillOval(x, y, size, size);
+                
+                // 添加高光效果
+                g2d.setColor(new Color(255, 255, 255, 100));
+                g2d.fillOval(x + 8, y + 8, size / 3, size / 3);
             }
         };
-        iconLabel.setPreferredSize(new Dimension(60, 60));
-        iconPanel.add(iconLabel);
+        iconContainer.setOpaque(false);
+        iconContainer.setPreferredSize(new Dimension(80, 80)); // 调整为80px圆形，更大更醒目
+        iconContainer.setLayout(new BorderLayout());
         
-        // 标题
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        titlePanel.setOpaque(false);
-        JLabel titleLabel = new JLabel("虚拟校园系统");
-        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(51, 51, 51));
-        titlePanel.add(titleLabel);
+        // 创建图标样式的学校建筑物图标
+        JPanel iconPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                int size = Math.min(getWidth(), getHeight());
+                int centerX = getWidth() / 2;
+                int centerY = getHeight() / 2;
+                int iconSize = (int)(size * 0.6); // 图标大小为容器的60%，更好的比例
+                
+                g2d.setColor(Color.WHITE);
+                g2d.setStroke(new BasicStroke(2f));
+                
+                // 绘制精美的学位帽图标（参考提供的代码）
+                g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                
+                // 使用100x100规范坐标系，然后缩放到实际大小
+                double pad = size * 0.10; // 减少边距，让图标更大
+                double scale = (size - pad * 2) / 100.0; // 将0..100映射到圆内
+                AffineTransform oldTransform = g2d.getTransform();
+                
+                g2d.translate(centerX, centerY);
+                g2d.scale(scale, scale);
+                g2d.translate(-50, -50); // 让(0,0)落在左上角
+                
+                // 学位帽上方面片（菱形）- 调整位置确保居中
+                GeneralPath hatTop = new GeneralPath();
+                hatTop.moveTo(50, 25);
+                hatTop.lineTo(80, 40);
+                hatTop.lineTo(50, 55);
+                hatTop.lineTo(20, 40);
+                hatTop.closePath();
+                
+                // 帽沿（矩形略带透视）
+                GeneralPath brim = new GeneralPath();
+                brim.moveTo(28, 50);
+                brim.lineTo(72, 50);
+                brim.lineTo(68, 60);
+                brim.lineTo(32, 60);
+                brim.closePath();
+                
+                // 流苏绳
+                GeneralPath tassel = new GeneralPath();
+                tassel.moveTo(68, 55);
+                tassel.quadTo(75, 63, 72, 73); // 弯曲下垂
+                
+                // 流苏小球
+                Ellipse2D.Float tasselBall = new Ellipse2D.Float(69, 71, 6, 6);
+                
+                // 设置描边样式 - 白色粗描边
+                g2d.setStroke(new BasicStroke(3.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2d.setColor(Color.WHITE);
+                
+                // 仅描边绘制（线条风格）
+                g2d.draw(hatTop);
+                g2d.draw(brim);
+                g2d.draw(tassel);
+                g2d.fill(tasselBall);
+                
+                // 恢复变换
+                g2d.setTransform(oldTransform);
+            }
+        };
+        iconPanel.setOpaque(false);
+        iconContainer.add(iconPanel, BorderLayout.CENTER);
         
-        // 副标题
-        JPanel subtitlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        subtitlePanel.setOpaque(false);
-        JLabel subtitleLabel = new JLabel("请输入您的学号/教工号和密码登录");
-        subtitleLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-        subtitleLabel.setForeground(GRAY_TEXT);
-        subtitlePanel.add(subtitleLabel);
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 12, 0); // Logo与标题间距12px
+        card.add(iconContainer, gbc);
         
-        // 用户名输入区域
-        JPanel usernamePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        usernamePanel.setOpaque(false);
+        // 标题 - 28px字号，加粗
+        JLabel titleLabel = new JLabel("虚拟校园系统", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 28)); // 标题28px
+        titleLabel.setForeground(DARK_TEXT);
         
-        JPanel usernameContainer = new JPanel(new BorderLayout());
-        usernameContainer.setOpaque(false);
-        usernameContainer.setPreferredSize(new Dimension(320, 60));
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 8, 0); // 标题与副标题间距8px
+        card.add(titleLabel, gbc);
         
-        JLabel usernameLabel = new JLabel("学号/教工号");
-        usernameLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-        usernameLabel.setForeground(new Color(51, 51, 51));
-        usernameLabel.setBorder(new EmptyBorder(0, 0, 5, 0));
+        // 副标题 - 14px字号，灰度#6B7280
+        JLabel subtitleLabel = new JLabel("请输入您的学号/教工号和密码登录", SwingConstants.CENTER);
+        subtitleLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 14)); // 副标题14px
+        subtitleLabel.setForeground(GRAY_TEXT); // 灰度#6B7280
         
-        usernameContainer.add(usernameLabel, BorderLayout.NORTH);
-        usernameContainer.add(loginIdField, BorderLayout.CENTER);
-        usernamePanel.add(usernameContainer);
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 32, 0);
+        card.add(subtitleLabel, gbc);
         
-        // 密码输入区域
-        JPanel passwordPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        passwordPanel.setOpaque(false);
+        // 用户名标签 - 12px正文字号
+        JLabel usernameLabel = new JLabel("学号/教工号", SwingConstants.LEFT);
+        usernameLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12)); // 正文12px
+        usernameLabel.setForeground(DARK_TEXT);
         
-        JPanel passwordContainer = new JPanel(new BorderLayout());
-        passwordContainer.setOpaque(false);
-        passwordContainer.setPreferredSize(new Dimension(320, 60));
+        gbc.gridy = 3;
+        gbc.insets = new Insets(0, 0, 8, 0);
+        gbc.anchor = GridBagConstraints.WEST;
+        card.add(usernameLabel, gbc);
         
-        JLabel passwordLabel = new JLabel("密码");
-        passwordLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-        passwordLabel.setForeground(new Color(51, 51, 51));
-        passwordLabel.setBorder(new EmptyBorder(0, 0, 5, 0));
+        // 用户名输入框
+        gbc.gridy = 4;
+        gbc.insets = new Insets(0, 0, 4, 0); // 减少间距给错误提示留空间
+        gbc.anchor = GridBagConstraints.CENTER;
+        card.add(loginIdField, gbc);
+        
+        // 用户名错误提示
+        gbc.gridy = 5;
+        gbc.insets = new Insets(0, 0, 16, 0);
+        gbc.anchor = GridBagConstraints.WEST;
+        card.add(loginIdErrorLabel, gbc);
+        
+        // 密码标签 - 12px正文字号
+        JLabel passwordLabel = new JLabel("密码", SwingConstants.LEFT);
+        passwordLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12)); // 正文12px
+        passwordLabel.setForeground(DARK_TEXT);
+        
+        gbc.gridy = 6;
+        gbc.insets = new Insets(0, 0, 8, 0);
+        gbc.anchor = GridBagConstraints.WEST;
+        card.add(passwordLabel, gbc);
         
         // 密码输入框容器（包含眼睛图标）
         JPanel passwordFieldContainer = new JPanel();
         passwordFieldContainer.setLayout(new OverlayLayout(passwordFieldContainer));
         passwordFieldContainer.setOpaque(false);
+        passwordFieldContainer.setPreferredSize(new Dimension(360, 44));
         
         passwordFieldContainer.add(passwordField);
         
-        JPanel eyePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel eyePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         eyePanel.setOpaque(false);
-        eyePanel.setBorder(new EmptyBorder(0, 0, 0, 15));
+        eyePanel.setBorder(new EmptyBorder(10, 0, 10, 15));
         eyePanel.add(eyeIconLabel);
         passwordFieldContainer.add(eyePanel);
         
-        passwordContainer.add(passwordLabel, BorderLayout.NORTH);
-        passwordContainer.add(passwordFieldContainer, BorderLayout.CENTER);
-        passwordPanel.add(passwordContainer);
+        gbc.gridy = 7;
+        gbc.insets = new Insets(0, 0, 4, 0); // 减少间距给错误提示留空间
+        gbc.anchor = GridBagConstraints.CENTER;
+        card.add(passwordFieldContainer, gbc);
         
-        // 登录按钮
-        JPanel loginPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        loginPanel.setOpaque(false);
-        loginPanel.add(loginButton);
+        // 密码错误提示
+        gbc.gridy = 8;
+        gbc.insets = new Insets(0, 0, 32, 0); // 增加底部间距
+        gbc.anchor = GridBagConstraints.WEST;
+        card.add(passwordErrorLabel, gbc);
+        
+        // 登录按钮 - 略微下移，不要太贴近密码输入框
+        gbc.gridy = 9;
+        gbc.insets = new Insets(8, 0, 20, 0); // 增加顶部间距8px
+        gbc.anchor = GridBagConstraints.CENTER;
+        card.add(loginButton, gbc);
         
         // 注册链接
-        JPanel registerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        registerPanel.setOpaque(false);
-        registerPanel.add(registerLabel);
+        gbc.gridy = 10;
+        gbc.insets = new Insets(0, 0, 16, 0);
+        card.add(registerLabel, gbc);
         
         // 服务条款
-        JPanel termsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        termsPanel.setOpaque(false);
-        JLabel termsLabel = new JLabel("登录即表示您同意我们的服务条款和隐私政策");
-        termsLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        termsLabel.setForeground(new Color(153, 153, 153));
-        termsPanel.add(termsLabel);
+        JLabel termsLabel = new JLabel("登录即表示您同意我们的服务条款和隐私政策", SwingConstants.CENTER);
+        termsLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12));
+        termsLabel.setForeground(new Color(158, 158, 158));
         
-        // 添加组件到卡片
-        card.add(Box.createVerticalStrut(10));
-        card.add(iconPanel);
-        card.add(Box.createVerticalStrut(20));
-        card.add(titlePanel);
-        card.add(Box.createVerticalStrut(10));
-        card.add(subtitlePanel);
-        card.add(Box.createVerticalStrut(30));
-        card.add(usernamePanel);
-        card.add(Box.createVerticalStrut(20));
-        card.add(passwordPanel);
-        card.add(Box.createVerticalStrut(30));
-        card.add(loginPanel);
-        card.add(Box.createVerticalStrut(20));
-        card.add(registerPanel);
-        card.add(Box.createVerticalStrut(20));
-        card.add(termsPanel);
+        gbc.gridy = 11;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        card.add(termsLabel, gbc);
         
         return card;
     }
@@ -394,6 +722,8 @@ public class LoginFrame extends JFrame {
         
         JPanel statusRightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         statusRightPanel.setOpaque(false);
+        // 默认隐藏连接按钮，只在失败时显示
+        connectButton.setVisible(false);
         statusRightPanel.add(connectButton);
         
         statusPanel.add(statusLeftPanel, BorderLayout.WEST);
@@ -426,7 +756,7 @@ public class LoginFrame extends JFrame {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 if (registerLabel.isEnabled()) {
-                    registerLabel.setForeground(PRIMARY_GREEN);
+                    registerLabel.setForeground(PRIMARY_COLOR);
                 }
             }
             
@@ -454,18 +784,25 @@ public class LoginFrame extends JFrame {
             }
         });
         
-        // 回车键登录
-        KeyAdapter enterKeyListener = new KeyAdapter() {
+        // 键盘支持：回车键登录，Esc键关闭
+        KeyAdapter keyListener = new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER && loginButton.isEnabled()) {
                     performLogin();
+                } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    // Esc键关闭窗口
+                    System.exit(0);
                 }
             }
         };
         
-        loginIdField.addKeyListener(enterKeyListener);
-        passwordField.addKeyListener(enterKeyListener);
+        loginIdField.addKeyListener(keyListener);
+        passwordField.addKeyListener(keyListener);
+        
+        // 为整个窗口添加键盘监听
+        addKeyListener(keyListener);
+        setFocusable(true);
     }
     
     /**
@@ -474,11 +811,11 @@ public class LoginFrame extends JFrame {
     private void togglePasswordVisibility() {
         if (passwordVisible) {
             passwordField.setEchoChar('●');
-            eyeIconLabel.setText("👁");
+            eyeIconLabel.setText("显示");
             passwordVisible = false;
         } else {
             passwordField.setEchoChar((char) 0);
-            eyeIconLabel.setText("🙈");
+            eyeIconLabel.setText("隐藏");
             passwordVisible = true;
         }
     }
@@ -489,23 +826,28 @@ public class LoginFrame extends JFrame {
     private void connectToServer() {
         connectButton.setEnabled(false);
         statusLabel.setText("正在连接服务器...");
-        statusLabel.setForeground(Color.ORANGE);
+        statusLabel.setForeground(WARNING_ORANGE);
         
         // 在后台线程中连接
         SwingUtilities.invokeLater(() -> {
             boolean connected = serverConnection.connect();
             
             if (connected) {
-                statusLabel.setText("服务器连接成功");
-                statusLabel.setForeground(new Color(0, 128, 0));
+                // 成功时，显示右上角轻提示2-3秒后消失
+                showConnectionToast(true);
+                statusLabel.setText("就绪");
+                statusLabel.setForeground(DARK_TEXT);
                 loginButton.setEnabled(true);
                 registerLabel.setEnabled(true);
-                connectButton.setText("重新连接");
+                connectButton.setVisible(false); // 隐藏连接按钮
             } else {
+                // 失败时，显示橙色重新连接按钮
                 statusLabel.setText("服务器连接失败");
-                statusLabel.setForeground(Color.RED);
+                statusLabel.setForeground(ERROR_RED);
                 loginButton.setEnabled(false);
                 registerLabel.setEnabled(false);
+                connectButton.setVisible(true); // 显示重新连接按钮
+                connectButton.setText("重新连接");
             }
             
             connectButton.setEnabled(true);
@@ -519,23 +861,26 @@ public class LoginFrame extends JFrame {
         String loginId = loginIdField.getText().trim();
         String password = new String(passwordField.getPassword());
         
+        // 清除之前的错误提示
+        hideErrorMessages();
+        
         // 检查是否是占位符文本
-        if (loginId.isEmpty() || loginId.equals("请输入学号或教工号")) {
-            JOptionPane.showMessageDialog(this, "请输入学号或教工号", "提示", JOptionPane.WARNING_MESSAGE);
+        if (loginId.isEmpty() || loginId.equals("学号/教工号")) {
+            showFieldError(loginIdErrorLabel, "请输入学号或教工号");
             loginIdField.requestFocus();
             return;
         }
         
         if (password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "请输入密码", "提示", JOptionPane.WARNING_MESSAGE);
+            showFieldError(passwordErrorLabel, "请输入密码");
             passwordField.requestFocus();
             return;
         }
         
-        // 禁用按钮防止重复点击
-        setButtonsEnabled(false);
+        // 禁用按钮防止重复点击，切换为加载态
+        setLoadingState(true);
         statusLabel.setText("正在登录...");
-        statusLabel.setForeground(Color.ORANGE);
+        statusLabel.setForeground(WARNING_ORANGE);
         
         // 执行登录
         userController.login(loginId, password, new UserController.LoginCallback() {
@@ -550,10 +895,17 @@ public class LoginFrame extends JFrame {
             @Override
             public void onFailure(String errorMessage) {
                 SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(LoginFrame.this, errorMessage, "登录失败", JOptionPane.ERROR_MESSAGE);
-                    setButtonsEnabled(true);
+                    // 恢复按钮状态
+                    setLoadingState(false);
+                    
+                    // 启动摇摆动画
+                    startShakeAnimation();
+                    
+                    // 显示错误提示在密码框下方
+                    showFieldError(passwordErrorLabel, errorMessage);
+                    
                     statusLabel.setText("服务器连接成功");
-                    statusLabel.setForeground(new Color(0, 128, 0));
+                    statusLabel.setForeground(SUCCESS_GREEN);
                     passwordField.setText("");
                     passwordField.requestFocus();
                 });
@@ -562,11 +914,18 @@ public class LoginFrame extends JFrame {
     }
     
     /**
-     * 打开注册对话框
+     * 打开注册页面
      */
     private void openRegisterDialog() {
-        RegisterDialog registerDialog = new RegisterDialog(this, userController);
-        registerDialog.setVisible(true);
+        // 隐藏登录页面
+        setVisible(false);
+        
+        // 打开注册页面
+        RegisterFrame registerFrame = new RegisterFrame(userController);
+        registerFrame.setVisible(true);
+        
+        // 关闭登录页面
+        dispose();
     }
     
     /**
@@ -594,6 +953,243 @@ public class LoginFrame extends JFrame {
     }
     
     /**
+     * 设置加载状态
+     */
+    private void setLoadingState(boolean loading) {
+        isLoading = loading;
+        if (loading) {
+            originalButtonText = loginButton.getText();
+            loginButton.setText("正在登录...");
+            loginButton.setEnabled(false);
+            registerLabel.setEnabled(false);
+            connectButton.setEnabled(false);
+        } else {
+            loginButton.setText(originalButtonText);
+            loginButton.setEnabled(true);
+            registerLabel.setEnabled(true);
+            connectButton.setEnabled(true);
+        }
+    }
+    
+    /**
+     * 显示字段错误提示
+     */
+    private void showFieldError(JLabel errorLabel, String message) {
+        errorLabel.setText(message);
+        errorLabel.setVisible(true);
+        // 添加淡入动画效果
+        Timer fadeInTimer = new Timer(20, new ActionListener() {
+            private float alpha = 0.0f;
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                alpha += 0.1f;
+                if (alpha >= 1.0f) {
+                    alpha = 1.0f;
+                    ((Timer) e.getSource()).stop();
+                }
+                // 设置透明度效果
+                Color color = ERROR_RED;
+                errorLabel.setForeground(new Color(color.getRed(), color.getGreen(), color.getBlue(), (int)(255 * alpha)));
+            }
+        });
+        fadeInTimer.start();
+    }
+    
+    /**
+     * 隐藏错误提示
+     */
+    private void hideErrorMessages() {
+        loginIdErrorLabel.setVisible(false);
+        passwordErrorLabel.setVisible(false);
+    }
+    
+    /**
+     * 显示连接状态Toast提示
+     */
+    private void showConnectionToast(boolean success) {
+        if (success) {
+            connectionToast.setText("服务器连接成功");
+            connectionToast.setBackground(SUCCESS_GREEN);
+            connectionToast.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(SUCCESS_GREEN, 1),
+                BorderFactory.createEmptyBorder(8, 16, 8, 16)
+            ));
+        } else {
+            connectionToast.setText("连接失败");
+            connectionToast.setBackground(ERROR_RED);
+            connectionToast.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ERROR_RED, 1),
+                BorderFactory.createEmptyBorder(8, 16, 8, 16)
+            ));
+        }
+        
+        connectionToast.setVisible(true);
+        
+        // 2-3秒后自动消失
+        Timer hideTimer = new Timer(2500, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                connectionToast.setVisible(false);
+                ((Timer) e.getSource()).stop();
+            }
+        });
+        hideTimer.setRepeats(false);
+        hideTimer.start();
+    }
+    
+    /**
+     * 启动淡入动画
+     */
+    private void startFadeInAnimation() {
+        // 简化处理：移除透明度动画，避免兼容性问题
+        // 直接显示窗口，保持良好的用户体验
+        System.out.println("登录界面已准备就绪");
+    }
+    
+    /**
+     * 卡片摇摆动画（登录失败时）
+     */
+    private void startShakeAnimation() {
+        final int originalX = loginCardPanel.getX();
+        final int shakeDistance = 10;
+        final int shakeDuration = 500;
+        final int shakeCount = 6;
+        
+        Timer shakeTimer = new Timer(shakeDuration / (shakeCount * 2), new ActionListener() {
+            private int count = 0;
+            private boolean right = true;
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (count >= shakeCount * 2) {
+                    loginCardPanel.setLocation(originalX, loginCardPanel.getY());
+                    ((Timer) e.getSource()).stop();
+                    return;
+                }
+                
+                int offset = right ? shakeDistance : -shakeDistance;
+                loginCardPanel.setLocation(originalX + offset, loginCardPanel.getY());
+                right = !right;
+                count++;
+            }
+        });
+        shakeTimer.start();
+    }
+    
+    /**
+     * 文本框焦点动画
+     */
+    private void animateFieldFocus(JTextField field, boolean focused, String placeholder) {
+        Timer animTimer = new Timer(10, new ActionListener() {
+            private int step = 0;
+            private final int totalSteps = 15;
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                step++;
+                float progress = (float) step / totalSteps;
+                
+                if (focused) {
+                    // 获得焦点时的动画 - 主色边框#37A165，1px边框 + 微弱外发光
+                    field.setBorder(BorderFactory.createCompoundBorder(
+                        new FocusedBorder(FOCUS_COLOR, 1, 12), // 聚焦态专用边框
+                        BorderFactory.createEmptyBorder(12, 16, 12, 16) // 统一内边距
+                    ));
+                    
+                    // 背景颜色过渡
+                    Color startBg = new Color(248, 250, 252);
+                    Color endBg = WHITE;
+                    int r = (int) (startBg.getRed() + (endBg.getRed() - startBg.getRed()) * progress);
+                    int g = (int) (startBg.getGreen() + (endBg.getGreen() - startBg.getGreen()) * progress);
+                    int b = (int) (startBg.getBlue() + (endBg.getBlue() - startBg.getBlue()) * progress);
+                    field.setBackground(new Color(r, g, b));
+                    
+                    if (step == 1 && field.getText().equals(placeholder)) {
+                        field.setText("");
+                        field.setForeground(DARK_TEXT);
+                    }
+                } else {
+                    // 失去焦点时的动画
+                    field.setBorder(BorderFactory.createCompoundBorder(
+                        new RoundedBorder(BORDER_COLOR, 1, 12),
+                        BorderFactory.createEmptyBorder(12, 16, 12, 16) // 统一内边距
+                    ));
+                    
+                    // 背景颜色过渡
+                    Color startBg = WHITE;
+                    Color endBg = new Color(248, 250, 252);
+                    int r = (int) (startBg.getRed() + (endBg.getRed() - startBg.getRed()) * progress);
+                    int g = (int) (startBg.getGreen() + (endBg.getGreen() - startBg.getGreen()) * progress);
+                    int b = (int) (startBg.getBlue() + (endBg.getBlue() - startBg.getBlue()) * progress);
+                    field.setBackground(new Color(r, g, b));
+                    
+                    if (step == totalSteps && field.getText().isEmpty()) {
+                        field.setForeground(GRAY_TEXT);
+                        field.setText(placeholder);
+                    }
+                }
+                
+                if (step >= totalSteps) {
+                    ((Timer) e.getSource()).stop();
+                }
+            }
+        });
+        animTimer.start();
+    }
+    
+    /**
+     * 密码框焦点动画
+     */
+    private void animatePasswordFieldFocus(JPasswordField field, boolean focused) {
+        Timer animTimer = new Timer(10, new ActionListener() {
+            private int step = 0;
+            private final int totalSteps = 15;
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                step++;
+                float progress = (float) step / totalSteps;
+                
+                if (focused) {
+                    // 获得焦点时的动画 - 主色边框#37A165，1px边框 + 微弱外发光
+                    field.setBorder(BorderFactory.createCompoundBorder(
+                        new FocusedBorder(FOCUS_COLOR, 1, 12), // 聚焦态专用边框
+                        BorderFactory.createEmptyBorder(12, 16, 12, 48) // 统一内边距，右侧留空间给眼睛图标
+                    ));
+                    
+                    // 背景颜色过渡
+                    Color startBg = new Color(248, 250, 252);
+                    Color endBg = WHITE;
+                    int r = (int) (startBg.getRed() + (endBg.getRed() - startBg.getRed()) * progress);
+                    int g = (int) (startBg.getGreen() + (endBg.getGreen() - startBg.getGreen()) * progress);
+                    int b = (int) (startBg.getBlue() + (endBg.getBlue() - startBg.getBlue()) * progress);
+                    field.setBackground(new Color(r, g, b));
+                } else {
+                    // 失去焦点时的动画
+                    field.setBorder(BorderFactory.createCompoundBorder(
+                        new RoundedBorder(BORDER_COLOR, 1, 12),
+                        BorderFactory.createEmptyBorder(12, 16, 12, 48) // 统一内边距，右侧留空间给眼睛图标
+                    ));
+                    
+                    // 背景颜色过渡
+                    Color startBg = WHITE;
+                    Color endBg = new Color(248, 250, 252);
+                    int r = (int) (startBg.getRed() + (endBg.getRed() - startBg.getRed()) * progress);
+                    int g = (int) (startBg.getGreen() + (endBg.getGreen() - startBg.getGreen()) * progress);
+                    int b = (int) (startBg.getBlue() + (endBg.getBlue() - startBg.getBlue()) * progress);
+                    field.setBackground(new Color(r, g, b));
+                }
+                
+                if (step >= totalSteps) {
+                    ((Timer) e.getSource()).stop();
+                }
+            }
+        });
+        animTimer.start();
+    }
+    
+    /**
      * 主方法
      */
     public static void main(String[] args) {
@@ -606,6 +1202,11 @@ public class LoginFrame extends JFrame {
             System.setProperty("flatlaf.useRoundedBorders", "true");
             System.setProperty("flatlaf.menuBarEmbedded", "false");
             
+            // 高DPI支持 - 处理Windows缩放问题
+            System.setProperty("sun.java2d.dpiaware", "true");
+            System.setProperty("awt.useSystemAAFontSettings", "on");
+            System.setProperty("swing.aatext", "true");
+            
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             System.err.println("Failed to initialize FlatLaf, using system default");
             e.printStackTrace();
@@ -617,8 +1218,117 @@ public class LoginFrame extends JFrame {
             }
         }
         
+        // 设置全局默认字体 - 统一字体设置
+        setGlobalFont();
+        
         SwingUtilities.invokeLater(() -> {
             new LoginFrame().setVisible(true);
         });
+    }
+    
+    /**
+     * 设置全局默认字体
+     */
+    private static void setGlobalFont() {
+        try {
+            // 设置默认字体为Microsoft YaHei UI，中文优先
+            Font defaultFont = new Font("Microsoft YaHei UI", Font.PLAIN, 14);
+            
+            // 设置所有UI组件的默认字体
+            java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
+            while (keys.hasMoreElements()) {
+                Object key = keys.nextElement();
+                Object value = UIManager.get(key);
+                if (value instanceof Font) {
+                    UIManager.put(key, defaultFont);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("设置全局字体失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 聚焦态边框 - 带外发光效果
+     */
+    private static class FocusedBorder extends AbstractBorder {
+        private Color color;
+        private int thickness;
+        private int radius;
+        
+        public FocusedBorder(Color color, int thickness, int radius) {
+            this.color = color;
+            this.thickness = thickness;
+            this.radius = radius;
+        }
+        
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            
+            // 绘制外发光效果
+            for (int i = 3; i >= 0; i--) {
+                int alpha = 20 - i * 5; // 渐变透明度
+                g2d.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha));
+                g2d.setStroke(new BasicStroke(thickness + i));
+                g2d.drawRoundRect(x + thickness / 2 - i, y + thickness / 2 - i, 
+                                 width - thickness + i * 2, height - thickness + i * 2, 
+                                 radius + i, radius + i);
+            }
+            
+            // 绘制主边框
+            g2d.setColor(color);
+            g2d.setStroke(new BasicStroke(thickness));
+            g2d.drawRoundRect(x + thickness / 2, y + thickness / 2, 
+                             width - thickness, height - thickness, radius, radius);
+        }
+        
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return new Insets(thickness + 3, thickness + 3, thickness + 3, thickness + 3);
+        }
+        
+        @Override
+        public Insets getBorderInsets(Component c, Insets insets) {
+            insets.left = insets.top = insets.right = insets.bottom = thickness + 3;
+            return insets;
+        }
+    }
+    
+    /**
+     * 自定义圆角边框
+     */
+    private static class RoundedBorder extends AbstractBorder {
+        private Color color;
+        private int thickness;
+        private int radius;
+        
+        public RoundedBorder(Color color, int thickness, int radius) {
+            this.color = color;
+            this.thickness = thickness;
+            this.radius = radius;
+        }
+        
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setColor(color);
+            g2d.setStroke(new BasicStroke(thickness));
+            g2d.drawRoundRect(x + thickness / 2, y + thickness / 2, 
+                             width - thickness, height - thickness, radius, radius);
+        }
+        
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return new Insets(thickness, thickness, thickness, thickness);
+        }
+        
+        @Override
+        public Insets getBorderInsets(Component c, Insets insets) {
+            insets.left = insets.top = insets.right = insets.bottom = thickness;
+            return insets;
+        }
     }
 }

@@ -15,7 +15,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public Integer insert(UserVO user) {
-        String sql = "INSERT INTO users (login_id, name, password, role, status, phone, email, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (login_id, password, role) VALUES (?, ?, ?)";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -24,24 +24,22 @@ public class UserDAOImpl implements UserDAO {
             conn = DatabaseUtil.getConnection();
             pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             
-            pstmt.setString(1, user.getLoginId());
-            pstmt.setString(2, user.getName());
-            pstmt.setString(3, user.getPassword());
-            pstmt.setInt(4, user.getRole() != null ? user.getRole() : 0);
-            pstmt.setInt(5, user.getStatus() != null ? user.getStatus() : 0);
-            pstmt.setString(6, user.getPhone());
-            pstmt.setString(7, user.getEmail());
-            pstmt.setDouble(8, user.getBalance() != null ? user.getBalance() : 0.0);
+            pstmt.setString(1, user.getId()); // 使用id作为login_id
+            pstmt.setString(2, user.getPassword());
+            pstmt.setInt(3, user.getRole() != null ? user.getRole() : 0);
             
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
                 rs = pstmt.getGeneratedKeys();
                 if (rs.next()) {
-                    return rs.getInt(1);
+                    Integer userId = rs.getInt(1);
+                    user.setUserId(userId); // 设置生成的用户ID
+                    return userId;
                 }
             }
         } catch (SQLException e) {
             System.err.println("插入用户失败: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, rs);
         }
@@ -71,7 +69,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public boolean update(UserVO user) {
-        String sql = "UPDATE users SET name = ?, phone = ?, email = ?, role = ?, status = ?, balance = ?, updated_time = CURRENT_TIMESTAMP WHERE user_id = ?";
+        String sql = "UPDATE users SET login_id = ?, password = ?, role = ?, updated_time = CURRENT_TIMESTAMP WHERE user_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         
@@ -79,18 +77,16 @@ public class UserDAOImpl implements UserDAO {
             conn = DatabaseUtil.getConnection();
             pstmt = conn.prepareStatement(sql);
             
-            pstmt.setString(1, user.getName());
-            pstmt.setString(2, user.getPhone());
-            pstmt.setString(3, user.getEmail());
-            pstmt.setInt(4, user.getRole() != null ? user.getRole() : 0);
-            pstmt.setInt(5, user.getStatus() != null ? user.getStatus() : 0);
-            pstmt.setDouble(6, user.getBalance() != null ? user.getBalance() : 0.0);
-            pstmt.setInt(7, user.getUserId());
+            pstmt.setString(1, user.getId());
+            pstmt.setString(2, user.getPassword());
+            pstmt.setInt(3, user.getRole() != null ? user.getRole() : 0);
+            pstmt.setInt(4, user.getUserId()); // 使用userId作为更新条件
             
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
             System.err.println("更新用户失败: " + e.getMessage());
+            e.printStackTrace();
             return false;
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, null);
@@ -99,7 +95,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public UserVO findById(Integer userId) {
-        String sql = "SELECT * FROM users WHERE user_id = ?";
+        String sql = "SELECT user_id, login_id, password, role FROM users WHERE user_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -123,7 +119,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public List<UserVO> findAll() {
-        String sql = "SELECT * FROM users ORDER BY user_id";
+        String sql = "SELECT user_id, login_id, password, role FROM users ORDER BY user_id";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -192,7 +188,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public UserVO findByLoginId(String loginId) {
-        String sql = "SELECT * FROM users WHERE login_id = ?";
+        String sql = "SELECT user_id, login_id, password, role FROM users WHERE login_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -216,7 +212,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public UserVO authenticate(String loginId, String password) {
-        String sql = "SELECT * FROM users WHERE login_id = ? AND password = ? AND status = 1";
+        String sql = "SELECT user_id, login_id, password, role FROM users WHERE login_id = ? AND password = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -263,7 +259,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public List<UserVO> findByRole(Integer role) {
-        String sql = "SELECT * FROM users WHERE role = ? ORDER BY user_id";
+        String sql = "SELECT user_id, login_id, password, role FROM users WHERE role = ? ORDER BY user_id";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -288,27 +284,9 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public List<UserVO> findByStatus(Integer status) {
-        String sql = "SELECT * FROM users WHERE status = ? ORDER BY user_id";
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        List<UserVO> users = new ArrayList<>();
-        
-        try {
-            conn = DatabaseUtil.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, status);
-            rs = pstmt.executeQuery();
-            
-            while (rs.next()) {
-                users.add(mapResultSetToUserVO(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("根据状态查询用户失败: " + e.getMessage());
-        } finally {
-            DatabaseUtil.closeAll(conn, pstmt, rs);
-        }
-        return users;
+        // 状态管理已移除，返回所有用户
+        System.out.println("根据状态查询用户: " + status + " (状态管理已简化，返回所有用户)");
+        return findAll();
     }
     
     @Override
@@ -335,7 +313,8 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public boolean updateBalance(Integer userId, Double amount) {
-        String sql = "UPDATE users SET balance = balance + ?, updated_time = CURRENT_TIMESTAMP WHERE user_id = ?";
+        // 余额信息存储在students表中
+        String sql = "UPDATE students SET balance = balance + ?, updated_time = CURRENT_TIMESTAMP WHERE user_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         
@@ -349,6 +328,7 @@ public class UserDAOImpl implements UserDAO {
             return affectedRows > 0;
         } catch (SQLException e) {
             System.err.println("更新用户余额失败: " + e.getMessage());
+            e.printStackTrace();
             return false;
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, null);
@@ -357,49 +337,22 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public boolean activateUser(Integer userId) {
-        String sql = "UPDATE users SET status = 1, updated_time = CURRENT_TIMESTAMP WHERE user_id = ?";
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        
-        try {
-            conn = DatabaseUtil.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, userId);
-            
-            int affectedRows = pstmt.executeUpdate();
-            return affectedRows > 0;
-        } catch (SQLException e) {
-            System.err.println("激活用户失败: " + e.getMessage());
-            return false;
-        } finally {
-            DatabaseUtil.closeAll(conn, pstmt, null);
-        }
+        // 状态管理已移除，此方法保留为兼容性，直接返回true
+        System.out.println("激活用户: " + userId + " (状态管理已简化)");
+        return true;
     }
     
     @Override
     public boolean deactivateUser(Integer userId) {
-        String sql = "UPDATE users SET status = 0, updated_time = CURRENT_TIMESTAMP WHERE user_id = ?";
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        
-        try {
-            conn = DatabaseUtil.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, userId);
-            
-            int affectedRows = pstmt.executeUpdate();
-            return affectedRows > 0;
-        } catch (SQLException e) {
-            System.err.println("停用用户失败: " + e.getMessage());
-            return false;
-        } finally {
-            DatabaseUtil.closeAll(conn, pstmt, null);
-        }
+        // 状态管理已移除，此方法保留为兼容性，直接返回true
+        System.out.println("停用用户: " + userId + " (状态管理已简化)");
+        return true;
     }
     
     @Override
     public List<UserVO> findByNameLike(String name) {
-        String sql = "SELECT * FROM users WHERE name LIKE ? ORDER BY user_id";
+        // 由于users表没有name字段，这里根据login_id进行模糊查询
+        String sql = "SELECT user_id, login_id, password, role FROM users WHERE login_id LIKE ? ORDER BY user_id";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -415,7 +368,8 @@ public class UserDAOImpl implements UserDAO {
                 users.add(mapResultSetToUserVO(rs));
             }
         } catch (SQLException e) {
-            System.err.println("根据姓名模糊查询用户失败: " + e.getMessage());
+            System.err.println("根据登录ID模糊查询用户失败: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, rs);
         }
@@ -424,7 +378,8 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public Double getBalance(Integer userId) {
-        String sql = "SELECT balance FROM users WHERE user_id = ?";
+        // 余额信息存储在students表中
+        String sql = "SELECT balance FROM students WHERE user_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -440,6 +395,7 @@ public class UserDAOImpl implements UserDAO {
             }
         } catch (SQLException e) {
             System.err.println("获取用户余额失败: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, rs);
         }
@@ -454,17 +410,10 @@ public class UserDAOImpl implements UserDAO {
      */
     private UserVO mapResultSetToUserVO(ResultSet rs) throws SQLException {
         UserVO user = new UserVO();
-        user.setUserId(rs.getInt("user_id"));
-        user.setLoginId(rs.getString("login_id"));
-        user.setName(rs.getString("name"));
+        user.setUserId(rs.getInt("user_id")); // 设置数据库主键ID
+        user.setId(rs.getString("login_id")); // 设置登录ID
         user.setPassword(rs.getString("password"));
         user.setRole(rs.getInt("role"));
-        user.setStatus(rs.getInt("status"));
-        user.setPhone(rs.getString("phone"));
-        user.setEmail(rs.getString("email"));
-        user.setBalance(rs.getDouble("balance"));
-        user.setCreatedTime(rs.getTimestamp("created_time"));
-        user.setUpdatedTime(rs.getTimestamp("updated_time"));
         return user;
     }
 }

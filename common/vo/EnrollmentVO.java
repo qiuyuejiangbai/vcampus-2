@@ -13,9 +13,12 @@ public class EnrollmentVO implements Serializable {
     private Integer enrollmentId;   // 选课记录ID
     private Integer studentId;      // 学生ID
     private Integer courseId;       // 课程ID
+    private String semester;        // 学期
+    private String academicYear;    // 学年
     private Timestamp enrollmentTime; // 选课时间
-    private Double grade;           // 成绩
-    private Integer status;         // 状态：0-已退课，1-已选课，2-已完成
+    private Timestamp dropTime;     // 退课时间
+    private String dropReason;      // 退课原因
+    private String status;          // 状态：enrolled, dropped, completed
     
     // 关联信息（用于显示）
     private String studentName;     // 学生姓名
@@ -23,14 +26,21 @@ public class EnrollmentVO implements Serializable {
     private String courseName;      // 课程名称
     private String courseCode;      // 课程代码
     private Integer credits;        // 学分
-    private String semester;        // 学期
+    private String teacherName;     // 教师姓名
+    
+    // 关联对象
+    private StudentVO student;
+    private CourseVO course;
+    private GradeVO grade;          // 成绩信息
     
     public EnrollmentVO() {}
     
-    public EnrollmentVO(Integer studentId, Integer courseId) {
+    public EnrollmentVO(Integer studentId, Integer courseId, String semester, String academicYear) {
         this.studentId = studentId;
         this.courseId = courseId;
-        this.status = 1; // 默认已选课
+        this.semester = semester;
+        this.academicYear = academicYear;
+        this.status = "enrolled"; // 默认已选课
     }
     
     // Getters and Setters
@@ -58,6 +68,22 @@ public class EnrollmentVO implements Serializable {
         this.courseId = courseId;
     }
     
+    public String getSemester() {
+        return semester;
+    }
+    
+    public void setSemester(String semester) {
+        this.semester = semester;
+    }
+    
+    public String getAcademicYear() {
+        return academicYear;
+    }
+    
+    public void setAcademicYear(String academicYear) {
+        this.academicYear = academicYear;
+    }
+    
     public Timestamp getEnrollmentTime() {
         return enrollmentTime;
     }
@@ -66,19 +92,27 @@ public class EnrollmentVO implements Serializable {
         this.enrollmentTime = enrollmentTime;
     }
     
-    public Double getGrade() {
-        return grade;
+    public Timestamp getDropTime() {
+        return dropTime;
     }
     
-    public void setGrade(Double grade) {
-        this.grade = grade;
+    public void setDropTime(Timestamp dropTime) {
+        this.dropTime = dropTime;
     }
     
-    public Integer getStatus() {
+    public String getDropReason() {
+        return dropReason;
+    }
+    
+    public void setDropReason(String dropReason) {
+        this.dropReason = dropReason;
+    }
+    
+    public String getStatus() {
         return status;
     }
     
-    public void setStatus(Integer status) {
+    public void setStatus(String status) {
         this.status = status;
     }
     
@@ -122,13 +156,39 @@ public class EnrollmentVO implements Serializable {
         this.credits = credits;
     }
     
-    public String getSemester() {
-        return semester;
+    public String getTeacherName() {
+        return teacherName;
     }
     
-    public void setSemester(String semester) {
-        this.semester = semester;
+    public void setTeacherName(String teacherName) {
+        this.teacherName = teacherName;
     }
+    
+    public StudentVO getStudent() {
+        return student;
+    }
+    
+    public void setStudent(StudentVO student) {
+        this.student = student;
+    }
+    
+    public CourseVO getCourse() {
+        return course;
+    }
+    
+    public void setCourse(CourseVO course) {
+        this.course = course;
+    }
+    
+    public GradeVO getGrade() {
+        return grade;
+    }
+    
+    public void setGrade(GradeVO grade) {
+        this.grade = grade;
+    }
+    
+    // 业务方法
     
     /**
      * 获取状态名称
@@ -137,9 +197,9 @@ public class EnrollmentVO implements Serializable {
     public String getStatusName() {
         if (status == null) return "未知";
         switch (status) {
-            case 0: return "已退课";
-            case 1: return "已选课";
-            case 2: return "已完成";
+            case "enrolled": return "已选课";
+            case "dropped": return "已退课";
+            case "completed": return "已完成";
             default: return "未知";
         }
     }
@@ -149,7 +209,7 @@ public class EnrollmentVO implements Serializable {
      * @return true表示已完成，false表示未完成
      */
     public boolean isCompleted() {
-        return status != null && status == 2;
+        return "completed".equals(status);
     }
     
     /**
@@ -157,7 +217,15 @@ public class EnrollmentVO implements Serializable {
      * @return true表示已退课，false表示未退课
      */
     public boolean isDropped() {
-        return status != null && status == 0;
+        return "dropped".equals(status);
+    }
+    
+    /**
+     * 检查是否已选课
+     * @return true表示已选课，false表示未选课
+     */
+    public boolean isEnrolled() {
+        return "enrolled".equals(status);
     }
     
     /**
@@ -165,7 +233,35 @@ public class EnrollmentVO implements Serializable {
      * @return true表示有成绩，false表示无成绩
      */
     public boolean hasGrade() {
-        return grade != null && grade >= 0;
+        return grade != null && grade.getTotalGrade() != null;
+    }
+    
+    /**
+     * 退课操作
+     * @param reason 退课原因
+     */
+    public void dropCourse(String reason) {
+        this.status = "dropped";
+        this.dropReason = reason;
+        this.dropTime = new Timestamp(System.currentTimeMillis());
+    }
+    
+    /**
+     * 完成课程
+     */
+    public void completeCourse() {
+        this.status = "completed";
+    }
+    
+    /**
+     * 获取最终成绩
+     * @return 最终成绩
+     */
+    public String getFinalGrade() {
+        if (grade != null && grade.getTotalGrade() != null) {
+            return grade.getFormattedGrade();
+        }
+        return "未评分";
     }
     
     /**
@@ -173,12 +269,26 @@ public class EnrollmentVO implements Serializable {
      * @return 成绩等级字符串
      */
     public String getGradeLevel() {
-        if (grade == null) return "未录入";
-        if (grade >= 90) return "优秀";
-        if (grade >= 80) return "良好";
-        if (grade >= 70) return "中等";
-        if (grade >= 60) return "及格";
-        return "不及格";
+        return grade != null ? grade.getGradeLevel() : "未评分";
+    }
+    
+    /**
+     * 获取选课状态描述
+     * @return 状态描述
+     */
+    public String getStatusDescription() {
+        StringBuilder sb = new StringBuilder(getStatusName());
+        
+        if (isDropped() && dropTime != null) {
+            sb.append(" (").append(dropTime.toString().substring(0, 10)).append(")");
+            if (dropReason != null && !dropReason.isEmpty()) {
+                sb.append(" - ").append(dropReason);
+            }
+        } else if (isCompleted() && hasGrade()) {
+            sb.append(" - ").append(getFinalGrade());
+        }
+        
+        return sb.toString();
     }
     
     @Override
@@ -187,15 +297,17 @@ public class EnrollmentVO implements Serializable {
                 "enrollmentId=" + enrollmentId +
                 ", studentId=" + studentId +
                 ", courseId=" + courseId +
+                ", semester='" + semester + '\'' +
+                ", academicYear='" + academicYear + '\'' +
                 ", enrollmentTime=" + enrollmentTime +
-                ", grade=" + grade +
-                ", status=" + status +
+                ", status='" + status + '\'' +
                 ", studentName='" + studentName + '\'' +
                 ", studentNo='" + studentNo + '\'' +
                 ", courseName='" + courseName + '\'' +
                 ", courseCode='" + courseCode + '\'' +
                 ", credits=" + credits +
-                ", semester='" + semester + '\'' +
+                ", teacherName='" + teacherName + '\'' +
+                ", hasGrade=" + hasGrade() +
                 '}';
     }
     

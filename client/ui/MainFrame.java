@@ -54,13 +54,10 @@ public class MainFrame extends JFrame {
         modulePanel = new JPanel();
         
         // 设置样式
-        Font welcomeFont = new Font("微软雅黑", Font.BOLD, 16);
-        Font statusFont = new Font("微软雅黑", Font.PLAIN, 12);
-        
-        welcomeLabel.setFont(welcomeFont);
-        welcomeLabel.setForeground(new Color(25, 25, 112));
-        statusLabel.setFont(statusFont);
-        statusLabel.setForeground(new Color(0, 128, 0));
+        welcomeLabel.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 16));
+        welcomeLabel.setForeground(new Color(34, 139, 34));  // 墨绿色
+        statusLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12));
+        statusLabel.setForeground(new Color(46, 125, 50));   // 深绿色
         
         // 设置欢迎信息
         updateWelcomeLabel();
@@ -74,22 +71,25 @@ public class MainFrame extends JFrame {
         
         // 顶部面板
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBackground(new Color(240, 248, 255));
+        topPanel.setBackground(new Color(240, 248, 240));  // 淡绿色背景
         topPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         
         JPanel welcomePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        welcomePanel.setBackground(new Color(240, 248, 255));
+        welcomePanel.setBackground(new Color(240, 248, 240));  // 淡绿色背景
         welcomePanel.add(welcomeLabel);
         
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        statusPanel.setBackground(new Color(240, 248, 255));
+        statusPanel.setBackground(new Color(240, 248, 240));  // 淡绿色背景
         statusPanel.add(statusLabel);
         
         // 添加登出按钮
         JButton logoutButton = new JButton("退出登录");
-        logoutButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        logoutButton.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 12));
         logoutButton.setBackground(new Color(220, 20, 60));
         logoutButton.setForeground(Color.WHITE);
+        logoutButton.setBorderPainted(false);
+        logoutButton.setFocusPainted(false);
+        logoutButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         logoutButton.addActionListener(e -> performLogout());
         statusPanel.add(logoutButton);
         
@@ -106,12 +106,12 @@ public class MainFrame extends JFrame {
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 20));
         
         JLabel infoLabel = new JLabel("vCampus 虚拟校园系统 v1.0.0");
-        infoLabel.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        infoLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 11));
         infoLabel.setForeground(Color.GRAY);
         bottomPanel.add(infoLabel, BorderLayout.WEST);
         
         JLabel serverLabel = new JLabel("服务器: " + serverConnection.getServerHost() + ":" + serverConnection.getServerPort());
-        serverLabel.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        serverLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 11));
         serverLabel.setForeground(Color.GRAY);
         bottomPanel.add(serverLabel, BorderLayout.EAST);
         
@@ -156,38 +156,38 @@ public class MainFrame extends JFrame {
      * 加载学生功能模块
      */
     private void loadStudentModules() {
-        addModuleButton("个人信息", "查看和修改个人信息", new Color(70, 130, 180), e -> openPersonalInfo());
-        addModuleButton("选课系统", "查看课程和选课退课", new Color(60, 179, 113), e -> openCourseSelection());
-        addModuleButton("成绩查询", "查看个人成绩单", new Color(255, 140, 0), e -> openGradeQuery());
-        addModuleButton("图书馆", "图书检索和借阅管理", new Color(147, 112, 219), e -> openLibrary());
-        addModuleButton("校园商店", "商品浏览和购买", new Color(220, 20, 60), e -> openStore());
-        addModuleButton("校园论坛", "交流讨论和资源分享", new Color(30, 144, 255), e -> openForum());
+        addModuleButton("个人信息", "查看和修改个人信息", new Color(34, 139, 34), e -> openPersonalInfo());
+        addModuleButton("选课系统", "查看课程和选课退课", new Color(46, 125, 50), e -> openCourseSelection());
+        addModuleButton("成绩查询", "查看个人成绩单", new Color(76, 175, 80), e -> openGradeQuery());
+        addModuleButton("图书馆", "图书检索和借阅管理", new Color(56, 142, 60), e -> openLibrary());
+        addModuleButton("校园商店", "商品浏览和购买", new Color(67, 160, 71), e -> openStore());
+        addModuleButton("校园论坛", "交流讨论和资源分享", new Color(85, 139, 47), e -> openForum());
     }
     
     /**
      * 加载教师功能模块
      */
     private void loadTeacherModules() {
-        addModuleButton("个人信息", "查看和修改个人信息", new Color(70, 130, 180), e -> openPersonalInfo());
-        addModuleButton("课程管理", "管理教授课程和学生", new Color(60, 179, 113), e -> openCourseManagement());
-        addModuleButton("成绩管理", "录入和修改学生成绩", new Color(255, 140, 0), e -> openGradeManagement());
-        addModuleButton("学生查询", "查看学生信息", new Color(147, 112, 219), e -> openStudentQuery());
-        addModuleButton("图书馆", "图书检索和借阅管理", new Color(220, 20, 60), e -> openLibrary());
-        addModuleButton("校园论坛", "交流讨论和资源分享", new Color(30, 144, 255), e -> openForum());
+        addModuleButton("个人信息", "查看和修改个人信息", new Color(34, 139, 34), e -> openPersonalInfo());
+        addModuleButton("课程管理", "管理教授课程和学生", new Color(46, 125, 50), e -> openCourseManagement());
+        addModuleButton("成绩管理", "录入和修改学生成绩", new Color(76, 175, 80), e -> openGradeManagement());
+        addModuleButton("学生查询", "查看学生信息", new Color(56, 142, 60), e -> openStudentQuery());
+        addModuleButton("图书馆", "图书检索和借阅管理", new Color(67, 160, 71), e -> openLibrary());
+        addModuleButton("校园论坛", "交流讨论和资源分享", new Color(85, 139, 47), e -> openForum());
     }
     
     /**
      * 加载管理员功能模块
      */
     private void loadAdminModules() {
-        addModuleButton("用户管理", "管理用户账户和权限", new Color(70, 130, 180), e -> openUserManagement());
-        addModuleButton("学籍管理", "管理学生学籍信息", new Color(60, 179, 113), e -> openStudentManagement());
-        addModuleButton("课程管理", "管理课程和教学安排", new Color(255, 140, 0), e -> openCourseManagement());
-        addModuleButton("图书管理", "管理图书馆藏书", new Color(147, 112, 219), e -> openBookManagement());
-        addModuleButton("商店管理", "管理校园商店商品", new Color(220, 20, 60), e -> openStoreManagement());
-        addModuleButton("论坛管理", "管理论坛内容", new Color(30, 144, 255), e -> openForumManagement());
-        addModuleButton("系统统计", "查看系统使用统计", new Color(128, 0, 128), e -> openSystemStats());
-        addModuleButton("系统设置", "系统配置和参数设置", new Color(105, 105, 105), e -> openSystemSettings());
+        addModuleButton("用户管理", "管理用户账户和权限", new Color(34, 139, 34), e -> openUserManagement());
+        addModuleButton("学籍管理", "管理学生学籍信息", new Color(46, 125, 50), e -> openStudentManagement());
+        addModuleButton("课程管理", "管理课程和教学安排", new Color(76, 175, 80), e -> openCourseManagement());
+        addModuleButton("图书管理", "管理图书馆藏书", new Color(56, 142, 60), e -> openBookManagement());
+        addModuleButton("商店管理", "管理校园商店商品", new Color(67, 160, 71), e -> openStoreManagement());
+        addModuleButton("论坛管理", "管理论坛内容", new Color(85, 139, 47), e -> openForumManagement());
+        addModuleButton("系统统计", "查看系统使用统计", new Color(102, 187, 106), e -> openSystemStats());
+        addModuleButton("系统设置", "系统配置和参数设置", new Color(72, 156, 76), e -> openSystemSettings());
     }
     
     /**
@@ -206,11 +206,11 @@ public class MainFrame extends JFrame {
         button.addActionListener(action);
         
         JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
+        titleLabel.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 16));
         titleLabel.setForeground(Color.WHITE);
         
         JLabel descLabel = new JLabel(description, SwingConstants.CENTER);
-        descLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        descLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12));
         descLabel.setForeground(Color.WHITE);
         
         button.add(titleLabel, BorderLayout.CENTER);
@@ -224,7 +224,7 @@ public class MainFrame extends JFrame {
      * 更新欢迎标签
      */
     private void updateWelcomeLabel() {
-        String welcome = String.format("欢迎您，%s (%s)", currentUser.getName(), currentUser.getRoleName());
+        String welcome = String.format("欢迎您，%s (%s)", currentUser.getId(), currentUser.getRoleName());
         welcomeLabel.setText(welcome);
     }
     

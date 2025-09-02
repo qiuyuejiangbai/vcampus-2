@@ -10,27 +10,31 @@ import java.sql.Timestamp;
 public class UserVO implements Serializable {
     private static final long serialVersionUID = 1L;
     
-    private Integer userId;         // 用户ID
-    private String loginId;         // 登录ID（学号/教工号）
-    private String name;            // 姓名
-    private String password;        // 密码（传输时为明文，存储时为哈希值）
+    private Integer userId;         // 数据库主键ID（自增）
+    private String id;              // 登录ID（对应学生的学号、老师的工号、管理员id）
+    private String password;        // 登录密码
     private Integer role;           // 角色：0-学生，1-教师，2-管理员
-    private Integer status;         // 状态：0-未激活，1-已激活
-    private String phone;           // 联系电话
+    private String name;            // 姓名
+    private String phone;           // 电话
     private String email;           // 邮箱
-    private Double balance;         // 账户余额
+    private Integer status;         // 状态
+    private Double balance;         // 余额
     private Timestamp createdTime;  // 创建时间
     private Timestamp updatedTime;  // 更新时间
     
     public UserVO() {}
     
-    public UserVO(String loginId, String name, String password, Integer role) {
-        this.loginId = loginId;
-        this.name = name;
+    public UserVO(String id, String password, Integer role) {
+        this.id = id;
         this.password = password;
         this.role = role;
-        this.status = 0; // 默认未激活
-        this.balance = 0.0; // 默认余额为0
+    }
+    
+    public UserVO(Integer userId, String id, String password, Integer role) {
+        this.userId = userId;
+        this.id = id;
+        this.password = password;
+        this.role = role;
     }
     
     // Getters and Setters
@@ -42,20 +46,12 @@ public class UserVO implements Serializable {
         this.userId = userId;
     }
     
-    public String getLoginId() {
-        return loginId;
+    public String getId() {
+        return id;
     }
     
-    public void setLoginId(String loginId) {
-        this.loginId = loginId;
-    }
-    
-    public String getName() {
-        return name;
-    }
-    
-    public void setName(String name) {
-        this.name = name;
+    public void setId(String id) {
+        this.id = id;
     }
     
     public String getPassword() {
@@ -74,12 +70,12 @@ public class UserVO implements Serializable {
         this.role = role;
     }
     
-    public Integer getStatus() {
-        return status;
+    public String getName() {
+        return name;
     }
     
-    public void setStatus(Integer status) {
-        this.status = status;
+    public void setName(String name) {
+        this.name = name;
     }
     
     public String getPhone() {
@@ -96,6 +92,14 @@ public class UserVO implements Serializable {
     
     public void setEmail(String email) {
         this.email = email;
+    }
+    
+    public Integer getStatus() {
+        return status;
+    }
+    
+    public void setStatus(Integer status) {
+        this.status = status;
     }
     
     public Double getBalance() {
@@ -122,6 +126,17 @@ public class UserVO implements Serializable {
         this.updatedTime = updatedTime;
     }
     
+    // 别名方法，用于兼容性
+    public String getLoginId() {
+        return this.id;
+    }
+    
+    public void setLoginId(String loginId) {
+        this.id = loginId;
+    }
+    
+    // 业务方法
+    
     /**
      * 获取角色名称
      * @return 角色名称字符串
@@ -132,19 +147,6 @@ public class UserVO implements Serializable {
             case 0: return "学生";
             case 1: return "教师";
             case 2: return "管理员";
-            default: return "未知";
-        }
-    }
-    
-    /**
-     * 获取状态名称
-     * @return 状态名称字符串
-     */
-    public String getStatusName() {
-        if (status == null) return "未知";
-        switch (status) {
-            case 0: return "未激活";
-            case 1: return "已激活";
             default: return "未知";
         }
     }
@@ -173,27 +175,13 @@ public class UserVO implements Serializable {
         return role != null && role == 2;
     }
     
-    /**
-     * 检查账户是否已激活
-     * @return true表示已激活，false表示未激活
-     */
-    public boolean isActivated() {
-        return status != null && status == 1;
-    }
-    
     @Override
     public String toString() {
         return "UserVO{" +
                 "userId=" + userId +
-                ", loginId='" + loginId + '\'' +
-                ", name='" + name + '\'' +
+                ", id='" + id + '\'' +
                 ", role=" + role +
-                ", status=" + status +
-                ", phone='" + phone + '\'' +
-                ", email='" + email + '\'' +
-                ", balance=" + balance +
-                ", createdTime=" + createdTime +
-                ", updatedTime=" + updatedTime +
+                ", roleName='" + getRoleName() + '\'' +
                 '}';
     }
     
@@ -202,11 +190,11 @@ public class UserVO implements Serializable {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         UserVO userVO = (UserVO) obj;
-        return userId != null && userId.equals(userVO.userId);
+        return id != null && id.equals(userVO.id);
     }
     
     @Override
     public int hashCode() {
-        return userId != null ? userId.hashCode() : 0;
+        return id != null ? id.hashCode() : 0;
     }
 }
