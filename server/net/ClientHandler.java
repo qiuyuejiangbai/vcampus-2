@@ -4,6 +4,8 @@ import common.protocol.Message;
 import common.protocol.MessageType;
 import common.protocol.StatusCode;
 import common.vo.UserVO;
+import common.vo.StudentVO;
+import common.vo.TeacherVO;
 import server.service.UserService;
 
 import java.util.List;
@@ -146,12 +148,12 @@ public class ClientHandler implements Runnable {
         System.out.println("=== 处理登录请求 ===");
         if (request.getData() instanceof UserVO) {
             UserVO loginUser = (UserVO) request.getData();
-            System.out.println("收到登录请求 - ID: " + loginUser.getLoginId());
+            System.out.println("收到登录请求 - ID: " + loginUser.getId());
             
-            UserVO user = userService.login(loginUser.getLoginId(), loginUser.getPassword());
+            UserVO user = userService.login(loginUser.getId(), loginUser.getPassword());
             if (user != null) {
                 // 登录成功
-                this.currentUserId = user.getUserId();
+                this.currentUserId = user.getUserId(); // 使用数据库的user_id
                 this.currentUser = user;
                 
                 // 添加到在线用户列表
@@ -163,7 +165,7 @@ public class ClientHandler implements Runnable {
                 Message response = new Message(MessageType.LOGIN_SUCCESS, StatusCode.SUCCESS, user, "登录成功");
                 sendMessage(response);
                 
-                System.out.println("用户登录成功: " + user.getLoginId() + " (" + user.getRoleName() + ")");
+                System.out.println("用户登录成功: " + user.getId() + " (" + user.getRoleName() + ")");
             } else {
                 // 登录失败
                 System.out.println("登录失败，发送失败响应");
@@ -181,27 +183,92 @@ public class ClientHandler implements Runnable {
      * 处理注册请求
      */
     private void handleRegister(Message request) {
-        if (request.getData() instanceof UserVO) {
-            UserVO newUser = (UserVO) request.getData();
-            
-            Integer userId = userService.register(newUser);
-            if (userId != null) {
-                // 注册成功
-                Message response = new Message(MessageType.REGISTER_SUCCESS, StatusCode.CREATED, userId, "注册成功，等待管理员激活");
-                sendMessage(response);
+        try {
+            if (request.getData() instanceof UserVO) {
+                // 简单注册（只有基础用户信息）
+                UserVO newUser = (UserVO) request.getData();
                 
-                System.out.println("新用户注册: " + newUser.getLoginId());
-            } else {
-                // 注册失败
-                String errorMsg = "注册失败";
-                if (userService.loginIdExists(newUser.getLoginId())) {
-                    errorMsg = "登录ID已存在";
+                Integer userId = userService.register(newUser);
+                if (userId != null) {
+                    // 注册成功，账户自动激活
+                    Message response = new Message(MessageType.REGISTER_SUCCESS, StatusCode.CREATED, userId, "注册成功，账户已激活");
+                    sendMessage(response);
+                    
+                    System.out.println("新用户注册: " + newUser.getId());
+                } else {
+                    // 注册失败
+                    String errorMsg = "注册失败";
+                    if (userService.loginIdExists(newUser.getId())) {
+                        errorMsg = "登录ID已存在";
+                    }
+                    Message response = new Message(MessageType.REGISTER_FAIL, StatusCode.USER_EXISTS, null, errorMsg);
+                    sendMessage(response);
                 }
-                Message response = new Message(MessageType.REGISTER_FAIL, StatusCode.USER_EXISTS, null, errorMsg);
-                sendMessage(response);
+            } else if (request.getData() instanceof java.util.Map) {
+                // 详细注册（包含学生/教师信息）
+                handleDetailedRegister(request);
+            } else {
+                sendErrorMessage("注册数据格式错误");
             }
+        } catch (Exception e) {
+            System.err.println("处理注册请求失败: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("注册处理失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理详细注册请求
+     */
+    private void handleDetailedRegister(Message request) {
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> details = (java.util.Map<String, Object>) request.getData();
+        
+        UserVO user = (UserVO) details.get("user");
+        String name = (String) details.get("name");
+        String phone = (String) details.get("phone");
+        String email = (String) details.get("email");
+        String department = (String) details.get("department");
+        String major = (String) details.get("major");
+        String title = (String) details.get("title");
+        
+        // 创建学生或教师信息对象
+        StudentVO studentInfo = null;
+        TeacherVO teacherInfo = null;
+        
+        if (user.isStudent()) {
+            studentInfo = new StudentVO();
+            studentInfo.setName(name);
+            studentInfo.setPhone(phone);
+            studentInfo.setEmail(email);
+            studentInfo.setDepartment(department);
+            studentInfo.setMajor(major);
+            // 其他字段为空，账户余额默认为0在数据库中设置
+        } else if (user.isTeacher()) {
+            teacherInfo = new TeacherVO();
+            teacherInfo.setName(name);
+            teacherInfo.setPhone(phone);
+            teacherInfo.setEmail(email);
+            teacherInfo.setDepartment(department);
+            teacherInfo.setTitle(title);
+        }
+        
+        // 执行注册
+        Integer userId = userService.register(user, studentInfo, teacherInfo);
+        if (userId != null) {
+            // 注册成功，账户自动激活
+            Message response = new Message(MessageType.REGISTER_SUCCESS, StatusCode.CREATED, userId, "注册成功，账户已激活");
+            sendMessage(response);
+            
+            System.out.println("新用户详细注册: " + user.getId() + " (" + user.getRoleName() + ")");
         } else {
-            sendErrorMessage("注册数据格式错误");
+            // 注册失败
+            String errorMsg = "注册失败";
+            if (userService.loginIdExists(user.getId())) {
+                errorMsg = "登录ID已存在";
+            }
+            Message response = new Message(MessageType.REGISTER_FAIL, StatusCode.USER_EXISTS, null, errorMsg);
+            sendMessage(response);
         }
     }
     
@@ -211,7 +278,7 @@ public class ClientHandler implements Runnable {
     private void handleLogout(Message request) {
         if (currentUserId != null) {
             server.removeOnlineUser(currentUserId);
-            System.out.println("用户登出: " + (currentUser != null ? currentUser.getLoginId() : currentUserId));
+            System.out.println("用户登出: " + (currentUser != null ? currentUser.getId() : currentUserId));
         }
         
         currentUserId = null;
@@ -258,6 +325,11 @@ public class ClientHandler implements Runnable {
                 Message response = new Message(MessageType.UPDATE_USER_FAIL, StatusCode.FORBIDDEN, null, "无权限修改他人信息");
                 sendMessage(response);
                 return;
+            }
+            
+            // 如果没有设置userId，则设置为当前用户的ID
+            if (updateUser.getUserId() == null) {
+                updateUser.setUserId(currentUserId);
             }
             
             boolean success = userService.updateUser(updateUser);

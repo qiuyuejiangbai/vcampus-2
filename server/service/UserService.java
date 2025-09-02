@@ -1,8 +1,14 @@
 package server.service;
 
 import common.vo.UserVO;
+import common.vo.StudentVO;
+import common.vo.TeacherVO;
 import server.dao.UserDAO;
+import server.dao.StudentDAO;
+import server.dao.TeacherDAO;
 import server.dao.impl.UserDAOImpl;
+import server.dao.impl.StudentDAOImpl;
+import server.dao.impl.TeacherDAOImpl;
 import server.util.MD5Util;
 
 import java.util.List;
@@ -13,9 +19,13 @@ import java.util.List;
  */
 public class UserService {
     private final UserDAO userDAO;
+    private final StudentDAO studentDAO;
+    private final TeacherDAO teacherDAO;
     
     public UserService() {
         this.userDAO = new UserDAOImpl();
+        this.studentDAO = new StudentDAOImpl();
+        this.teacherDAO = new TeacherDAOImpl();
     }
     
     /**
@@ -43,7 +53,7 @@ public class UserService {
             if (result == null) {
                 System.out.println("数据库认证失败：用户不存在或密码错误");
             } else {
-                System.out.println("数据库认证成功：" + result.getName() + ", 状态: " + result.getStatus());
+                System.out.println("数据库认证成功：用户ID: " + result.getUserId() + ", 登录ID: " + result.getId() + ", 角色: " + result.getRoleName());
             }
             System.out.println("=== 登录调试结束 ===");
             return result;
@@ -55,19 +65,21 @@ public class UserService {
     }
     
     /**
-     * 用户注册
-     * @param user 用户信息
+     * 用户注册 - 支持同时注册学生和教师信息
+     * @param user 用户基础信息
+     * @param studentInfo 学生信息（如果是学生角色）
+     * @param teacherInfo 教师信息（如果是教师角色）
      * @return 注册成功返回用户ID，失败返回null
      */
-    public Integer register(UserVO user) {
-        if (user == null || user.getLoginId() == null || user.getPassword() == null) {
+    public Integer register(UserVO user, StudentVO studentInfo, TeacherVO teacherInfo) {
+        if (user == null || user.getId() == null || user.getPassword() == null) {
             return null;
         }
         
         try {
             // 检查登录ID是否已存在
-            if (userDAO.existsByLoginId(user.getLoginId())) {
-                System.err.println("登录ID已存在: " + user.getLoginId());
+            if (userDAO.existsByLoginId(user.getId())) {
+                System.err.println("登录ID已存在: " + user.getId());
                 return null;
             }
             
@@ -79,18 +91,45 @@ public class UserService {
             if (user.getRole() == null) {
                 user.setRole(0); // 默认为学生
             }
-            if (user.getStatus() == null) {
-                user.setStatus(0); // 默认未激活
-            }
-            if (user.getBalance() == null) {
-                user.setBalance(0.0); // 默认余额为0
+            
+            // 插入用户基础信息
+            Integer userId = userDAO.insert(user);
+            if (userId == null) {
+                return null;
             }
             
-            return userDAO.insert(user);
+            // 根据角色插入对应的详细信息
+            if (user.isStudent() && studentInfo != null) {
+                studentInfo.setUserId(userId);
+                // 如果没有提供学号，使用用户ID作为学号
+                if (studentInfo.getStudentNo() == null || studentInfo.getStudentNo().isEmpty()) {
+                    studentInfo.setStudentNo(user.getId());
+                }
+                studentDAO.insert(studentInfo);
+            } else if (user.isTeacher() && teacherInfo != null) {
+                teacherInfo.setUserId(userId);
+                // 如果没有提供工号，使用用户ID作为工号
+                if (teacherInfo.getTeacherNo() == null || teacherInfo.getTeacherNo().isEmpty()) {
+                    teacherInfo.setTeacherNo(user.getId());
+                }
+                teacherDAO.insert(teacherInfo);
+            }
+            
+            return userId;
         } catch (Exception e) {
             System.err.println("用户注册失败: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
+    }
+    
+    /**
+     * 简化版用户注册 - 只注册基础用户信息
+     * @param user 用户信息
+     * @return 注册成功返回用户ID，失败返回null
+     */
+    public Integer register(UserVO user) {
+        return register(user, null, null);
     }
     
     /**
@@ -138,11 +177,12 @@ public class UserService {
     }
     
     /**
-     * 获取未激活的用户列表
-     * @return 未激活用户列表
+     * 获取未激活的用户列表（状态管理已简化）
+     * @return 空列表（状态管理已移除）
      */
     public List<UserVO> getInactiveUsers() {
-        return userDAO.findByStatus(0);
+        // 状态管理已移除，返回空列表
+        return new java.util.ArrayList<>();
     }
     
     /**
@@ -159,6 +199,7 @@ public class UserService {
             return userDAO.update(user);
         } catch (Exception e) {
             System.err.println("更新用户信息失败: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
@@ -327,7 +368,7 @@ public class UserService {
         }
         
         UserVO user = userDAO.findById(userId);
-        if (user == null || !user.isActivated()) {
+        if (user == null) {
             return false;
         }
         
