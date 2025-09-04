@@ -419,10 +419,17 @@ public class StudentDAOImpl implements StudentDAO {
         student.setStudentId(rs.getInt("student_id"));
         student.setUserId(rs.getInt("user_id"));
         student.setStudentNo(rs.getString("student_no"));
+        // 同步基础档案字段
+        try { student.setName(rs.getString("name")); } catch (SQLException ignored) {}
+        try { student.setPhone(rs.getString("phone")); } catch (SQLException ignored) {}
+        try { student.setEmail(rs.getString("email")); } catch (SQLException ignored) {}
+        try { student.setDepartment(rs.getString("department")); } catch (SQLException ignored) {}
         student.setMajor(rs.getString("major"));
         student.setClassName(rs.getString("class_name"));
-        student.setGrade(rs.getString("grade"));
+        try { student.setGrade(rs.getString("grade")); } catch (SQLException ignored) {}
         student.setEnrollmentYear((Integer) rs.getObject("enrollment_year"));
+        try { student.setCreatedTime(rs.getTimestamp("created_time")); } catch (SQLException ignored) {}
+        try { student.setUpdatedTime(rs.getTimestamp("updated_time")); } catch (SQLException ignored) {}
         return student;
     }
     

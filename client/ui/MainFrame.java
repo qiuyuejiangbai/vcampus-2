@@ -2,6 +2,7 @@ package client.ui;
 
 import client.controller.UserController;
 import client.net.ServerConnection;
+import client.ui.util.FontUtil;
 import common.vo.UserVO;
 
 import javax.swing.*;
@@ -16,8 +17,8 @@ import java.awt.event.WindowEvent;
  * 根据用户角色显示不同的功能模块
  */
 public class MainFrame extends JFrame {
-    private static final int FRAME_WIDTH = 1000;
-    private static final int FRAME_HEIGHT = 700;
+    private static final int FRAME_WIDTH = 1440;
+    private static final int FRAME_HEIGHT = 900;
     
     private UserVO currentUser;
     private UserController userController;
@@ -33,10 +34,17 @@ public class MainFrame extends JFrame {
         this.userController = new UserController();
         this.serverConnection = ServerConnection.getInstance();
         
-        initComponents();
-        setupLayout();
-        setupEventListeners();
-        loadModules();
+        // 最小改动：直接切换到新的 Dashboard 窗口（保持登录流程与业务不变）
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override public void run() {
+                dispose();
+                if (currentUser != null && currentUser.isTeacher()) {
+                    new client.ui.dashboard.TeacherDashboardUI(currentUser, serverConnection).setVisible(true);
+                } else {
+                    new client.ui.dashboard.StudentDashboardUI(currentUser, serverConnection).setVisible(true);
+                }
+            }
+        });
     }
     
     /**
@@ -45,6 +53,8 @@ public class MainFrame extends JFrame {
     private void initComponents() {
         setTitle("vCampus 虚拟校园系统 - " + currentUser.getRoleName());
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        // 去除标题栏与边框
+        setUndecorated(true);
         setSize(FRAME_WIDTH, FRAME_HEIGHT);
         setLocationRelativeTo(null);
         
@@ -54,9 +64,9 @@ public class MainFrame extends JFrame {
         modulePanel = new JPanel();
         
         // 设置样式
-        welcomeLabel.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 16));
+        FontUtil.setLabelFont(welcomeLabel, Font.BOLD, 20);
         welcomeLabel.setForeground(new Color(34, 139, 34));  // 墨绿色
-        statusLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12));
+        FontUtil.setLabelFont(statusLabel, Font.PLAIN, 14);
         statusLabel.setForeground(new Color(46, 125, 50));   // 深绿色
         
         // 设置欢迎信息
@@ -82,9 +92,9 @@ public class MainFrame extends JFrame {
         statusPanel.setBackground(new Color(240, 248, 240));  // 淡绿色背景
         statusPanel.add(statusLabel);
         
-        // 添加登出按钮
+        // 添加登出按钮（顶部右侧）
         JButton logoutButton = new JButton("退出登录");
-        logoutButton.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 12));
+        FontUtil.setButtonFont(logoutButton, Font.BOLD, 14);
         logoutButton.setBackground(new Color(220, 20, 60));
         logoutButton.setForeground(Color.WHITE);
         logoutButton.setBorderPainted(false);
@@ -106,12 +116,12 @@ public class MainFrame extends JFrame {
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 20));
         
         JLabel infoLabel = new JLabel("vCampus 虚拟校园系统 v1.0.0");
-        infoLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 11));
+        FontUtil.setLabelFont(infoLabel, Font.PLAIN, 12);
         infoLabel.setForeground(Color.GRAY);
         bottomPanel.add(infoLabel, BorderLayout.WEST);
         
         JLabel serverLabel = new JLabel("服务器: " + serverConnection.getServerHost() + ":" + serverConnection.getServerPort());
-        serverLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 11));
+        serverLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 13));
         serverLabel.setForeground(Color.GRAY);
         bottomPanel.add(serverLabel, BorderLayout.EAST);
         
@@ -138,7 +148,7 @@ public class MainFrame extends JFrame {
      * 加载功能模块
      */
     private void loadModules() {
-        modulePanel.setLayout(new GridLayout(0, 3, 20, 20));
+        modulePanel.setLayout(new GridLayout(0, 2, 24, 24));
         
         if (currentUser.isStudent()) {
             loadStudentModules();
@@ -202,15 +212,15 @@ public class MainFrame extends JFrame {
         JButton button = new JButton();
         button.setLayout(new BorderLayout());
         button.setBackground(color);
-        button.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        button.setBorder(BorderFactory.createEmptyBorder(28, 28, 28, 28));
         button.addActionListener(action);
         
         JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 16));
+        titleLabel.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 20));
         titleLabel.setForeground(Color.WHITE);
         
         JLabel descLabel = new JLabel(description, SwingConstants.CENTER);
-        descLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12));
+        descLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 14));
         descLabel.setForeground(Color.WHITE);
         
         button.add(titleLabel, BorderLayout.CENTER);

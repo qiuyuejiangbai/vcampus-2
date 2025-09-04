@@ -2,6 +2,7 @@ package client.ui;
 
 import client.controller.UserController;
 import client.net.ServerConnection;
+import client.ui.util.FontUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -153,7 +154,7 @@ public class LoginFrame extends JFrame {
         registerLabel = new JLabel("<html><u>注册新账户</u></html>");
         registerLabel.setForeground(GRAY_TEXT);
         registerLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        registerLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 14));
+        FontUtil.setLabelFont(registerLabel, Font.PLAIN, 14);
         registerLabel.setHorizontalAlignment(SwingConstants.CENTER);
         registerLabel.setPreferredSize(new Dimension(120, 44)); // 确保可点击区域≥44px
         registerLabel.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16)); // 增加点击区域
@@ -161,7 +162,7 @@ public class LoginFrame extends JFrame {
         // 创建密码可见性切换图标 - 统一字体，确保可点击区域≥44px
         eyeIconLabel = new JLabel("显示");
         eyeIconLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        eyeIconLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 12));
+        FontUtil.setLabelFont(eyeIconLabel, Font.PLAIN, 12);
         eyeIconLabel.setForeground(PRIMARY_COLOR);
         eyeIconLabel.setHorizontalAlignment(SwingConstants.CENTER);
         eyeIconLabel.setVerticalAlignment(SwingConstants.CENTER);
@@ -217,8 +218,8 @@ public class LoginFrame extends JFrame {
             }
         };
         
-        // 统一字体设置
-        field.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 16));
+        // 统一字体设置 - 调整为14px，避免数字显示过大
+        field.setFont(FontUtil.getSourceHanSansFont(Font.PLAIN, 14));
         field.setBorder(BorderFactory.createCompoundBorder(
             new RoundedBorder(BORDER_COLOR, 1, 12),
             BorderFactory.createEmptyBorder(12, 16, 12, 16) // 统一内边距
@@ -263,8 +264,8 @@ public class LoginFrame extends JFrame {
             }
         };
         
-        // 统一字体设置
-        field.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 16));
+        // 统一字体设置 - 调整为14px，避免密码字符显示过大
+        field.setFont(FontUtil.getSourceHanSansFont(Font.PLAIN, 14));
         field.setBorder(BorderFactory.createCompoundBorder(
             new RoundedBorder(BORDER_COLOR, 1, 12),
             BorderFactory.createEmptyBorder(12, 16, 12, 48) // 右侧留空间给眼睛图标
@@ -272,7 +273,7 @@ public class LoginFrame extends JFrame {
         field.setPreferredSize(new Dimension(360, 44)); // 恢复输入框宽度360px，统一高度44px
         field.setBackground(new Color(248, 250, 252));
         field.setOpaque(false);
-        field.setEchoChar('●');
+        field.setEchoChar('•'); // 使用更小的密码字符
         
         // 添加焦点效果
         field.addFocusListener(new java.awt.event.FocusAdapter() {
@@ -329,7 +330,7 @@ public class LoginFrame extends JFrame {
         };
         
         // 统一字体和尺寸设置
-        button.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 16));
+        button.setFont(FontUtil.getSourceHanSansFont(Font.BOLD, 16));
         button.setForeground(WHITE);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
@@ -468,15 +469,6 @@ public class LoginFrame extends JFrame {
                     return;
                 }
                 
-                // 创建更轻的阴影效果 - rgba(0,0,0,0.08) 0 10px 28px + rgba(0,0,0,0.03) 0 2px 6px
-                // 主阴影层
-                g2d.setColor(new Color(0, 0, 0, 20)); // rgba(0,0,0,0.08)
-                g2d.fill(new RoundRectangle2D.Float(10, 10, width - 10, height - 10, 24, 24));
-                
-                // 次阴影层
-                g2d.setColor(new Color(0, 0, 0, 8)); // rgba(0,0,0,0.03)
-                g2d.fill(new RoundRectangle2D.Float(2, 2, width - 2, height - 2, 24, 24));
-                
                 // 绘制完全不透明的白色卡片背景
                 g2d.setColor(WHITE);
                 g2d.fill(new RoundRectangle2D.Float(0, 0, width - 2, height - 2, 24, 24)); // 圆角24px
@@ -611,7 +603,7 @@ public class LoginFrame extends JFrame {
         
         // 标题 - 28px字号，加粗
         JLabel titleLabel = new JLabel("虚拟校园系统", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Microsoft YaHei UI", Font.BOLD, 28)); // 标题28px
+        titleLabel.setFont(FontUtil.getSourceHanSansFont(Font.BOLD, 28)); // 标题28px
         titleLabel.setForeground(DARK_TEXT);
         
         gbc.gridy = 1;
@@ -620,7 +612,7 @@ public class LoginFrame extends JFrame {
         
         // 副标题 - 14px字号，灰度#6B7280
         JLabel subtitleLabel = new JLabel("请输入您的学号/教工号和密码登录", SwingConstants.CENTER);
-        subtitleLabel.setFont(new Font("Microsoft YaHei UI", Font.PLAIN, 14)); // 副标题14px
+        subtitleLabel.setFont(FontUtil.getSourceHanSansFont(Font.PLAIN, 14)); // 副标题14px
         subtitleLabel.setForeground(GRAY_TEXT); // 灰度#6B7280
         
         gbc.gridy = 2;
@@ -827,31 +819,33 @@ public class LoginFrame extends JFrame {
         connectButton.setEnabled(false);
         statusLabel.setText("正在连接服务器...");
         statusLabel.setForeground(WARNING_ORANGE);
-        
-        // 在后台线程中连接
-        SwingUtilities.invokeLater(() -> {
+
+        // 在后台线程中进行阻塞连接，避免阻塞EDT
+        new Thread(() -> {
             boolean connected = serverConnection.connect();
-            
-            if (connected) {
-                // 成功时，显示右上角轻提示2-3秒后消失
-                showConnectionToast(true);
-                statusLabel.setText("就绪");
-                statusLabel.setForeground(DARK_TEXT);
-                loginButton.setEnabled(true);
-                registerLabel.setEnabled(true);
-                connectButton.setVisible(false); // 隐藏连接按钮
-            } else {
-                // 失败时，显示橙色重新连接按钮
-                statusLabel.setText("服务器连接失败");
-                statusLabel.setForeground(ERROR_RED);
-                loginButton.setEnabled(false);
-                registerLabel.setEnabled(false);
-                connectButton.setVisible(true); // 显示重新连接按钮
-                connectButton.setText("重新连接");
-            }
-            
-            connectButton.setEnabled(true);
-        });
+
+            SwingUtilities.invokeLater(() -> {
+                if (connected) {
+                    // 成功时，显示右上角轻提示2-3秒后消失
+                    showConnectionToast(true);
+                    statusLabel.setText("就绪");
+                    statusLabel.setForeground(DARK_TEXT);
+                    loginButton.setEnabled(true);
+                    registerLabel.setEnabled(true);
+                    connectButton.setVisible(false); // 隐藏连接按钮
+                } else {
+                    // 失败时，显示橙色重新连接按钮
+                    statusLabel.setText("服务器连接失败");
+                    statusLabel.setForeground(ERROR_RED);
+                    loginButton.setEnabled(false);
+                    registerLabel.setEnabled(false);
+                    connectButton.setVisible(true); // 显示重新连接按钮
+                    connectButton.setText("重新连接");
+                }
+
+                connectButton.setEnabled(true);
+            });
+        }, "ServerConnectThread").start();
     }
     
     /**
@@ -935,9 +929,14 @@ public class LoginFrame extends JFrame {
         // 隐藏登录界面
         setVisible(false);
         
-        // 打开主界面
-        MainFrame mainFrame = new MainFrame(user);
-        mainFrame.setVisible(true);
+        // 根据角色打开对应 Dashboard 主界面
+        if (user != null && user.isTeacher()) {
+            new client.ui.dashboard.TeacherDashboardUI(user, serverConnection).setVisible(true);
+        } else if (user != null && user.isAdmin()) {
+            new client.ui.dashboard.AdminDashboardUI(user, serverConnection).setVisible(true);
+        } else {
+            new client.ui.dashboard.StudentDashboardUI(user, serverConnection).setVisible(true);
+        }
         
         // 关闭登录界面
         dispose();
@@ -1219,33 +1218,11 @@ public class LoginFrame extends JFrame {
         }
         
         // 设置全局默认字体 - 统一字体设置
-        setGlobalFont();
+        FontUtil.setGlobalFont();
         
         SwingUtilities.invokeLater(() -> {
             new LoginFrame().setVisible(true);
         });
-    }
-    
-    /**
-     * 设置全局默认字体
-     */
-    private static void setGlobalFont() {
-        try {
-            // 设置默认字体为Microsoft YaHei UI，中文优先
-            Font defaultFont = new Font("Microsoft YaHei UI", Font.PLAIN, 14);
-            
-            // 设置所有UI组件的默认字体
-            java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
-            while (keys.hasMoreElements()) {
-                Object key = keys.nextElement();
-                Object value = UIManager.get(key);
-                if (value instanceof Font) {
-                    UIManager.put(key, defaultFont);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("设置全局字体失败: " + e.getMessage());
-        }
     }
     
     /**

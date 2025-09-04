@@ -54,6 +54,23 @@ public class UserService {
                 System.out.println("数据库认证失败：用户不存在或密码错误");
             } else {
                 System.out.println("数据库认证成功：用户ID: " + result.getUserId() + ", 登录ID: " + result.getId() + ", 角色: " + result.getRoleName());
+
+                // 增强：仅凭账号密码，若为学生则查询并同步姓名（及日志输出专业）
+                if (result.isStudent()) {
+                    try {
+                        StudentVO student = studentDAO.findByUserId(result.getUserId());
+                        if (student != null) {
+                            if (result.getName() == null || result.getName().trim().isEmpty()) {
+                                result.setName(student.getName());
+                            }
+                            System.out.println("登录后学生档案：姓名=" + student.getName() + ", 专业=" + student.getMajor());
+                        } else {
+                            System.out.println("登录后学生档案未找到（userId=" + result.getUserId() + ")");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("登录后查询学生档案异常: " + e.getMessage());
+                    }
+                }
             }
             System.out.println("=== 登录调试结束 ===");
             return result;

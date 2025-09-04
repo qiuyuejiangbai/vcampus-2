@@ -15,7 +15,7 @@ echo 正在启动客户端...
 echo 默认服务器: localhost:8888
 echo.
 
-REM 启动客户端
-java -cp "bin;libs/*" client.ui.LoginFrame
+REM 启动客户端（将 resources 也加入 classpath 以加载图标等资源）
+java -cp "bin;resources;libs/*" client.ui.LoginFrame
 
 pause

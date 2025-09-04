@@ -300,7 +300,7 @@ public enum MessageType {
 
 - 项目仓库: [Git仓库地址]
 - 问题反馈: [Issues链接]
-- 技术文档: 参见 `vCampus模块开发指导.md`
+- 技术文档: 参见 `vCampus模块开发指导.md`，以及《[动态加载页面注册指南](docs/dynamic-page-guide.md)》
 
 ---
 
