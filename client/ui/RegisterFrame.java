@@ -2,6 +2,7 @@ package client.ui;
 
 import client.controller.UserController;
 import common.vo.UserVO;
+import client.ui.util.FontUtil;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -55,14 +56,14 @@ public class RegisterFrame extends JFrame {
     // 背景颜色
     private static final Color INPUT_BACKGROUND = new Color(248, 249, 250);       // #F8F9FA
     
-    // 字体常量
-    private static final Font FONT_TITLE = new Font("Microsoft YaHei UI", Font.BOLD, 24);
-    private static final Font FONT_SUBTITLE = new Font("Microsoft YaHei UI", Font.PLAIN, 12);
-    private static final Font FONT_LABEL = new Font("Microsoft YaHei UI", Font.PLAIN, 11);
-    private static final Font FONT_INPUT = new Font("Microsoft YaHei UI", Font.PLAIN, 13);
-    private static final Font FONT_BUTTON = new Font("Microsoft YaHei UI", Font.BOLD, 16);
-    private static final Font FONT_ERROR = new Font("Microsoft YaHei UI", Font.PLAIN, 12);
-    private static final Font FONT_SMALL = new Font("Microsoft YaHei UI", Font.PLAIN, 11);
+    // 字体常量 - 使用FontUtil动态获取
+    private static Font getFontTitle() { return FontUtil.getSourceHanSansFont(Font.BOLD, 24); }
+    private static Font getFontSubtitle() { return FontUtil.getSourceHanSansFont(Font.PLAIN, 12); }
+    private static Font getFontLabel() { return FontUtil.getSourceHanSansFont(Font.PLAIN, 11); }
+    private static Font getFontInput() { return FontUtil.getSourceHanSansFont(Font.PLAIN, 13); }
+    private static Font getFontButton() { return FontUtil.getSourceHanSansFont(Font.BOLD, 16); }
+    private static Font getFontError() { return FontUtil.getSourceHanSansFont(Font.PLAIN, 12); }
+    private static Font getFontSmall() { return FontUtil.getSourceHanSansFont(Font.PLAIN, 11); }
     
     // ==================== UI组件 ====================
     
@@ -350,15 +351,6 @@ public class RegisterFrame extends JFrame {
                     return;
                 }
                 
-                // 创建更轻的阴影效果 - rgba(0,0,0,0.08) 0 10px 28px + rgba(0,0,0,0.03) 0 2px 6px
-                // 主阴影层
-                g2d.setColor(new Color(0, 0, 0, 20)); // rgba(0,0,0,0.08)
-                g2d.fill(new RoundRectangle2D.Float(10, 10, width - 10, height - 10, ARC_SIZE, ARC_SIZE));
-                
-                // 次阴影层
-                g2d.setColor(new Color(0, 0, 0, 8)); // rgba(0,0,0,0.03)
-                g2d.fill(new RoundRectangle2D.Float(2, 2, width - 2, height - 2, ARC_SIZE, ARC_SIZE));
-                
                 // 绘制完全不透明的白色卡片背景
                 g2d.setColor(WHITE);
                 g2d.fill(new RoundRectangle2D.Float(0, 0, width - 2, height - 2, ARC_SIZE, ARC_SIZE));
@@ -415,12 +407,12 @@ public class RegisterFrame extends JFrame {
         leftPanel.setOpaque(false);
         
         JLabel titleLabel = new JLabel("用户注册");
-        titleLabel.setFont(FONT_TITLE);
+        titleLabel.setFont(getFontTitle());
         titleLabel.setForeground(DARK_TEXT);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
         JLabel subtitleLabel = new JLabel("请填写以下信息完成注册申请");
-        subtitleLabel.setFont(FONT_SUBTITLE);
+        subtitleLabel.setFont(getFontSubtitle());
         subtitleLabel.setForeground(GRAY_TEXT);
         subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
@@ -600,13 +592,13 @@ public class RegisterFrame extends JFrame {
         labelPanel.setOpaque(false);
         
         JLabel label = new JLabel(labelText);
-        label.setFont(FONT_LABEL);
+        label.setFont(getFontLabel());
         label.setForeground(DARK_TEXT);
         labelPanel.add(label);
         
         if (required) {
             JLabel requiredLabel = new JLabel(" *");
-            requiredLabel.setFont(FONT_LABEL);
+            requiredLabel.setFont(getFontLabel());
             requiredLabel.setForeground(ERROR_RED);
             labelPanel.add(requiredLabel);
         }
@@ -677,7 +669,7 @@ public class RegisterFrame extends JFrame {
             }
         };
         
-        field.setFont(FONT_INPUT);
+        field.setFont(getFontInput());
         field.setBorder(BorderFactory.createCompoundBorder(
             new RoundedBorder(BORDER_COLOR, 1, 10),
             BorderFactory.createEmptyBorder(5, 8, 5, 8)
@@ -735,7 +727,7 @@ public class RegisterFrame extends JFrame {
             }
         };
         
-        field.setFont(FONT_INPUT);
+        field.setFont(getFontInput());
         field.setBorder(BorderFactory.createCompoundBorder(
             new RoundedBorder(BORDER_COLOR, 1, 10),
             BorderFactory.createEmptyBorder(5, 8, 5, 32) // 右侧留空间给按钮
@@ -768,7 +760,7 @@ public class RegisterFrame extends JFrame {
      */
     private <T> JComboBox<T> createStyledComboBox(T[] items) {
         JComboBox<T> comboBox = new JComboBox<>(items);
-        comboBox.setFont(FONT_INPUT);
+        comboBox.setFont(getFontInput());
         comboBox.setBackground(INPUT_BACKGROUND);
         comboBox.setBorder(BorderFactory.createCompoundBorder(
             new RoundedBorder(BORDER_COLOR, 1, 10),
@@ -783,7 +775,7 @@ public class RegisterFrame extends JFrame {
      */
     private JLabel createErrorLabel() {
         JLabel label = new JLabel();
-        label.setFont(FONT_ERROR);
+        label.setFont(getFontError());
         label.setForeground(ERROR_RED);
         label.setVisible(false);
         return label;
@@ -835,7 +827,7 @@ public class RegisterFrame extends JFrame {
             "<html>我已阅读并同意 <font color='#37A165'><u>用户协议</u></font> 和 " +
             "<font color='#37A165'><u>隐私政策</u></font></html>"
         );
-        checkBox.setFont(FONT_SMALL);
+        checkBox.setFont(getFontSmall());
         checkBox.setForeground(GRAY_TEXT);
         checkBox.setOpaque(false);
         checkBox.setFocusPainted(false);
@@ -884,7 +876,7 @@ public class RegisterFrame extends JFrame {
             }
         };
         
-        button.setFont(FONT_BUTTON);
+        button.setFont(getFontButton());
         button.setForeground(WHITE);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
@@ -934,7 +926,7 @@ public class RegisterFrame extends JFrame {
             }
         };
         
-        button.setFont(FONT_SUBTITLE);
+        button.setFont(getFontSubtitle());
         button.setForeground(PRIMARY_COLOR);
         button.setBorder(null);
         button.setFocusPainted(false);

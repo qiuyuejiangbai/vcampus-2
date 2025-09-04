@@ -126,6 +126,10 @@ public class ClientHandler implements Runnable {
                     handleGetAllUsers(request);
                     break;
                     
+                case GET_STUDENT_INFO_REQUEST:
+                    handleGetStudentInfo(request);
+                    break;
+                    
                 case HEARTBEAT:
                     handleHeartbeat(request);
                     break;
@@ -155,6 +159,7 @@ public class ClientHandler implements Runnable {
                 // 登录成功
                 this.currentUserId = user.getUserId(); // 使用数据库的user_id
                 this.currentUser = user;
+                System.out.println("登录成功，保存会话：currentUserId=" + this.currentUserId + ", loginId=" + this.currentUser.getLoginId() + ", role=" + this.currentUser.getRoleName());
                 
                 // 添加到在线用户列表
                 server.addOnlineUser(currentUserId, this);
@@ -305,6 +310,39 @@ public class ClientHandler implements Runnable {
             sendMessage(response);
         } else {
             sendErrorMessage("获取用户信息失败");
+        }
+    }
+    
+    /**
+     * 处理获取学生信息请求
+     */
+    private void handleGetStudentInfo(Message request) {
+        if (!isLoggedIn()) {
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查当前用户是否为学生
+        if (!currentUser.isStudent()) {
+            sendErrorMessage("只有学生用户才能获取学生信息");
+            return;
+        }
+        
+        // 获取学生详细信息
+        System.out.println("准备查询学生信息，userId=" + currentUserId + ", loginId=" + currentUser.getLoginId());
+        server.service.StudentService studentService = new server.service.StudentService();
+        StudentVO student = studentService.getStudentByUserId(currentUserId);
+        
+        if (student != null) {
+            // 设置用户信息
+            student.setUserInfo(currentUser);
+            System.out.println("学生信息查询成功：姓名=" + student.getName() + ", 专业=" + student.getMajor());
+            Message response = new Message(MessageType.GET_STUDENT_INFO_SUCCESS, StatusCode.SUCCESS, student, "获取学生信息成功");
+            sendMessage(response);
+        } else {
+            System.out.println("学生信息查询结果为空，userId=" + currentUserId);
+            Message response = new Message(MessageType.GET_STUDENT_INFO_SUCCESS, StatusCode.NOT_FOUND, null, "学生信息不存在");
+            sendMessage(response);
         }
     }
     

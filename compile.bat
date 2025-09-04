@@ -17,6 +17,12 @@ if not exist "libs\mysql-connector-j-8.0.33.jar" (
     echo.
 )
 
+REM 检查 FlatLaf 是否存在
+if not exist "libs\flatlaf-3.4.1.jar" (
+    echo 警告: 未找到 flatlaf-3.4.1.jar
+    echo 请从 https://search.maven.org/artifact/com.formdev/flatlaf 下载对应版本放入 libs\
+)
+
 REM 编译Java源文件（分步编译以便定位错误）
 echo 编译通用模块...
 javac -cp "libs/*;." -d bin -encoding UTF-8 common/protocol/*.java common/vo/*.java
@@ -37,12 +43,15 @@ if %errorlevel% neq 0 (
 )
 
 echo 编译客户端...
-javac -cp "libs/*;bin;." -d bin -encoding UTF-8 client/net/*.java client/controller/*.java client/ui/*.java
+javac -cp "libs/*;bin;." -d bin -encoding UTF-8 client/net/*.java client/controller/*.java client/ui/*.java client/ui/util/*.java client/ui/dashboard/*.java client/ui/modules/*.java client/ui/integration/*.java client/ui/api/*.java
 
 if %errorlevel% == 0 (
     echo.
     echo 复制配置文件到classpath...
     copy resources\config.properties bin\ >nul 2>&1
+    echo 复制静态资源到classpath...
+    if not exist "bin\icons" mkdir bin\icons
+    xcopy /E /I /Y resources\icons bin\icons >nul 2>&1
     echo.
     echo ================================
     echo 编译成功！
