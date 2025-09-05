@@ -16,7 +16,7 @@ public class BorrowRecordVO implements Serializable {
     private Timestamp borrowTime;   // 借出时间
     private Timestamp dueTime;      // 应还时间
     private Timestamp returnTime;   // 实际归还时间
-    private Integer status;         // 状态：1-已借出，2-已归还，3-逾期
+    private Integer status;         // 状态：1-已借出，2-已归还，3-逾期，4-丢失
     
     // 关联信息（用于显示）
     private String userName;        // 用户姓名

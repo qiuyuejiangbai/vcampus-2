@@ -6,7 +6,10 @@ import common.protocol.StatusCode;
 import common.vo.UserVO;
 import common.vo.StudentVO;
 import common.vo.TeacherVO;
+import common.vo.BookVO;
+import common.vo.BorrowRecordVO;
 import server.service.UserService;
+import server.dao.impl.LibraryServiceImpl;
 
 import java.util.List;
 
@@ -133,7 +136,37 @@ public class ClientHandler implements Runnable {
                 case HEARTBEAT:
                     handleHeartbeat(request);
                     break;
-                    
+
+                // 图书馆模块请求
+                case SEARCH_BOOK_REQUEST:
+                    handleSearchBooks(request);
+                    break;
+                case BORROW_BOOK_REQUEST:
+                    handleBorrowBook(request);
+                    break;
+                case RETURN_BOOK_REQUEST:
+                    handleReturnBook(request);
+                    break;
+                case RENEW_BOOK_REQUEST:
+                    handleRenewBook(request);
+                    break;
+                case GET_BORROW_RECORDS_REQUEST:
+                    handleGetBorrowRecords(request);
+                    break;
+                case ADD_BOOK_REQUEST:
+                    handleAddBook(request);
+                    break;
+                case UPDATE_BOOK_REQUEST:
+                    handleUpdateBook(request);
+                    break;
+                case DELETE_BOOK_REQUEST:
+                    handleDeleteBook(request);
+                    break;
+                case GET_BOOK_BY_ID_REQUEST:
+                    handleGetBookById(request);
+                    break;
+
+
                 default:
                     handleUnsupportedRequest(request);
                     break;
@@ -144,7 +177,166 @@ public class ClientHandler implements Runnable {
             sendErrorMessage("服务器内部错误: " + e.getMessage());
         }
     }
-    
+
+    // ================= 图书馆模块 =================
+
+    private void handleSearchBooks(Message request) {
+        try {
+            String keyword = (String) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            List<BookVO> books = libraryService.searchBooks(keyword);
+
+            Message response = new Message(MessageType.SEARCH_BOOK_SUCCESS, StatusCode.SUCCESS, books, "搜索成功");
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("搜索书籍失败: " + e.getMessage());
+        }
+    }
+
+    private void handleBorrowBook(Message request) {
+        try {
+            Object[] params = (Object[]) request.getData();
+            Integer userId = (Integer) params[0];
+            Integer bookId = (Integer) params[1];
+
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            boolean success = libraryService.borrowBook(userId, bookId);
+
+            Message response = new Message(
+                    success ? MessageType.BORROW_BOOK_SUCCESS : MessageType.BORROW_BOOK_FAIL,
+                    success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                    null,
+                    success ? "借书成功" : "借书失败"
+            );
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("借书失败: " + e.getMessage());
+        }
+    }
+
+    private void handleReturnBook(Message request) {
+        try {
+            Integer borrowId = (Integer) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            boolean success = libraryService.returnBook(borrowId);
+
+            Message response = new Message(
+                    success ? MessageType.RETURN_BOOK_SUCCESS : MessageType.RETURN_BOOK_FAIL,
+                    success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                    null,
+                    success ? "还书成功" : "还书失败"
+            );
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("还书失败: " + e.getMessage());
+        }
+    }
+
+    private void handleRenewBook(Message request) {
+        try {
+            Integer borrowId = (Integer) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            boolean success = libraryService.renewBook(borrowId);
+
+            Message response = new Message(
+                    success ? MessageType.RENEW_BOOK_SUCCESS : MessageType.RENEW_BOOK_FAIL,
+                    success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                    null,
+                    success ? "续借成功" : "续借失败"
+            );
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("续借失败: " + e.getMessage());
+        }
+    }
+
+    private void handleGetBorrowRecords(Message request) {
+        try {
+            Integer userId = (Integer) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            List<BorrowRecordVO> records = libraryService.getBorrowHistory(userId);
+
+            Message response = new Message(MessageType.GET_BORROW_RECORDS_SUCCESS, StatusCode.SUCCESS, records, "查询借阅记录成功");
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("获取借阅记录失败: " + e.getMessage());
+        }
+    }
+
+    private void handleAddBook(Message request) {
+        try {
+            BookVO book = (BookVO) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            boolean success = libraryService.addBook(book);
+
+            Message response = new Message(
+                    success ? MessageType.ADD_BOOK_SUCCESS : MessageType.ADD_BOOK_FAIL,
+                    success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                    null,
+                    success ? "添加图书成功" : "添加图书失败"
+            );
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("添加图书失败: " + e.getMessage());
+        }
+    }
+
+    private void handleUpdateBook(Message request) {
+        try {
+            BookVO book = (BookVO) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            boolean success = libraryService.updateBook(book);
+
+            Message response = new Message(
+                    success ? MessageType.UPDATE_BOOK_SUCCESS : MessageType.UPDATE_BOOK_FAIL,
+                    success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                    null,
+                    success ? "更新图书成功" : "更新图书失败"
+            );
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("更新图书失败: " + e.getMessage());
+        }
+    }
+
+    private void handleDeleteBook(Message request) {
+        try {
+            Integer bookId = (Integer) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            boolean success = libraryService.deleteBook(bookId);
+
+            Message response = new Message(
+                    success ? MessageType.DELETE_BOOK_SUCCESS : MessageType.DELETE_BOOK_FAIL,
+                    success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                    null,
+                    success ? "删除图书成功" : "删除图书失败"
+            );
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("删除图书失败: " + e.getMessage());
+        }
+    }
+
+    private void handleGetBookById(Message request) {
+        try {
+            Integer bookId = (Integer) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            BookVO book = libraryService.getBookById(bookId);
+
+            if (book != null) {
+                Message response = new Message(MessageType.GET_BOOK_BY_ID_SUCCESS, StatusCode.SUCCESS, book, "查询成功");
+                sendMessage(response);
+            } else {
+                Message response = new Message(MessageType.GET_BOOK_BY_ID_FAIL, StatusCode.NOT_FOUND, null, "未找到图书");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            sendErrorMessage("查询图书失败: " + e.getMessage());
+        }
+    }
+
+    //==========================================================================================
+
     /**
      * 处理登录请求
      */

@@ -1,6 +1,7 @@
 package common.vo;
 
 import java.io.Serializable;
+import java.sql.Date;
 import java.sql.Timestamp;
 
 /**
@@ -19,7 +20,10 @@ public class BookVO implements Serializable {
     private Integer totalStock;     // 总库存
     private Integer availableStock; // 可借库存
     private Timestamp createdTime;  // 创建时间
-    
+    private Date publicationDate;   // 出版日期
+    private String location;        // 所在位置
+    private String status;
+
     public BookVO() {}
     
     public BookVO(String isbn, String title, String author, String publisher, String category, Integer totalStock) {
@@ -33,6 +37,10 @@ public class BookVO implements Serializable {
     }
     
     // Getters and Setters
+    public String getLocation() { return location; }
+
+    public void setLocation(String location) { this.location = location; }
+
     public Integer getBookId() {
         return bookId;
     }
@@ -104,7 +112,21 @@ public class BookVO implements Serializable {
     public void setCreatedTime(Timestamp createdTime) {
         this.createdTime = createdTime;
     }
-    
+
+    public Date getPublicationDate() {
+        return publicationDate;
+    }
+
+    public void setPublicationDate(Date publicationDate) { this.publicationDate = publicationDate; }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     /**
      * 获取已借出数量
      * @return 已借出数量

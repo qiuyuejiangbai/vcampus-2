@@ -122,6 +122,13 @@ public class AdminDashboardUI extends JFrame {
         client.ui.modules.AdminForumModule.registerTo(ModuleRegistry.class);
         client.ui.modules.AdminResourceCenterModule.registerTo(ModuleRegistry.class);
 
+        // 注册管理员图书馆模块
+        ModuleRegistry.register(
+                new client.ui.modules.LibraryModule(
+                        ModuleKeys.ADMIN_LIBRARY, "图书馆", null
+                )
+        );
+
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
             contentHost.addPage(m.getKey(), m.getComponent());
