@@ -61,27 +61,61 @@ public enum MessageType {
     UPDATE_GRADE_SUCCESS,       // 更新成绩成功
     GET_MY_COURSES_REQUEST,     // 获取我的课程请求
     GET_MY_COURSES_SUCCESS,     // 获取我的课程成功
-    
-    // 图书馆模块
-    SEARCH_BOOK_REQUEST,        // 搜索图书请求
-    SEARCH_BOOK_SUCCESS,        // 搜索图书成功
-    GET_ALL_BOOKS_REQUEST,      // 获取所有图书请求
-    GET_ALL_BOOKS_SUCCESS,      // 获取所有图书成功
-    ADD_BOOK_REQUEST,           // 添加图书请求
-    ADD_BOOK_SUCCESS,           // 添加图书成功
-    UPDATE_BOOK_REQUEST,        // 更新图书请求
-    UPDATE_BOOK_SUCCESS,        // 更新图书成功
-    DELETE_BOOK_REQUEST,        // 删除图书请求
-    DELETE_BOOK_SUCCESS,        // 删除图书成功
-    BORROW_BOOK_REQUEST,        // 借书请求
-    BORROW_BOOK_SUCCESS,        // 借书成功
-    BORROW_BOOK_FAIL,           // 借书失败
-    RETURN_BOOK_REQUEST,        // 还书请求
-    RETURN_BOOK_SUCCESS,        // 还书成功
-    RETURN_BOOK_FAIL,           // 还书失败
-    GET_BORROW_RECORDS_REQUEST, // 获取借阅记录请求
-    GET_BORROW_RECORDS_SUCCESS, // 获取借阅记录成功
-    
+
+    // ================= 图书馆模块 =================
+
+    // 搜索图书
+    SEARCH_BOOK_REQUEST,          // 搜索图书请求
+    SEARCH_BOOK_SUCCESS,          // 搜索图书成功
+    SEARCH_BOOK_FAIL,             // 搜索图书失败
+
+    // 获取所有图书
+    GET_ALL_BOOKS_REQUEST,        // 获取所有图书请求
+    GET_ALL_BOOKS_SUCCESS,        // 获取所有图书成功
+    GET_ALL_BOOKS_FAIL,           // 获取所有图书失败
+
+    // 按 ID 获取图书
+    GET_BOOK_BY_ID_REQUEST,       // 按 ID 获取图书请求
+    GET_BOOK_BY_ID_SUCCESS,       // 按 ID 获取图书成功
+    GET_BOOK_BY_ID_FAIL,          // 按 ID 获取图书失败
+
+    // 添加图书
+    ADD_BOOK_REQUEST,             // 添加图书请求
+    ADD_BOOK_SUCCESS,             // 添加图书成功
+    ADD_BOOK_FAIL,                // 添加图书失败
+
+    // 更新图书
+    UPDATE_BOOK_REQUEST,          // 更新图书请求
+    UPDATE_BOOK_SUCCESS,          // 更新图书成功
+    UPDATE_BOOK_FAIL,             // 更新图书失败
+
+    // 删除图书
+    DELETE_BOOK_REQUEST,          // 删除图书请求
+    DELETE_BOOK_SUCCESS,          // 删除图书成功
+    DELETE_BOOK_FAIL,             // 删除图书失败
+
+    // 借书
+    BORROW_BOOK_REQUEST,          // 借书请求
+    BORROW_BOOK_SUCCESS,          // 借书成功
+    BORROW_BOOK_FAIL,             // 借书失败
+
+    // 还书
+    RETURN_BOOK_REQUEST,          // 还书请求
+    RETURN_BOOK_SUCCESS,          // 还书成功
+    RETURN_BOOK_FAIL,             // 还书失败
+
+    // 续借
+    RENEW_BOOK_REQUEST,           // 续借请求
+    RENEW_BOOK_SUCCESS,           // 续借成功
+    RENEW_BOOK_FAIL,              // 续借失败
+
+    // 获取借阅记录
+    GET_BORROW_RECORDS_REQUEST,   // 获取借阅记录请求
+    GET_BORROW_RECORDS_SUCCESS,   // 获取借阅记录成功
+    GET_BORROW_RECORDS_FAIL,     // 获取借阅记录失败
+
+
+
     // 商店模块
     GET_STORE_ITEMS_REQUEST,    // 获取商品列表请求
     GET_STORE_ITEMS_SUCCESS,    // 获取商品列表成功

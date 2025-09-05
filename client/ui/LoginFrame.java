@@ -881,8 +881,8 @@ public class LoginFrame extends JFrame {
             @Override
             public void onSuccess(common.vo.UserVO user) {
                 SwingUtilities.invokeLater(() -> {
-                    // 登录成功，打开主界面
-                    openMainFrame(user);
+                    // 登录成功，打开对应的 Dashboard
+                    openDashboard(user);
                 });
             }
             
@@ -923,9 +923,9 @@ public class LoginFrame extends JFrame {
     }
     
     /**
-     * 打开主界面
+     * 打开对应的 Dashboard
      */
-    private void openMainFrame(common.vo.UserVO user) {
+    private void openDashboard(common.vo.UserVO user) {
         // 隐藏登录界面
         setVisible(false);
         

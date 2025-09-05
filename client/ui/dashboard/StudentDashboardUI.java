@@ -57,17 +57,17 @@ public class StudentDashboardUI extends JFrame {
         });
 
         JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(new Color(0xF5, 0xF6, 0xF8));
+        root.setBackground(new Color(255, 255, 255));
         root.add(titleBar, BorderLayout.NORTH);
 
         JPanel north = new JPanel(new BorderLayout());
         north.setOpaque(true);
-        north.setBackground(new Color(0xF5, 0xF6, 0xF8));
+        north.setBackground(new Color(255, 255, 255));
         north.add(appBar, BorderLayout.CENTER);
 
         JPanel west = new JPanel(new BorderLayout());
         west.setOpaque(true);
-        west.setBackground(new Color(0xF5, 0xF6, 0xF8));
+        west.setBackground(new Color(255, 255, 255));
         west.add(sideNav, BorderLayout.CENTER);
         sideNav.setExpanded(true);
 
@@ -89,11 +89,11 @@ public class StudentDashboardUI extends JFrame {
 
         JPanel center = new JPanel(new BorderLayout());
         center.setOpaque(true);
-        center.setBackground(new Color(0xF5, 0xF6, 0xF8));
-        // 内容与 AppBar/SideNav 保持间距：上 16px、左 16px、右 16px、下 16px
+        center.setBackground(new Color(255, 255, 255));
+        // 内容与 AppBar/SideNav 保持间距：上 8px、左 8px、右 8px、下 8px
         JPanel contentWrap = new JPanel(new BorderLayout());
         contentWrap.setOpaque(false);
-        contentWrap.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        contentWrap.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         contentWrap.add(contentHost, BorderLayout.CENTER);
 
         center.add(north, BorderLayout.NORTH);
@@ -124,6 +124,12 @@ public class StudentDashboardUI extends JFrame {
         // 注册学生版论坛与资源中心
         ModuleRegistry.register(new client.ui.modules.StudentForumModule());
         ModuleRegistry.register(new client.ui.modules.StudentResourceCenterModule());
+
+        ModuleRegistry.register(
+                new client.ui.modules.LibraryModule(
+                        ModuleKeys.STUDENT_LIBRARY, "图书馆", null
+                )
+        );
 
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
