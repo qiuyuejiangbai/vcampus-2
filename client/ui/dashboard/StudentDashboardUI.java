@@ -125,6 +125,12 @@ public class StudentDashboardUI extends JFrame {
         ModuleRegistry.register(new client.ui.modules.StudentForumModule());
         ModuleRegistry.register(new client.ui.modules.StudentResourceCenterModule());
 
+        ModuleRegistry.register(
+                new client.ui.modules.LibraryModule(
+                        ModuleKeys.STUDENT_LIBRARY, "图书馆", null
+                )
+        );
+
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
             contentHost.addPage(m.getKey(), m.getComponent());

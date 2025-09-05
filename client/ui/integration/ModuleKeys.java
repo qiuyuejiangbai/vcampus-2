@@ -29,6 +29,12 @@ public final class ModuleKeys {
     public static final String STUDENT_RESOURCE_CENTER = "student_resource_center";
     public static final String TEACHER_RESOURCE_CENTER = "teacher_resource_center";
     public static final String ADMIN_RESOURCE_CENTER = "admin_resource_center";
+
+    // 图书馆模块
+    public static final String STUDENT_LIBRARY = "student_library";
+    public static final String TEACHER_LIBRARY = "teacher_library";
+    public static final String ADMIN_LIBRARY   = "admin_library";
+
 }
 
 

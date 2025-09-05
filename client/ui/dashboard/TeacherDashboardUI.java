@@ -122,6 +122,13 @@ public class TeacherDashboardUI extends JFrame {
         ModuleRegistry.register(new client.ui.modules.TeacherForumModule());
         ModuleRegistry.register(new client.ui.modules.TeacherResourceCenterModule());
 
+        // 注册图书馆模块
+        ModuleRegistry.register(
+                new client.ui.modules.LibraryModule(
+                        ModuleKeys.TEACHER_LIBRARY, "图书馆", null
+                )
+        );
+
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
             contentHost.addPage(m.getKey(), m.getComponent());
