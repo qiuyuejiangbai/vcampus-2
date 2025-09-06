@@ -301,6 +301,8 @@ public class StudentForumModule implements IModuleView {
         // 使用分层面板将按钮悬浮在滚动区域右下角
         JLayeredPane layeredPane = new JLayeredPane();
         layeredPane.setOpaque(false);
+        // 用于存储右侧信息面板的期望右内边距（随右侧栏宽度而定）
+        final int[] rightSidebarPad = new int[]{0};
         layeredPane.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override public void componentResized(java.awt.event.ComponentEvent e) {
                 Dimension size = layeredPane.getSize();
@@ -313,6 +315,19 @@ public class StudentForumModule implements IModuleView {
                     btnSize.width,
                     btnSize.height
                 );
+
+                // 确保右侧内容不被悬浮按钮遮挡：为滚动列表添加与按钮宽度相当的右侧内边距
+                try {
+                    javax.swing.border.Border b = threadItemsPanel.getBorder();
+                    int top = 10, left = 0, bottom = 10;
+                    if (b instanceof javax.swing.border.EmptyBorder) {
+                        java.awt.Insets ins = ((javax.swing.border.EmptyBorder) b).getBorderInsets();
+                        top = ins.top; left = ins.left; bottom = ins.bottom;
+                    }
+                    // 预留按钮宽度 + 边距，且至少包含右侧公告/热门栏的宽度
+                    int rightPad = Math.max(btnSize.width + margin + 8, rightSidebarPad[0]);
+                    threadItemsPanel.setBorder(new javax.swing.border.EmptyBorder(top, left, bottom, rightPad));
+                } catch (Exception ignore) {}
             }
         });
         layeredPane.add(threadScrollPane, JLayeredPane.DEFAULT_LAYER);
@@ -321,6 +336,19 @@ public class StudentForumModule implements IModuleView {
         
         // 右侧信息面板
         JPanel rightPanel = createRightInfoPanel();
+        // 计算右侧面板所需为左侧内容预留的右内边距（含额外间距）
+        int sidebarWidth = Math.max(0, rightPanel.getPreferredSize() != null ? rightPanel.getPreferredSize().width : 300);
+        rightSidebarPad[0] = sidebarWidth + 16; // 右侧栏宽度 + 与内容间距
+        // 初始化时也同步一次右内边距，避免首次展示被遮挡
+        try {
+            javax.swing.border.Border b = threadItemsPanel.getBorder();
+            int top = 10, left = 0, bottom = 10;
+            if (b instanceof javax.swing.border.EmptyBorder) {
+                java.awt.Insets ins = ((javax.swing.border.EmptyBorder) b).getBorderInsets();
+                top = ins.top; left = ins.left; bottom = ins.bottom;
+            }
+            threadItemsPanel.setBorder(new javax.swing.border.EmptyBorder(top, left, bottom, rightSidebarPad[0]));
+        } catch (Exception ignore) {}
         
         mainContentPanel.add(leftPanel, BorderLayout.CENTER);
         mainContentPanel.add(rightPanel, BorderLayout.EAST);
@@ -1147,15 +1175,15 @@ public class StudentForumModule implements IModuleView {
         itemPanel.setOpaque(false);
         itemPanel.setBorder(new EmptyBorder(8, 12, 8, 12));
         itemPanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        // 让卡片在滚动视图中横向占满：最小/首选宽度为0，最大为无限
-        itemPanel.setMinimumSize(new Dimension(0, 160));
-        itemPanel.setPreferredSize(new Dimension(0, 160));
-        itemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
+        // 让卡片在滚动视图中横向占满：宽度填满，高度由内容自适应
+        itemPanel.setMinimumSize(null);
+        itemPanel.setPreferredSize(null);
+        itemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         itemPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         final Color defaultBg = new Color(255, 255, 255);
-        // 调整为低饱和度的浅绿色，降低悬浮时的视觉强调
-        final Color hoverBg = new Color(236, 246, 240);
+        // 悬浮时背景：浅灰色
+        final Color hoverBg = new Color(243, 244, 246);
         final Color[] currentBg = new Color[]{defaultBg};
 
         JPanel cardPanel = new JPanel(new BorderLayout()) {
@@ -1171,18 +1199,13 @@ public class StudentForumModule implements IModuleView {
         };
         cardPanel.setOpaque(false);
         cardPanel.setBorder(new EmptyBorder(16, 18, 16, 18));
-        // 确保内部内容也能拉伸充满
-        cardPanel.setMinimumSize(new Dimension(0, 0));
-        cardPanel.setPreferredSize(new Dimension(0, 0));
+        // 内部内容由布局计算高度，横向可拉伸
+        cardPanel.setMinimumSize(null);
+        cardPanel.setPreferredSize(null);
         cardPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         cardPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        java.awt.event.MouseAdapter hover = new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent e) { currentBg[0] = hoverBg; cardPanel.repaint(); }
-            public void mouseExited(java.awt.event.MouseEvent e) { currentBg[0] = defaultBg; cardPanel.repaint(); }
-            public void mouseClicked(java.awt.event.MouseEvent e) { showThreadDetail(thread); }
-        };
-        cardPanel.addMouseListener(hover);
+        
 
         // 左上角头像
         CircularAvatar avatar = new CircularAvatar(48);
@@ -1200,12 +1223,14 @@ public class StudentForumModule implements IModuleView {
         JPanel nameDept = new JPanel();
         nameDept.setOpaque(false);
         nameDept.setLayout(new BoxLayout(nameDept, BoxLayout.Y_AXIS));
-        JLabel nameLabel = new JLabel(thread.getAuthorName());
-        nameLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 14f));
-        nameLabel.setForeground(new Color(55, 65, 81));
+        final JLabel nameLabel = new JLabel(thread.getAuthorName());
+        // 姓名：加粗黑体，字号略大
+        nameLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 16f));
+        nameLabel.setForeground(new Color(31, 41, 55));
         JLabel deptLabel = new JLabel("计算机科学与技术");
-        deptLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 12f));
-        deptLabel.setForeground(new Color(107, 114, 128));
+        // 专业：非常浅的较小字体
+        deptLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 11f));
+        deptLabel.setForeground(new Color(156, 163, 175));
         nameDept.add(nameLabel);
         nameDept.add(deptLabel);
 
@@ -1219,32 +1244,69 @@ public class StudentForumModule implements IModuleView {
 
         header.add(nameAndTagRow, BorderLayout.WEST);
 
-        // 将帖子卡片的悬浮与标签颜色联动：平时浅绿，悬浮深绿
+        // 将帖子卡片的悬浮与标签颜色联动：平时浅绿，悬浮墨绿
         final Color tagBaseBg = new Color(223, 245, 232);
         final Color tagBaseFg = new Color(24, 121, 78);
         final Color tagHoverBg = new Color(24, 121, 78);
         final Color tagHoverFg = Color.WHITE;
-        cardPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+        java.awt.event.MouseAdapter tagSync = new java.awt.event.MouseAdapter() {
             @Override public void mouseEntered(java.awt.event.MouseEvent e) {
-                tag.setBackground(tagHoverBg);
-                tag.setForeground(tagHoverFg);
+                try {
+                    java.lang.reflect.Method m = tag.getClass().getDeclaredMethod("startAnim", Color.class, Color.class);
+                    m.setAccessible(true);
+                    m.invoke(tag, tagHoverBg, tagHoverFg);
+                } catch (Exception ignored) {
+                    tag.setBackground(tagHoverBg);
+                    tag.setForeground(tagHoverFg);
+                    tag.repaint();
+                }
             }
             @Override public void mouseExited(java.awt.event.MouseEvent e) {
-                tag.setBackground(tagBaseBg);
-                tag.setForeground(tagBaseFg);
+                try {
+                    java.lang.reflect.Method m = tag.getClass().getDeclaredMethod("startAnim", Color.class, Color.class);
+                    m.setAccessible(true);
+                    m.invoke(tag, tagBaseBg, tagBaseFg);
+                } catch (Exception ignored) {
+                    tag.setBackground(tagBaseBg);
+                    tag.setForeground(tagBaseFg);
+                    tag.repaint();
+                }
             }
-        });
+        };
+        installHoverListenerRecursive(cardPanel, tagSync);
+
+        // 悬浮联动需要在 nameLabel 定义之后使用它
+        java.awt.event.MouseAdapter hover = new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                currentBg[0] = hoverBg;
+                cardPanel.repaint();
+                // 悬浮整卡片时，姓名改为墨绿色
+                nameLabel.setForeground(new Color(24, 121, 78));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                currentBg[0] = defaultBg;
+                cardPanel.repaint();
+                // 离开时恢复姓名默认颜色
+                nameLabel.setForeground(new Color(31, 41, 55));
+            }
+            public void mouseClicked(java.awt.event.MouseEvent e) { showThreadDetail(thread); }
+        };
+        // 递归安装悬浮监听，确保移动到子组件时不丢失“整体悬浮”效果
+        installHoverListenerRecursive(cardPanel, hover);
 
         // 标题与摘要
         JLabel titleLabel = new JLabel(thread.getTitle());
-        // 标题：不太黑不太粗，改为常规权重与更柔和的深灰
-        titleLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 16f));
+        // 标题：不加粗，字号比姓名小一些；与专业之间留出更明显空隙
+        titleLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 14f));
         titleLabel.setForeground(new Color(55, 65, 81));
-        titleLabel.setBorder(new EmptyBorder(8, 0, 2, 0));
-        JLabel summaryLabel = new JLabel(getContentSummary(thread.getContent(), 60));
-        // 摘要：更小且更灰
-        summaryLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 12f));
+        // 与姓名/专业行之间 12px 间距；左侧对齐补齐 8px
+        titleLabel.setBorder(new EmptyBorder(12, 8, 6, 0));
+        JLabel summaryLabel = new JLabel("<html><div style='line-height:1.6;'>" + getContentSummary(thread.getContent(), 60) + "</div></html>");
+        // 预展示内容：不加粗，字号小于标题略大于专业；灰色，颜色略深于专业
+        summaryLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 13f));
         summaryLabel.setForeground(new Color(107, 114, 128));
+        // 同步补齐左边距 8px，保证与标题、姓名/专业左侧齐平
+        summaryLabel.setBorder(new EmptyBorder(0, 8, 0, 0));
         // 左对齐并占满行宽
         header.setAlignmentX(Component.LEFT_ALIGNMENT);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -1284,7 +1346,8 @@ public class StudentForumModule implements IModuleView {
         centerStack.add(header);
         centerStack.add(titleLabel);
         centerStack.add(summaryLabel);
-        centerStack.add(Box.createVerticalStrut(6));
+        // 正文与点赞/评论区之间留 12px 间隔
+        centerStack.add(Box.createVerticalStrut(12));
         centerStack.add(footer);
 
         cardPanel.add(westWrap, BorderLayout.WEST);
@@ -1295,6 +1358,22 @@ public class StudentForumModule implements IModuleView {
         // 姓名悬浮主题色：墨绿色
         makeNameHoverGreen(nameLabel, new Color(55, 65, 81));
         return itemPanel;
+    }
+
+    /**
+     * 为容器及其所有子组件安装同一个鼠标监听，保证“整体悬浮”在子组件上仍然生效。
+     */
+    private void installHoverListenerRecursive(java.awt.Component comp, java.awt.event.MouseListener listener) {
+        if (comp == null || listener == null) return;
+        comp.addMouseListener(listener);
+        if (comp instanceof java.awt.Container) {
+            java.awt.Component[] children = ((java.awt.Container) comp).getComponents();
+            if (children != null) {
+                for (java.awt.Component child : children) {
+                    installHoverListenerRecursive(child, listener);
+                }
+            }
+        }
     }
 
     private JLabel createTagLabel(String text) {
@@ -1452,7 +1531,8 @@ public class StudentForumModule implements IModuleView {
         JPanel itemPanel = new JPanel(new BorderLayout());
         itemPanel.setBackground(new Color(255, 255, 255));
         itemPanel.setBorder(new LineBorder(new Color(229, 231, 235), 1));
-        itemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+        // 自适应高度，避免底部点赞/回复被裁剪
+        itemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
         // 左侧头像：默认头像
         JPanel avatarWrap = new JPanel(new BorderLayout());

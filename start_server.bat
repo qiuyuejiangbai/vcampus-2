@@ -22,6 +22,9 @@ if not exist "bin" (
 
 echo 复制配置文件...
 copy resources\config.properties bin\ >nul 2>&1
+if exist "resources\config.local.properties" (
+    copy resources\config.local.properties bin\ >nul 2>&1
+)
 
 echo 启动服务器...
 echo 端口: 8888
