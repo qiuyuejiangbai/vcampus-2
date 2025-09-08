@@ -21,6 +21,7 @@ public class LibraryModule implements IModuleView {
     private JPanel root;
     private UserVO currentUser;
     private ServerConnection connection;
+    private LibraryMainFrameModule frame;
 
     /**
      * 构造函数（可以在不同 Dashboard 使用不同的 key/name/icon）
@@ -57,12 +58,26 @@ public class LibraryModule implements IModuleView {
         this.connection = conn;
 
         // ⚡ 用现有的 LibraryMainFrameModule 构建实际 UI
-        LibraryMainFrameModule frame = new LibraryMainFrameModule(user);
+        frame = new LibraryMainFrameModule(user);
         frame.setVisible(false); // 不要作为单独窗口显示
 
         // ⚡ 把 JFrame 的内容面板嵌入 Dashboard
         root = new JPanel(new BorderLayout());
         root.add(frame.getContentPane(), BorderLayout.CENTER);
+    }
+
+    /**
+     * 生命周期结束时释放资源
+     */
+    public void dispose() {
+        if (connection != null) {
+            connection.disconnect();
+            connection = null;
+        }
+        if (frame != null) {
+            frame.dispose(); // ✅ 自动释放 LibraryController
+            frame = null;
+        }
     }
 
     /**

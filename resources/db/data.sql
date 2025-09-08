@@ -144,6 +144,17 @@ INSERT INTO borrow_records (user_id, book_id, borrow_time, due_time, return_time
 (7, 5, '2024-03-10 09:15:00', '2024-04-10 09:15:00', '2024-03-25 16:20:00', 2);
 
 -- ========================================
+-- 初始化若干示例文献（请先在服务器准备好这些文件）
+-- ========================================
+
+INSERT INTO library_documents
+(title, authors, year, category, subject, keywords, abstract_txt, file_type, file_size, storage_path, uploader_id, is_public)
+VALUES
+('基于协同过滤的图书推荐研究', '王明;李雷', 2023, '期刊', '计算机', '推荐系统;图书馆;协同过滤',
+ '针对高校图书借阅数据，提出改进的协同过滤算法以提升推荐效果。', 'pdf', 824532,
+ '/docs/2023/1_recsys_cf.pdf', 2, 1);
+
+-- ========================================
 -- 商品信息（products表）
 -- ========================================
 

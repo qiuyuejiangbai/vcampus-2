@@ -43,6 +43,7 @@ public class ClientHandler implements Runnable {
             // 创建输入输出流
             this.objectOut = new ObjectOutputStream(clientSocket.getOutputStream());
             this.objectIn = new ObjectInputStream(clientSocket.getInputStream());
+
         } catch (IOException e) {
             System.err.println("创建客户端流失败: " + e.getMessage());
             disconnect();
@@ -165,6 +166,26 @@ public class ClientHandler implements Runnable {
                 case GET_BOOK_BY_ID_REQUEST:
                     handleGetBookById(request);
                     break;
+                case SEARCH_DOCUMENTS_REQUEST:
+                    handleSearchDocuments(request);
+                    break;
+                case GET_DOCUMENT_REQUEST:
+                    handleGetDocument(request);
+                    break;
+                case DOWNLOAD_DOCUMENT_REQUEST:
+                    handleDownloadDocument(request);
+                    break;
+                case UPLOAD_DOCUMENT_REQUEST:
+                    handleUploadDocument(request);
+                    break;
+                case UPDATE_DOCUMENT_REQUEST:
+                    handleUpdateDocument(request);
+                    break;
+                case DELETE_DOCUMENT_REQUEST:
+                    handleDeleteDocument(request);
+                    break;
+
+
 
 
                 default:
@@ -334,6 +355,120 @@ public class ClientHandler implements Runnable {
             sendErrorMessage("查询图书失败: " + e.getMessage());
         }
     }
+
+    // ================= 文献模块 =================
+
+    private void handleSearchDocuments(Message request) {
+        try {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> params = (java.util.Map<String, Object>) request.getData();
+            String keyword = (String) params.get("keyword");
+            String subject = (String) params.get("subject");
+            String category = (String) params.get("category");
+            Integer startYear = (Integer) params.get("startYear");
+            Integer endYear = (Integer) params.get("endYear");
+
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            java.util.List<common.vo.DocumentVO> docs =
+                    libraryService.searchDocuments(keyword, subject, category, startYear, endYear);
+
+            Message response = new Message(MessageType.SEARCH_DOCUMENTS_RESPONSE,
+                    StatusCode.SUCCESS, docs, "搜索文献成功");
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("搜索文献失败: " + e.getMessage());
+        }
+    }
+
+    private void handleGetDocument(Message request) {
+        try {
+            Integer docId = (Integer) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            common.vo.DocumentVO doc = libraryService.getDocumentById(docId);
+
+            Message response;
+            if (doc != null) {
+                response = new Message(MessageType.GET_DOCUMENT_RESPONSE,
+                        StatusCode.SUCCESS, doc, "获取文献成功");
+            } else {
+                response = new Message(MessageType.GET_DOCUMENT_RESPONSE,
+                        StatusCode.NOT_FOUND, null, "文献不存在");
+            }
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("获取文献失败: " + e.getMessage());
+        }
+    }
+
+    private void handleDownloadDocument(Message request) {
+        try {
+            Integer docId = (Integer) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            byte[] fileData = libraryService.downloadDocument(docId);
+
+            Message response;
+            if (fileData != null) {
+                response = new Message(MessageType.DOWNLOAD_DOCUMENT_RESPONSE,
+                        StatusCode.SUCCESS, fileData, "下载成功");
+            } else {
+                response = new Message(MessageType.DOWNLOAD_DOCUMENT_RESPONSE,
+                        StatusCode.NOT_FOUND, null, "文件不存在");
+            }
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("下载文献失败: " + e.getMessage());
+        }
+    }
+
+    private void handleUploadDocument(Message request) {
+        try {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> uploadData = (java.util.Map<String, Object>) request.getData();
+            common.vo.DocumentVO doc = (common.vo.DocumentVO) uploadData.get("doc");
+            byte[] fileBytes = (byte[]) uploadData.get("file");
+
+            boolean ok = false;
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            try (java.io.InputStream is = new java.io.ByteArrayInputStream(fileBytes)) {
+                ok = libraryService.uploadDocument(doc, is);
+            }
+
+            Message response = new Message(MessageType.UPLOAD_DOCUMENT_RESPONSE,
+                    ok ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST, ok, ok ? "上传成功" : "上传失败");
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("上传文献失败: " + e.getMessage());
+        }
+    }
+
+    private void handleUpdateDocument(Message request) {
+        try {
+            common.vo.DocumentVO doc = (common.vo.DocumentVO) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            boolean ok = libraryService.updateDocument(doc);
+
+            Message response = new Message(MessageType.UPDATE_DOCUMENT_RESPONSE,
+                    ok ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST, ok, ok ? "更新成功" : "更新失败");
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("更新文献失败: " + e.getMessage());
+        }
+    }
+
+    private void handleDeleteDocument(Message request) {
+        try {
+            Integer docId = (Integer) request.getData();
+            server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            boolean ok = libraryService.deleteDocument(docId);
+
+            Message response = new Message(MessageType.DELETE_DOCUMENT_RESPONSE,
+                    ok ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST, ok, ok ? "删除成功" : "删除失败");
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("删除文献失败: " + e.getMessage());
+        }
+    }
+
 
     //==========================================================================================
 
