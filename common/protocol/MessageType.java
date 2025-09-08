@@ -114,22 +114,118 @@ public enum MessageType {
     GET_BORROW_RECORDS_SUCCESS,   // 获取借阅记录成功
     GET_BORROW_RECORDS_FAIL,     // 获取借阅记录失败
 
+ // ================= 商店模块 =================
 
-
-    // 商店模块
-    GET_STORE_ITEMS_REQUEST,    // 获取商品列表请求
-    GET_STORE_ITEMS_SUCCESS,    // 获取商品列表成功
-    ADD_PRODUCT_REQUEST,        // 添加商品请求
-    ADD_PRODUCT_SUCCESS,        // 添加商品成功
-    UPDATE_PRODUCT_REQUEST,     // 更新商品请求
-    UPDATE_PRODUCT_SUCCESS,     // 更新商品成功
-    DELETE_PRODUCT_REQUEST,     // 删除商品请求
-    DELETE_PRODUCT_SUCCESS,     // 删除商品成功
-    PURCHASE_REQUEST,           // 购买请求
-    PURCHASE_SUCCESS,           // 购买成功
-    PURCHASE_FAIL,              // 购买失败
-    GET_ORDER_HISTORY_REQUEST,  // 获取订单历史请求
-    GET_ORDER_HISTORY_SUCCESS,  // 获取订单历史成功
+    // 购物车管理
+    CLEAR_CART_REQUEST,         // 清空购物车请求
+    CLEAR_CART_SUCCESS,         // 清空购物车成功
+    CLEAR_CART_FAIL,            // 清空购物车失败
+    
+    // 订单管理
+    CREATE_ORDER_REQUEST,       // 创建订单请求
+    CREATE_ORDER_SUCCESS,       // 创建订单成功
+    CREATE_ORDER_FAIL,          // 创建订单失败
+    
+    // 管理员订单管理
+    GET_ADMIN_ORDER_DETAIL_REQUEST,  // 获取管理员订单详情请求
+    GET_ADMIN_ORDER_DETAIL_SUCCESS,  // 获取管理员订单详情成功
+    GET_ADMIN_ORDER_DETAIL_FAIL,     // 获取管理员订单详情失败
+    
+    // 用户订单管理
+    GET_ALL_USER_ORDERS_REQUEST,     // 获取所有用户订单请求
+    GET_ALL_USER_ORDERS_SUCCESS,     // 获取所有用户订单成功
+    GET_ALL_USER_ORDERS_FAIL,        // 获取所有用户订单失败
+    
+    GET_USER_ORDER_HISTORY_REQUEST,   // 获取用户订单历史请求
+    GET_USER_ORDER_HISTORY_SUCCESS,   // 获取用户订单历史成功
+    GET_USER_ORDER_HISTORY_FAIL,      // 获取用户订单历史失败
+    
+    GET_ORDER_ITEMS_REQUEST,          // 获取订单商品列表请求
+    GET_ORDER_ITEMS_SUCCESS,          // 获取订单商品列表成功
+    GET_ORDER_ITEMS_FAIL,             // 获取订单商品列表失败
+    
+    // 订单操作
+    CANCEL_ORDER_REQUEST,              // 取消订单请求
+    CANCEL_ORDER_SUCCESS,              // 取消订单成功
+    CANCEL_ORDER_FAIL,                 // 取消订单失败
+    
+    PAY_ORDER_REQUEST,                 // 支付订单请求
+    PAY_ORDER_SUCCESS,                 // 支付订单成功
+    PAY_ORDER_FAIL,                    // 支付订单失败
+    
+    SHIP_ORDER_REQUEST,                // 发货请求
+    SHIP_ORDER_SUCCESS,                // 发货成功
+    SHIP_ORDER_FAIL,                   // 发货失败
+    
+    // 余额管理
+    GET_USER_BALANCE_REQUEST,          // 获取用户余额请求
+    GET_USER_BALANCE_SUCCESS,          // 获取用户余额成功
+    GET_USER_BALANCE_FAIL,             // 获取用户余额失败
+    
+    RECHARGE_BALANCE_REQUEST,          // 余额充值请求
+    RECHARGE_BALANCE_SUCCESS,          // 余额充值成功
+    RECHARGE_BALANCE_FAIL,             // 余额充值失败
+    
+    PAY_WITH_BALANCE_REQUEST,          // 使用余额支付请求
+    PAY_WITH_BALANCE_SUCCESS,          // 使用余额支付成功
+    PAY_WITH_BALANCE_FAIL,             // 使用余额支付失败
+    
+    // 商品管理
+    
+    GET_STORE_ITEMS_REQUEST,           // 获取商品列表请求
+    GET_STORE_ITEMS_SUCCESS,           // 获取商品列表成功
+    GET_STORE_ITEMS_FAIL,              // 获取商品列表失败
+    
+    ADD_PRODUCT_REQUEST,               // 添加商品请求
+    ADD_PRODUCT_SUCCESS,               // 添加商品成功
+    ADD_PRODUCT_FAIL,                  // 添加商品失败
+    
+    UPDATE_PRODUCT_REQUEST,            // 更新商品请求
+    UPDATE_PRODUCT_SUCCESS,            // 更新商品成功
+    UPDATE_PRODUCT_FAIL,               // 更新商品失败
+    
+    DELETE_PRODUCT_REQUEST,            // 删除商品请求
+    DELETE_PRODUCT_SUCCESS,            // 删除商品成功
+    DELETE_PRODUCT_FAIL,               // 删除商品失败
+    
+    GET_ALL_PRODUCTS_REQUEST,          // 获取所有商品请求
+    GET_ALL_PRODUCTS_SUCCESS,          // 获取所有商品成功
+    GET_ALL_PRODUCTS_FAIL,             // 获取所有商品失败
+    
+    SEARCH_PRODUCTS_REQUEST,           // 搜索商品请求
+    SEARCH_PRODUCTS_SUCCESS,           // 搜索商品成功
+    SEARCH_PRODUCTS_FAIL,              // 搜索商品失败
+    
+    GET_PRODUCT_BY_ID_REQUEST,        // 按ID获取商品请求
+    GET_PRODUCT_BY_ID_SUCCESS,        // 按ID获取商品成功
+    GET_PRODUCT_BY_ID_FAIL,           // 按ID获取商品失败
+    
+    // 购买流程
+    PURCHASE_REQUEST,                  // 购买请求
+    PURCHASE_SUCCESS,                  // 购买成功
+    PURCHASE_FAIL,                     // 购买失败
+    
+    // 购物车管理
+    GET_SHOPPING_CART_REQUEST,         // 获取购物车请求
+    GET_SHOPPING_CART_SUCCESS,         // 获取购物车成功
+    GET_SHOPPING_CART_FAIL,            // 获取购物车失败
+    
+    ADD_TO_CART_REQUEST,               // 添加到购物车请求
+    ADD_TO_CART_SUCCESS,               // 添加到购物车成功
+    ADD_TO_CART_FAIL,                  // 添加到购物车失败
+    
+    REMOVE_FROM_CART_REQUEST,           // 从购物车移除请求
+    REMOVE_FROM_CART_SUCCESS,           // 从购物车移除成功
+    REMOVE_FROM_CART_FAIL,              // 从购物车移除失败
+    
+    UPDATE_CART_ITEM_REQUEST,          // 更新购物车商品请求
+    UPDATE_CART_ITEM_SUCCESS,          // 更新购物车商品成功
+    UPDATE_CART_ITEM_FAIL,             // 更新购物车商品失败
+    
+    // 库存管理
+    ADJUST_STOCK_REQUEST,              // 调整库存请求
+    ADJUST_STOCK_SUCCESS,              // 调整库存成功
+    ADJUST_STOCK_FAIL,                 // 调整库存失败
     
     // 论坛模块
     GET_ALL_THREADS_REQUEST,    // 获取所有主题请求

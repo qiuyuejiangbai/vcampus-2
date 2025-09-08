@@ -29,6 +29,7 @@ public class ProductVO implements Serializable {
         this.stock = stock;
         this.category = category;
         this.status = 1; // 默认上架
+        this.status = 1; // 默认已完成
     }
     
     // Getters and Setters
