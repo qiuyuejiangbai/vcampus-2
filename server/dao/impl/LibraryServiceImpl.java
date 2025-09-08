@@ -3,6 +3,7 @@ package server.dao.impl;
 import server.service.LibraryService;
 import common.vo.BookVO;
 import common.vo.BorrowRecordVO;
+import server.util.DatabaseUtil;
 import common.vo.DocumentVO;
 
 import java.io.*;
@@ -46,7 +47,7 @@ public class LibraryServiceImpl implements LibraryService {
             System.getProperty("user.dir") + File.separator + "resources" + File.separator;
 
     private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USER, PASSWORD);
+        return DatabaseUtil.getConnection();
     }
 
     /** 按关键字搜索图书 */
