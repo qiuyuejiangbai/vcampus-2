@@ -7,10 +7,9 @@ import client.controller.LibraryController;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.ItemEvent;
+import java.awt.event.*;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,10 +23,12 @@ public class LibraryBookSearchModule extends JPanel {
     private JButton viewButton;
 
     private JCheckBox[] categoryChecks;
-    private JLabel statLabel; // 右上角统计信息
 
     private final LibraryController Controller;
     private final UserVO currentUser;
+
+    // 鼠标悬停行索引
+    private int hoverRow = -1;
 
     public LibraryBookSearchModule(LibraryController Controller, UserVO currentUser) {
         this.Controller = Controller;
@@ -36,25 +37,55 @@ public class LibraryBookSearchModule extends JPanel {
         refreshTable(); // 初始化时加载所有书籍
     }
 
+    /** 创建现代化按钮（圆角 + hover 效果） */
+    private JButton createModernButton(String text, Color themeColor, Color hoverColor) {
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // 背景色（hover 时变浅）
+                if (getModel().isRollover()) {
+                    g2.setColor(hoverColor);
+                } else {
+                    g2.setColor(themeColor);
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+
+                // 文字
+                FontMetrics fm = g2.getFontMetrics();
+                Rectangle rect = new Rectangle(0, 0, getWidth(), getHeight());
+                int textHeight = fm.getAscent();
+                int textY = rect.y + (rect.height - fm.getHeight()) / 2 + textHeight;
+                g2.setColor(Color.WHITE);
+                g2.drawString(getText(), (getWidth() - fm.stringWidth(getText())) / 2, textY);
+
+                g2.dispose();
+            }
+        };
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setForeground(Color.WHITE);
+        button.setPreferredSize(new Dimension(90, 30));
+        return button;
+    }
+
     private void initUI() {
         setLayout(new BorderLayout());
 
-        // --- 顶部容器 ---
-        JPanel topContainer = new JPanel();
-        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
+        Color themeColor = new Color(0, 64, 0);        // 深墨绿色（按钮主色）
+        Color hoverColor = new Color(0, 100, 0);       // hover 墨绿色
+        Color headerColor = new Color(0, 100, 0);      // 表头绿色（介于深墨绿和森林绿之间）
+        Color rowAltColor = new Color(220, 245, 220);  // 表格斑马纹浅绿色
+        Color rowHoverColor = new Color(255, 250, 205); // 浅黄色（鼠标悬停行）
 
-        // 搜索栏（三段式布局）
-        JPanel searchPanel = new JPanel(new BorderLayout(10, 5));
-
-        JLabel titleLabel = new JLabel("📚 图书搜索");
-        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 14));
-        titleLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-
-        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        // --- 顶部搜索栏 ---
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         searchField = new JTextField("请输入关键词（书名/作者/ISBN/分类）", 25);
         searchField.setForeground(Color.GRAY);
 
-        // 提示文字效果
         searchField.addFocusListener(new FocusAdapter() {
             public void focusGained(FocusEvent e) {
                 if (searchField.getText().equals("请输入关键词（书名/作者/ISBN/分类）")) {
@@ -70,23 +101,21 @@ public class LibraryBookSearchModule extends JPanel {
             }
         });
 
-        searchButton = new JButton("搜索");
-        clearButton = new JButton("清空筛选");
-        centerPanel.add(searchField);
-        centerPanel.add(searchButton);
-        centerPanel.add(clearButton);
+        // 绑定回车触发搜索
+        searchField.addActionListener(e -> doSearch());
 
-        statLabel = new JLabel("馆藏总数: 0 本");
-        statLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        statLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        searchButton = createModernButton("搜索", themeColor, hoverColor);
+        clearButton = createModernButton("清空筛选", themeColor, hoverColor);
 
-        searchPanel.add(titleLabel, BorderLayout.WEST);
-        searchPanel.add(centerPanel, BorderLayout.CENTER);
-        searchPanel.add(statLabel, BorderLayout.EAST);
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+        searchPanel.add(clearButton);
 
+        JPanel topContainer = new JPanel();
+        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
         topContainer.add(searchPanel);
 
-        // 分类复选框（多行网格布局，一行 10 个，居中）
+        // 分类复选框
         String[] categories = {
                 "文学", "计算机", "医学", "历史", "艺术",
                 "经济", "教育", "哲学", "法律", "管理",
@@ -98,13 +127,7 @@ public class LibraryBookSearchModule extends JPanel {
         for (int i = 0; i < categories.length; i++) {
             categoryChecks[i] = new JCheckBox(categories[i]);
             categoryPanel.add(categoryChecks[i]);
-
-            // 勾选时立即刷新
-            categoryChecks[i].addItemListener(e -> {
-                if (e.getStateChange() == ItemEvent.SELECTED || e.getStateChange() == ItemEvent.DESELECTED) {
-                    doSearch();
-                }
-            });
+            categoryChecks[i].addItemListener(e -> doSearch());
         }
         JPanel categoryWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER));
         categoryWrapper.add(categoryPanel);
@@ -112,33 +135,72 @@ public class LibraryBookSearchModule extends JPanel {
 
         add(topContainer, BorderLayout.NORTH);
 
-        // 中间表格（去掉“馆藏总数”列）
+        // 表格
         String[] columnNames = {"ID", "书名", "作者", "ISBN", "出版社", "分类", "可借"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0);
-        table = new JTable(model);
+        table = new JTable(model) {
+            @Override
+            public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
+                Component c = super.prepareRenderer(renderer, row, column);
+                if (!isRowSelected(row)) {
+                    if (row == hoverRow) {
+                        c.setBackground(rowHoverColor); // 鼠标悬停高亮
+                    } else {
+                        c.setBackground(row % 2 == 0 ? rowAltColor : Color.WHITE); // 斑马纹
+                    }
+                }
+                return c;
+            }
+        };
 
-        // --- 表格美化：内容和表头居中，行高 ---
+        table.setRowHeight(28);
+        table.setShowGrid(true);
+        table.setGridColor(new Color(180, 180, 180)); // 分割线颜色
+
+        // 鼠标移动事件：更新 hoverRow
+        table.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                if (row != hoverRow) {
+                    hoverRow = row;
+                    table.repaint();
+                }
+            }
+        });
+
+        // 鼠标移出表格时取消高亮
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseExited(MouseEvent e) {
+                hoverRow = -1;
+                table.repaint();
+            }
+        });
+
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        table.setRowHeight(28);
         for (int i = 0; i < table.getColumnCount(); i++) {
             table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
-        ((DefaultTableCellRenderer) table.getTableHeader().getDefaultRenderer())
-                .setHorizontalAlignment(JLabel.CENTER);
+
+        JTableHeader header = table.getTableHeader();
+        header.setBackground(headerColor);
+        header.setForeground(Color.WHITE);
+        header.setFont(new Font("微软雅黑", Font.BOLD, 13));
+        ((DefaultTableCellRenderer) header.getDefaultRenderer()).setHorizontalAlignment(JLabel.CENTER);
 
         JScrollPane scrollPane = new JScrollPane(table);
         add(scrollPane, BorderLayout.CENTER);
 
         // 底部按钮
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        viewButton = new JButton("查看");
-        borrowButton = new JButton("借阅");
+        viewButton = createModernButton("查看", themeColor, hoverColor);
+        borrowButton = createModernButton("借阅", themeColor, hoverColor);
         bottomPanel.add(viewButton);
         bottomPanel.add(borrowButton);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // 事件绑定
         bindEvents();
     }
 
@@ -216,7 +278,6 @@ public class LibraryBookSearchModule extends JPanel {
                 }
             }
 
-            // 关键词额外模糊匹配分类
             boolean keywordMatch = keyword.isEmpty()
                     || (b.getCategory() != null && b.getCategory().contains(keyword));
 
@@ -232,9 +293,6 @@ public class LibraryBookSearchModule extends JPanel {
                 });
             }
         }
-
-        // 更新统计信息
-        statLabel.setText("馆藏总数: " + books.size() + " 本");
     }
 
     public void refreshTable() {
