@@ -38,7 +38,11 @@ fi
 
 # 编译客户端
 echo "编译客户端..."
-javac -cp "libs/*:bin:." -d bin -encoding UTF-8 client/net/*.java client/controller/*.java client/ui/*.java
+# 注意：使用 find 递归所有 client/ui 下的 .java 文件
+javac -cp "libs/*:bin:." -d bin -encoding UTF-8 \
+    client/net/*.java \
+    client/controller/*.java \
+    $(find client/ui -name "*.java")
 if [ $? -ne 0 ]; then
     echo "客户端编译失败！请检查错误信息。"
     exit 1
