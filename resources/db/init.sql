@@ -313,6 +313,33 @@ CREATE TABLE IF NOT EXISTS borrow_records (
 ) COMMENT='借阅记录表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========================================
+-- 文献/资料库（library_documents）
+-- ========================================
+CREATE TABLE IF NOT EXISTS library_documents (
+  doc_id        INT AUTO_INCREMENT PRIMARY KEY,
+  title         VARCHAR(255)      NOT NULL,
+  authors       VARCHAR(255)      NULL,         -- 多作者用分号/逗号分隔
+  year          INT               NULL,
+  category      VARCHAR(100)      NULL,         -- 期刊/会议/学位论文/报告/标准/教材/其他
+  subject       VARCHAR(100)      NULL,         -- 学科分类：计算机/文学/管理/...
+  keywords      VARCHAR(500)      NULL,         -- 搜索关键词，分号/逗号分隔
+  abstract_txt  TEXT              NULL,         -- 摘要（可选）
+  file_type     VARCHAR(20)       NOT NULL,     -- pdf/docx/pptx/zip...
+  file_size     BIGINT            NULL,         -- 字节数
+  storage_path  VARCHAR(500)      NOT NULL,     -- 服务器磁盘绝对路径 或 OSS URL
+  uploader_id   INT               NULL,         -- 可选：上传者 user_id
+  upload_time   TIMESTAMP         DEFAULT CURRENT_TIMESTAMP,
+  is_public     TINYINT(1)        DEFAULT 1     -- 1=可被检索/下载；0=隐藏
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 常用索引（模糊搜索会用 LIKE；后续需要可改 FULLTEXT）
+CREATE INDEX idx_library_documents_title     ON library_documents (title);
+CREATE INDEX idx_library_documents_authors   ON library_documents (authors);
+CREATE INDEX idx_library_documents_category  ON library_documents (category);
+CREATE INDEX idx_library_documents_year      ON library_documents (year);
+CREATE INDEX idx_library_documents_file_type ON library_documents (file_type);
+
+-- ========================================
 -- 商城系统表
 -- ========================================
 

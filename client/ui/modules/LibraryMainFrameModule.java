@@ -1,11 +1,10 @@
 package client.ui.modules;
 
-import com.formdev.flatlaf.FlatLightLaf;
-import client.ui.dashboard.components.GradientButton;
 import client.controller.LibraryController;
 import common.vo.UserVO;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class LibraryMainFrameModule extends JFrame {
@@ -15,111 +14,183 @@ public class LibraryMainFrameModule extends JFrame {
     private final UserVO currentUser;
     private final LibraryController controller;
 
-    // === 保存各个面板引用 ===
+    // 各个子模块
     private LibraryBookSearchModule libraryBookSearchModule;
     private LibraryBorrowHistoryModule libraryBorrowHistoryModule;
     private LibraryBookManageModule libraryBookManageModule;
     private LibraryBookAddModule libraryBookAddModule;
 
+    // 新增的文献模块
+    private LibraryDocumentSearchModule libraryDocumentSearchModule;
+    private LibraryDocumentManageModule libraryDocumentManageModule;
+
     public LibraryMainFrameModule(UserVO currentUser) {
         this.currentUser = currentUser;
-        this.controller = new LibraryController(currentUser.getUserId()); // 统一创建一个实例
+        this.controller = new LibraryController(currentUser.getUserId());
         initUI(currentUser);
     }
 
-    public void initUI(UserVO user) {
+    @Override
+    public void dispose() {
+        if (controller != null) {
+            controller.close();
+        }
+        super.dispose();
+    }
+
+    public LibraryController getController() {
+        return controller;
+    }
+
+    private void initUI(UserVO user) {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 600);
         setLocationRelativeTo(null);
 
-        // 顶部菜单
-        JPanel topBar = new JPanel();
-        topBar.setLayout(new BoxLayout(topBar, BoxLayout.X_AXIS));
-        topBar.setPreferredSize(new Dimension(getWidth(), 50));
-        topBar.setBackground(new Color(40, 40, 40));
-
+        // 内容区
         contentPanel = new JPanel();
         cardLayout = new CardLayout();
         contentPanel.setLayout(cardLayout);
 
-        if (user.getRole() == 0 || user.getRole() == 1) {
-            // === 普通用户 ===
-            GradientButton btnSearch = new GradientButton("图书检索");
-            GradientButton btnHistory = new GradientButton("借阅记录");
+        // ==== 顶部 AppBar ====
+        JPanel topBar = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(0, 0,
+                        new Color(0x0B, 0x3D, 0x2E),   // 深绿色
+                        getWidth(), getHeight(),
+                        new Color(0x14, 0x66, 0x4E)); // 稍浅绿色
+                g2.setPaint(gp);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        topBar.setPreferredSize(new Dimension(getWidth(), 56));
+        topBar.setBorder(BorderFactory.createMatteBorder(0, 0, 4, 0, new Color(0, 0, 0, 30)));
 
-            // 初始化面板并保存引用
+        // 左侧标题
+        JLabel titleLabel = new JLabel("图书馆");
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 0));
+        topBar.add(titleLabel, BorderLayout.WEST);
+
+        // 右侧导航按钮容器
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
+        navPanel.setOpaque(false);
+        topBar.add(navPanel, BorderLayout.EAST);
+
+        ButtonGroup navGroup = new ButtonGroup();
+
+        // 工具方法：创建带圆角背景效果的按钮
+        java.util.function.Function<String, JToggleButton> createNavButton = (text) -> {
+            JToggleButton btn = new JToggleButton(text) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                    if (isSelected()) {
+                        g2.setColor(new Color(0x0B, 0x3D, 0x2E)); // 深绿背景
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                    } else if (getModel().isRollover()) {
+                        g2.setColor(new Color(20, 100, 80, 120)); // 浅绿透明
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                    }
+                    super.paintComponent(g2);
+                    g2.dispose();
+                }
+            };
+
+            btn.setFocusPainted(false);
+            btn.setContentAreaFilled(false);
+            btn.setOpaque(false);
+            btn.setForeground(Color.WHITE);
+            btn.setFont(btn.getFont().deriveFont(Font.BOLD, 14f));
+            btn.setBorder(new EmptyBorder(8, 18, 8, 18)); // 增大尺寸
+            btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+            navGroup.add(btn);
+            navPanel.add(btn);
+            return btn;
+        };
+
+        // === 学生 / 普通用户 ===
+        if (user.getRole() == 0 || user.getRole() == 1) {
             libraryBookSearchModule = new LibraryBookSearchModule(controller, currentUser);
             libraryBorrowHistoryModule = new LibraryBorrowHistoryModule(user.getUserId());
+            libraryDocumentSearchModule = new LibraryDocumentSearchModule(controller);
 
             contentPanel.add(libraryBookSearchModule, "search");
             contentPanel.add(libraryBorrowHistoryModule, "history");
+            contentPanel.add(libraryDocumentSearchModule, "docSearch");
+
+            JToggleButton btnSearch = createNavButton.apply("图书检索");
+            JToggleButton btnHistory = createNavButton.apply("借阅记录");
+            JToggleButton btnDocSearch = createNavButton.apply("文献检索");
 
             btnSearch.addActionListener(e -> {
-                libraryBookSearchModule.refreshTable(); // ✅ 自动刷新
+                libraryBookSearchModule.refreshTable();
                 cardLayout.show(contentPanel, "search");
-                btnSearch.setActive(true);
-                btnHistory.setActive(false);
+                titleLabel.setText("图书检索");
             });
 
             btnHistory.addActionListener(e -> {
-                libraryBorrowHistoryModule.refreshTable(); // ✅ 自动刷新
+                libraryBorrowHistoryModule.refreshTable();
                 cardLayout.show(contentPanel, "history");
-                btnHistory.setActive(true);
-                btnSearch.setActive(false);
+                titleLabel.setText("借阅记录");
             });
 
-            topBar.add(btnSearch);
-            topBar.add(Box.createHorizontalStrut(10));
-            topBar.add(btnHistory);
+            btnDocSearch.addActionListener(e -> {
+                cardLayout.show(contentPanel, "docSearch");
+                titleLabel.setText("文献检索");
+            });
 
-            btnSearch.setActive(true);
+            btnSearch.setSelected(true);
+            cardLayout.show(contentPanel, "search");
+        }
 
-        } else if (user.getRole() == 2) {
-            // === 管理员 ===
-            GradientButton btnManage = new GradientButton("图书管理");
-            GradientButton btnAdd = new GradientButton("新增书籍");
-
-            // 初始化面板并保存引用
+        // === 管理员 ===
+        if (user.getRole() == 2) {
             libraryBookManageModule = new LibraryBookManageModule(controller);
             libraryBookAddModule = new LibraryBookAddModule(controller);
+            libraryDocumentManageModule = new LibraryDocumentManageModule(controller);
 
             contentPanel.add(libraryBookManageModule, "manage");
             contentPanel.add(libraryBookAddModule, "add");
+            contentPanel.add(libraryDocumentManageModule, "docManage");
+
+            JToggleButton btnManage = createNavButton.apply("图书管理");
+            JToggleButton btnAdd = createNavButton.apply("新增书籍");
+            JToggleButton btnDocManage = createNavButton.apply("文献管理");
 
             btnManage.addActionListener(e -> {
-                libraryBookManageModule.refreshTable(); // ✅ 自动刷新
+                libraryBookManageModule.refreshTable();
                 cardLayout.show(contentPanel, "manage");
-                btnManage.setActive(true);
-                btnAdd.setActive(false);
+                titleLabel.setText("图书管理");
             });
 
             btnAdd.addActionListener(e -> {
                 cardLayout.show(contentPanel, "add");
-                btnAdd.setActive(true);
-                btnManage.setActive(false);
+                titleLabel.setText("新增书籍");
             });
 
-            topBar.add(btnManage);
-            topBar.add(Box.createHorizontalStrut(10));
-            topBar.add(btnAdd);
+            btnDocManage.addActionListener(e -> {
+                libraryDocumentManageModule.refreshTable();
+                cardLayout.show(contentPanel, "docManage");
+                titleLabel.setText("文献管理");
+            });
 
-            btnManage.setActive(true);
+            btnManage.setSelected(true);
+            cardLayout.show(contentPanel, "manage");
         }
 
+        // 总布局
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(topBar, BorderLayout.NORTH);
         getContentPane().add(contentPanel, BorderLayout.CENTER);
-    }
-
-    public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(new FlatLightLaf());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-        // 测试：role=0 普通用户，role=2 管理员
-        SwingUtilities.invokeLater(() ->
-                new LibraryMainFrameModule(new UserVO(5, "name", "pass", 2)).setVisible(true));
     }
 }
