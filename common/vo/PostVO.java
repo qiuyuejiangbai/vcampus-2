@@ -16,6 +16,8 @@ public class PostVO implements Serializable {
     private Integer authorId;       // 作者ID
     private Timestamp createdTime;  // 创建时间
     private Integer status;         // 状态：0-已删除，1-正常
+    private Integer likeCount;      // 点赞数
+    private Boolean isLiked;        // 当前用户是否已点赞
     
     // 关联信息（用于显示）
     private String authorName;      // 作者姓名
@@ -78,6 +80,22 @@ public class PostVO implements Serializable {
     
     public void setStatus(Integer status) {
         this.status = status;
+    }
+    
+    public Integer getLikeCount() {
+        return likeCount;
+    }
+    
+    public void setLikeCount(Integer likeCount) {
+        this.likeCount = likeCount;
+    }
+    
+    public Boolean getIsLiked() {
+        return isLiked;
+    }
+    
+    public void setIsLiked(Boolean isLiked) {
+        this.isLiked = isLiked;
     }
     
     public String getAuthorName() {

@@ -193,29 +193,78 @@ INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) V
 (2, 4, 1, 45.00, 45.00),
 (2, 2, 1, 2.00, 2.00);
 
--- ========================================
--- 论坛主题（forum_threads表）
--- ========================================
+-- 先插入论坛板块
+INSERT INTO forum_sections (name, description, sort_order, status) VALUES
+('学术交流', '课程/学术问题讨论', 1, 1),
+('校园生活', '生活/活动/社团', 2, 1),
+('二手交易', '闲置物品交易', 3, 1),
+('失物招领', '失物与招领信息', 4, 1),
+('求助咨询', '问题求助与咨询', 5, 1);
 
--- 插入论坛主题
-INSERT INTO forum_threads (title, content, author_id, category, reply_count, view_count) VALUES 
-('欢迎来到vCampus虚拟校园！', '大家好，欢迎使用vCampus虚拟校园系统！这里是我们的交流平台，可以分享学习心得、讨论课程内容、交流生活感悟。让我们一起营造一个积极向上的学习氛围！', 1, '公告', 2, 150),
-('Java程序设计课程讨论', '有同学在学习Java面向对象编程时遇到困难吗？欢迎在这里讨论交流，互相帮助！', 2, '学习交流', 3, 89),
-('图书馆新书推荐', '最近图书馆新进了一批计算机类书籍，推荐大家借阅学习。特别推荐《算法导论》和《深入理解计算机系统》。', 3, '图书推荐', 1, 67),
-('校园商店优惠活动', '本月校园商店文具用品八折优惠，需要购买学习用品的同学不要错过哦！', 1, '活动通知', 0, 45);
+-- 插入论坛主题（补充 section_id / is_essence / like_count / favorite_count / last_post_time）
+INSERT INTO forum_threads (title, content, author_id, section_id, category, is_essence, reply_count, view_count, like_count, favorite_count, is_pinned, is_locked, status, created_time, last_post_time) VALUES 
+('欢迎来到vCampus虚拟校园！', '大家好，欢迎使用vCampus虚拟校园系统！这里是我们的交流平台，可以分享学习心得、讨论课程内容、交流生活感悟。让我们一起营造一个积极向上的学习氛围！', 1, 1, '公告', TRUE, 2, 150, 2, 5, TRUE, FALSE, 1, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 9 DAY),
+('Java程序设计课程讨论', '有同学在学习Java面向对象编程时遇到困难吗？欢迎在这里讨论交流，互相帮助！', 2, 1, '学习交流', FALSE, 3, 89, 1, 2, FALSE, FALSE, 1, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 6 DAY),
+('图书馆新书推荐', '最近图书馆新进了一批计算机类书籍，推荐大家借阅学习。特别推荐《算法导论》和《深入理解计算机系统》。', 3, 2, '图书推荐', FALSE, 1, 67, 0, 1, FALSE, FALSE, 1, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 5 DAY),
+('校园商店优惠活动', '本月校园商店文具用品八折优惠，需要购买学习用品的同学不要错过哦！', 1, 2, '活动通知', FALSE, 0, 45, 0, 0, FALSE, FALSE, 1, NOW() - INTERVAL 3 DAY, NULL);
 
 -- ========================================
--- 论坛回复（forum_posts表）
--- ========================================
+-- 插入论坛回复（补充 like_count / 层级）
+INSERT INTO forum_posts (thread_id, content, author_id, parent_post_id, like_count, created_time) VALUES 
+(1, '系统界面很友好，功能很全面，点赞！', 5, NULL, 1, NOW() - INTERVAL 9 DAY),
+(1, '期待更多功能的上线，加油！', 6, NULL, 0, NOW() - INTERVAL 8 DAY),
+(2, '我在学习继承和多态时有些困惑，有同学能帮忙解答一下吗？', 7, NULL, 0, NOW() - INTERVAL 6 DAY),
+(2, '建议多做练习题，理论结合实践才能更好理解。', 8, 3, 0, NOW() - INTERVAL 6 DAY),
+(2, '可以参考一下《Java核心技术》这本书，讲得很详细。', 5, NULL, 1, NOW() - INTERVAL 5 DAY),
+(3, '《算法导论》确实是经典教材，值得深入学习！', 9, NULL, 0, NOW() - INTERVAL 5 DAY);
 
--- 插入论坛回复
-INSERT INTO forum_posts (thread_id, content, author_id) VALUES 
-(1, '系统界面很友好，功能很全面，点赞！', 5),
-(1, '期待更多功能的上线，加油！', 6),
-(2, '我在学习继承和多态时有些困惑，有同学能帮忙解答一下吗？', 7),
-(2, '建议多做练习题，理论结合实践才能更好理解。', 8),
-(2, '可以参考一下《Java核心技术》这本书，讲得很详细。', 5),
-(3, '《算法导论》确实是经典教材，值得深入学习！', 9);
+-- 标签与主题-标签
+INSERT INTO forum_tags (tag_name) VALUES ('Java'), ('学习'), ('公告'), ('活动'), ('图书');
+INSERT INTO forum_thread_tags (thread_id, tag_id) VALUES 
+(1, 3), (1, 2),
+(2, 1), (2, 2),
+(3, 5),
+(4, 4);
+
+-- 点赞（主题/回复）示例
+INSERT INTO forum_likes (entity_type, entity_id, user_id, created_time) VALUES 
+('thread', 1, 5, NOW() - INTERVAL 9 DAY),
+('thread', 1, 6, NOW() - INTERVAL 8 DAY),
+('thread', 2, 7, NOW() - INTERVAL 6 DAY),
+('post', 1, 6, NOW() - INTERVAL 9 DAY),
+('post', 3, 8, NOW() - INTERVAL 6 DAY);
+
+-- 收藏示例
+INSERT INTO forum_favorites (thread_id, user_id, created_time) VALUES 
+(1, 5, NOW() - INTERVAL 9 DAY),
+(2, 6, NOW() - INTERVAL 7 DAY);
+
+-- 附件示例（为主题与回复各插入一个）
+INSERT INTO forum_attachments (entity_type, entity_id, file_name, file_type, file_size, storage_path, uploader_id) VALUES 
+('thread', 2, 'java-oop-tips.pdf', 'application/pdf', 204800, '/uploads/forum/2/java-oop-tips.pdf', 2),
+('post', 3, 'question.png', 'image/png', 102400, '/uploads/forum/posts/3/question.png', 7);
+
+-- 公告示例
+INSERT INTO forum_announcements (title, content, is_pinned, status, created_time) VALUES 
+('欢迎使用校园论坛系统！', '请遵守论坛规则，文明发言。', TRUE, 1, NOW() - INTERVAL 10 DAY),
+('期末考试安排已发布', '请进入教务系统查看详细安排。', TRUE, 1, NOW() - INTERVAL 7 DAY);
+
+-- 浏览日志（简化）
+INSERT INTO forum_views (thread_id, user_id, ip_hash, viewed_at) VALUES 
+(1, 5, 'iphash-a', NOW() - INTERVAL 9 DAY),
+(1, 6, 'iphash-b', NOW() - INTERVAL 8 DAY),
+(2, 7, 'iphash-c', NOW() - INTERVAL 6 DAY);
+
+-- 举报与日志示例
+INSERT INTO forum_reports (entity_type, entity_id, reporter_id, reason, status, created_time) VALUES 
+('post', 4, 5, '不友善言论', 0, NOW() - INTERVAL 6 DAY);
+INSERT INTO forum_moderation_logs (entity_type, entity_id, action, operator_id, detail, created_time) VALUES 
+('thread', 1, 'pin', 1, '置顶公告', NOW() - INTERVAL 10 DAY);
+
+-- 通知示例
+INSERT INTO forum_notifications (user_id, type, payload, is_read, created_time) VALUES 
+(2, 'reply', JSON_OBJECT('threadId', 2, 'postId', 3, 'fromUser', 7), FALSE, NOW() - INTERVAL 6 DAY),
+(3, 'like', JSON_OBJECT('entity','thread','entityId', 3, 'fromUser', 9), TRUE, NOW() - INTERVAL 5 DAY);
 
 -- ========================================
 -- 系统配置（system_configs表）

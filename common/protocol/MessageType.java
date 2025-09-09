@@ -154,6 +154,9 @@ public enum MessageType {
     // 论坛模块
     GET_ALL_THREADS_REQUEST,    // 获取所有主题请求
     GET_ALL_THREADS_SUCCESS,    // 获取所有主题成功
+    GET_ALL_THREADS_FAIL,       // 获取所有主题失败
+    GET_FORUM_SECTIONS_REQUEST, // 获取分区列表请求
+    GET_FORUM_SECTIONS_SUCCESS, // 获取分区列表成功
     CREATE_THREAD_REQUEST,      // 创建主题请求
     CREATE_THREAD_SUCCESS,      // 创建主题成功
     DELETE_THREAD_REQUEST,      // 删除主题请求
@@ -164,6 +167,10 @@ public enum MessageType {
     CREATE_POST_SUCCESS,        // 创建回复成功
     DELETE_POST_REQUEST,        // 删除回复请求
     DELETE_POST_SUCCESS,        // 删除回复成功
+    TOGGLE_THREAD_LIKE_REQUEST, // 切换主题点赞请求
+    TOGGLE_THREAD_LIKE_SUCCESS, // 切换主题点赞成功
+    TOGGLE_POST_LIKE_REQUEST,   // 切换回复点赞请求
+    TOGGLE_POST_LIKE_SUCCESS,   // 切换回复点赞成功
     
     // 文件资源模块
     GET_COURSE_FILES_REQUEST,   // 获取课程文件请求
