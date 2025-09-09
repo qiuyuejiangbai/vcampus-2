@@ -43,18 +43,20 @@ if %errorlevel% neq 0 (
 )
 
 echo 编译客户端...
-javac -cp "libs/*;bin;." -d bin -encoding UTF-8 client/net/*.java client/controller/*.java client/ui/*.java client/ui/util/*.java client/ui/dashboard/*.java client/ui/modules/*.java client/ui/integration/*.java client/ui/api/*.java
+javac -cp "libs/*;bin;." -d bin -encoding UTF-8 ^
+  client/net/*.java ^
+  client/controller/*.java ^
+  client/ui/*.java ^
+  client/ui/util/*.java ^
+  client/ui/dashboard/*.java ^
+  client/ui/modules/*.java ^
+  client/ui/integration/*.java ^
+  client/ui/api/*.java
 
 if %errorlevel% == 0 (
     echo.
     echo 复制配置文件到classpath...
     copy resources\config.properties bin\ >nul 2>&1
-    if exist "resources\config.local.properties" (
-        copy resources\config.local.properties bin\ >nul 2>&1
-    )
-    echo 复制静态资源到classpath...
-    if not exist "bin\icons" mkdir bin\icons
-    xcopy /E /I /Y resources\icons bin\icons >nul 2>&1
     echo.
     echo ================================
     echo 编译成功！
@@ -66,8 +68,9 @@ if %errorlevel% == 0 (
     echo 2. 运行服务器: start_server.bat
     echo 3. 运行客户端: start_client.bat
     echo.
+    pause
 ) else (
     echo 客户端编译失败！请检查错误信息。
+    pause
 )
 
-pause

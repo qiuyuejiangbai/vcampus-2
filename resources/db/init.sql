@@ -389,24 +389,28 @@ CREATE TABLE IF NOT EXISTS order_items (
 -- 论坛系统表
 -- ========================================
 
--- 论坛主题表（根据ThreadVO类设计）
 CREATE TABLE IF NOT EXISTS forum_threads (
     thread_id INT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(200) NOT NULL COMMENT '主题标题',
     content TEXT COMMENT '内容',
     author_id INT NOT NULL,
-    category VARCHAR(100) COMMENT '分类',
+    section_id INT NULL COMMENT '板块ID',
+    category VARCHAR(100) COMMENT '分类(兼容旧数据)',
+    is_essence BOOLEAN DEFAULT FALSE COMMENT '是否精华',
     reply_count INT DEFAULT 0 COMMENT '回复数',
     view_count INT DEFAULT 0 COMMENT '浏览数',
+    like_count INT DEFAULT 0 COMMENT '点赞数',
+    favorite_count INT DEFAULT 0 COMMENT '收藏数',
+    last_post_time TIMESTAMP NULL DEFAULT NULL COMMENT '最后回帖时间',
     is_pinned BOOLEAN DEFAULT FALSE COMMENT '是否置顶',
     is_locked BOOLEAN DEFAULT FALSE COMMENT '是否锁定',
     status INT DEFAULT 1 COMMENT '状态: 0-删除, 1-正常, 2-隐藏',
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (author_id) REFERENCES users(user_id) ON DELETE CASCADE
+    -- ,FOREIGN KEY (section_id) REFERENCES forum_sections(section_id) ON DELETE SET NULL
 ) COMMENT='论坛主题表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 论坛回复表（根据PostVO类设计）
 CREATE TABLE IF NOT EXISTS forum_posts (
     post_id INT PRIMARY KEY AUTO_INCREMENT,
     thread_id INT NOT NULL,
@@ -414,6 +418,9 @@ CREATE TABLE IF NOT EXISTS forum_posts (
     author_id INT NOT NULL,
     parent_post_id INT COMMENT '父回复ID（支持嵌套回复）',
     quote_post_id INT COMMENT '引用回复ID',
+    like_count INT DEFAULT 0 COMMENT '点赞数',
+    edit_count INT DEFAULT 0 COMMENT '编辑次数',
+    edited_time TIMESTAMP NULL DEFAULT NULL COMMENT '最后编辑时间',
     status INT DEFAULT 1 COMMENT '状态: 0-删除, 1-正常, 2-隐藏',
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (thread_id) REFERENCES forum_threads(thread_id) ON DELETE CASCADE,
@@ -421,6 +428,134 @@ CREATE TABLE IF NOT EXISTS forum_posts (
     FOREIGN KEY (parent_post_id) REFERENCES forum_posts(post_id) ON DELETE SET NULL,
     FOREIGN KEY (quote_post_id) REFERENCES forum_posts(post_id) ON DELETE SET NULL
 ) COMMENT='论坛回复表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 板块表
+CREATE TABLE IF NOT EXISTS forum_sections (
+    section_id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL UNIQUE COMMENT '板块名称',
+    description VARCHAR(255) COMMENT '简介',
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    status INT DEFAULT 1 COMMENT '状态: 0-禁用,1-启用',
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) COMMENT='论坛板块表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 标签表
+CREATE TABLE IF NOT EXISTS forum_tags (
+    tag_id INT PRIMARY KEY AUTO_INCREMENT,
+    tag_name VARCHAR(50) NOT NULL UNIQUE,
+    status INT DEFAULT 1 COMMENT '状态'
+) COMMENT='论坛标签表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 主题-标签关联表
+CREATE TABLE IF NOT EXISTS forum_thread_tags (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    thread_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    UNIQUE KEY uniq_thread_tag (thread_id, tag_id),
+    FOREIGN KEY (thread_id) REFERENCES forum_threads(thread_id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES forum_tags(tag_id) ON DELETE CASCADE
+) COMMENT='主题标签关联表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 点赞表（主题/回复通用）
+CREATE TABLE IF NOT EXISTS forum_likes (
+    like_id INT PRIMARY KEY AUTO_INCREMENT,
+    entity_type ENUM('thread','post') NOT NULL,
+    entity_id INT NOT NULL,
+    user_id INT NOT NULL,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_like (entity_type, entity_id, user_id),
+    INDEX idx_entity (entity_type, entity_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) COMMENT='论坛点赞表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 收藏表（主题）
+CREATE TABLE IF NOT EXISTS forum_favorites (
+    favorite_id INT PRIMARY KEY AUTO_INCREMENT,
+    thread_id INT NOT NULL,
+    user_id INT NOT NULL,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_fav (thread_id, user_id),
+    FOREIGN KEY (thread_id) REFERENCES forum_threads(thread_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) COMMENT='论坛收藏表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 附件/图片表（主题/回复通用）
+CREATE TABLE IF NOT EXISTS forum_attachments (
+    attachment_id INT PRIMARY KEY AUTO_INCREMENT,
+    entity_type ENUM('thread','post') NOT NULL,
+    entity_id INT NOT NULL,
+    file_name VARCHAR(200) NOT NULL,
+    file_type VARCHAR(50) COMMENT 'MIME或类型',
+    file_size INT DEFAULT 0,
+    storage_path VARCHAR(300) NOT NULL,
+    uploader_id INT NOT NULL,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_attach_entity (entity_type, entity_id),
+    FOREIGN KEY (uploader_id) REFERENCES users(user_id) ON DELETE CASCADE
+) COMMENT='论坛附件表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 公告表
+CREATE TABLE IF NOT EXISTS forum_announcements (
+    announcement_id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    is_pinned BOOLEAN DEFAULT FALSE,
+    status INT DEFAULT 1,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) COMMENT='论坛公告表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 浏览日志（用于热门/趋势统计）
+CREATE TABLE IF NOT EXISTS forum_views (
+    view_id INT PRIMARY KEY AUTO_INCREMENT,
+    thread_id INT NOT NULL,
+    user_id INT NULL,
+    ip_hash CHAR(64) NULL,
+    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_thread_time (thread_id, viewed_at),
+    INDEX idx_user_time (user_id, viewed_at),
+    FOREIGN KEY (thread_id) REFERENCES forum_threads(thread_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+) COMMENT='论坛浏览日志' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 举报表
+CREATE TABLE IF NOT EXISTS forum_reports (
+    report_id INT PRIMARY KEY AUTO_INCREMENT,
+    entity_type ENUM('thread','post') NOT NULL,
+    entity_id INT NOT NULL,
+    reporter_id INT NOT NULL,
+    reason VARCHAR(255) NOT NULL,
+    status INT DEFAULT 0 COMMENT '0-未处理,1-通过,2-驳回',
+    handled_by INT NULL,
+    handled_time TIMESTAMP NULL DEFAULT NULL,
+    remark VARCHAR(255) NULL,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (reporter_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (handled_by) REFERENCES users(user_id) ON DELETE SET NULL
+) COMMENT='论坛举报表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 审核/操作日志
+CREATE TABLE IF NOT EXISTS forum_moderation_logs (
+    log_id INT PRIMARY KEY AUTO_INCREMENT,
+    entity_type ENUM('thread','post') NOT NULL,
+    entity_id INT NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    operator_id INT NOT NULL,
+    detail VARCHAR(255) NULL,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (operator_id) REFERENCES users(user_id) ON DELETE CASCADE
+) COMMENT='论坛审核操作日志' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 通知表
+CREATE TABLE IF NOT EXISTS forum_notifications (
+    notification_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    type ENUM('reply','mention','like','system') NOT NULL,
+    payload JSON NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) COMMENT='论坛通知表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========================================
 -- 系统配置表

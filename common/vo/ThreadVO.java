@@ -15,13 +15,25 @@ public class ThreadVO implements Serializable {
     private String content;         // 内容
     private Integer authorId;       // 作者ID
     private Integer replyCount;     // 回复数
+    private Integer viewCount;      // 浏览数
+    private Integer likeCount;      // 点赞数
+    private Integer favoriteCount;  // 收藏数
     private Timestamp createdTime;  // 创建时间
     private Timestamp updatedTime;  // 更新时间
     private Integer status;         // 状态：0-已删除，1-正常
+    // 分区/板块
+    private Integer sectionId;      // 板块ID
+    private String sectionName;     // 板块名称（用于展示）
     
     // 关联信息（用于显示）
     private String authorName;      // 作者姓名
     private String authorLoginId;   // 作者登录ID
+
+    // 是否公告（管理员发布的帖子视为公告）
+    private Boolean isAnnouncement;
+    
+    // 当前用户是否已点赞
+    private Boolean isLiked; 
     
     public ThreadVO() {}
     
@@ -74,6 +86,30 @@ public class ThreadVO implements Serializable {
         this.replyCount = replyCount;
     }
     
+    public Integer getViewCount() {
+        return viewCount;
+    }
+    
+    public void setViewCount(Integer viewCount) {
+        this.viewCount = viewCount;
+    }
+    
+    public Integer getLikeCount() {
+        return likeCount;
+    }
+    
+    public void setLikeCount(Integer likeCount) {
+        this.likeCount = likeCount;
+    }
+    
+    public Integer getFavoriteCount() {
+        return favoriteCount;
+    }
+    
+    public void setFavoriteCount(Integer favoriteCount) {
+        this.favoriteCount = favoriteCount;
+    }
+    
     public Timestamp getCreatedTime() {
         return createdTime;
     }
@@ -97,6 +133,22 @@ public class ThreadVO implements Serializable {
     public void setStatus(Integer status) {
         this.status = status;
     }
+
+    public Integer getSectionId() {
+        return sectionId;
+    }
+
+    public void setSectionId(Integer sectionId) {
+        this.sectionId = sectionId;
+    }
+
+    public String getSectionName() {
+        return sectionName;
+    }
+
+    public void setSectionName(String sectionName) {
+        this.sectionName = sectionName;
+    }
     
     public String getAuthorName() {
         return authorName;
@@ -112,6 +164,22 @@ public class ThreadVO implements Serializable {
     
     public void setAuthorLoginId(String authorLoginId) {
         this.authorLoginId = authorLoginId;
+    }
+
+    public Boolean getIsAnnouncement() {
+        return isAnnouncement != null && isAnnouncement;
+    }
+
+    public void setIsAnnouncement(Boolean isAnnouncement) {
+        this.isAnnouncement = isAnnouncement;
+    }
+    
+    public Boolean getIsLiked() {
+        return isLiked;
+    }
+    
+    public void setIsLiked(Boolean isLiked) {
+        this.isLiked = isLiked;
     }
     
     /**
@@ -145,12 +213,13 @@ public class ThreadVO implements Serializable {
     
     /**
      * 增加回复数
+     * @param by 增加的数量（默认为1）
      */
-    public void incrementReplyCount() {
+    public void incrementReplyCount(int by) {
         if (this.replyCount == null) {
-            this.replyCount = 1;
+            this.replyCount = Math.max(0, by);
         } else {
-            this.replyCount++;
+            this.replyCount += Math.max(0, by);
         }
     }
     
@@ -187,6 +256,7 @@ public class ThreadVO implements Serializable {
                 ", status=" + status +
                 ", authorName='" + authorName + '\'' +
                 ", authorLoginId='" + authorLoginId + '\'' +
+                ", isAnnouncement=" + getIsAnnouncement() +
                 '}';
     }
     

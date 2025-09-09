@@ -10,6 +10,7 @@ import common.vo.BookVO;
 import common.vo.BorrowRecordVO;
 import server.service.UserService;
 import server.dao.impl.LibraryServiceImpl;
+import server.service.ForumService;
 
 import java.util.List;
 
@@ -186,6 +187,35 @@ public class ClientHandler implements Runnable {
                     break;
                 case SEARCH_BORROW_HISTORY_REQUEST:
                     handleSearchBorrowHistory(request);
+                    break;
+                // 论坛模块
+                case GET_ALL_THREADS_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: GET_ALL_THREADS_REQUEST");
+                    handleGetAllThreads(request);
+                    break;
+                case GET_FORUM_SECTIONS_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: GET_FORUM_SECTIONS_REQUEST");
+                    handleGetForumSections(request);
+                    break;
+                case GET_POSTS_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: GET_POSTS_REQUEST, threadId=" + request.getData());
+                    handleGetPosts(request);
+                    break;
+                case CREATE_THREAD_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: CREATE_THREAD_REQUEST");
+                    handleCreateThread(request);
+                    break;
+                case CREATE_POST_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: CREATE_POST_REQUEST");
+                    handleCreatePost(request);
+                    break;
+                case TOGGLE_THREAD_LIKE_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: TOGGLE_THREAD_LIKE_REQUEST");
+                    handleToggleThreadLike(request);
+                    break;
+                case TOGGLE_POST_LIKE_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: TOGGLE_POST_LIKE_REQUEST");
+                    handleTogglePostLike(request);
                     break;
 
 
@@ -498,6 +528,177 @@ public class ClientHandler implements Runnable {
 
 
     //==========================================================================================
+
+    // ================= 论坛模块 =================
+
+    private void handleGetAllThreads(Message request) {
+        try {
+            System.out.println("[Forum][Server] 开始查询所有主题");
+            ForumService forumService = new ForumService();
+            java.util.List<common.vo.ThreadVO> threads = forumService.getAllThreads(currentUserId);
+            System.out.println("[Forum][Server] 查询完成，返回条数=" + (threads != null ? threads.size() : -1));
+            Message response = new Message(MessageType.GET_ALL_THREADS_SUCCESS, StatusCode.SUCCESS, threads, "获取主题成功");
+            sendMessage(response);
+            System.out.println("[Forum][Server] 已发送响应: GET_ALL_THREADS_SUCCESS");
+        } catch (Exception e) {
+            System.err.println("处理获取主题请求时发生异常: " + e.getMessage());
+            sendErrorMessage("获取主题失败: " + e.getMessage());
+        }
+    }
+
+    private void handleGetForumSections(Message request) {
+        try {
+            System.out.println("[Forum][Server] 开始查询分区列表");
+            ForumService forumService = new ForumService();
+            java.util.List<common.vo.ForumSectionVO> sections = forumService.getAllSections();
+            System.out.println("[Forum][Server] 查询分区完成，返回条数=" + (sections != null ? sections.size() : -1));
+            Message response = new Message(MessageType.GET_FORUM_SECTIONS_SUCCESS, StatusCode.SUCCESS, sections, "获取分区成功");
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("获取分区失败: " + e.getMessage());
+        }
+    }
+
+    private void handleGetPosts(Message request) {
+        try {
+            Integer threadId = (Integer) request.getData();
+            if (threadId == null) {
+                sendErrorMessage("缺少threadId");
+                return;
+            }
+            System.out.println("[Forum][Server] 开始查询回复，threadId=" + threadId);
+            ForumService forumService = new ForumService();
+            java.util.List<common.vo.PostVO> posts = forumService.getPostsByThreadId(threadId, currentUserId);
+            System.out.println("[Forum][Server] 查询回复完成，返回条数=" + (posts != null ? posts.size() : -1));
+            Message response = new Message(MessageType.GET_POSTS_SUCCESS, StatusCode.SUCCESS, posts, "获取回复成功");
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("获取回复失败: " + e.getMessage());
+        }
+    }
+
+    private void handleCreateThread(Message request) {
+        try {
+            if (!isLoggedIn()) {
+                sendUnauthorizedMessage();
+                return;
+            }
+            common.vo.ThreadVO thread = (common.vo.ThreadVO) request.getData();
+            if (thread == null) {
+                sendErrorMessage("无效的主题数据");
+                return;
+            }
+            ForumService forumService = new ForumService();
+            Integer newId = forumService.createThread(thread, currentUserId);
+            if (newId != null) {
+                thread.setThreadId(newId);
+                Message response = new Message(MessageType.CREATE_THREAD_SUCCESS, StatusCode.CREATED, thread, "创建主题成功");
+                sendMessage(response);
+            } else {
+                Message response = new Message(MessageType.ERROR, StatusCode.INTERNAL_ERROR, null, "创建主题失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            sendErrorMessage("创建主题异常: " + e.getMessage());
+        }
+    }
+
+    private void handleCreatePost(Message request) {
+        try {
+            if (!isLoggedIn()) {
+                sendUnauthorizedMessage();
+                return;
+            }
+            common.vo.PostVO post = (common.vo.PostVO) request.getData();
+            if (post == null || post.getThreadId() == null) {
+                sendErrorMessage("无效的回复数据");
+                return;
+            }
+            ForumService forumService = new ForumService();
+            Integer newId = forumService.createPost(post, currentUserId);
+            if (newId != null) {
+                post.setPostId(newId);
+                Message response = new Message(MessageType.CREATE_POST_SUCCESS, StatusCode.CREATED, post, "创建回复成功");
+                sendMessage(response);
+            } else {
+                Message response = new Message(MessageType.ERROR, StatusCode.INTERNAL_ERROR, null, "创建回复失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            sendErrorMessage("创建回复异常: " + e.getMessage());
+        }
+    }
+    
+    private void handleToggleThreadLike(Message request) {
+        try {
+            if (!isLoggedIn()) {
+                sendUnauthorizedMessage();
+                return;
+            }
+            Integer threadId = (Integer) request.getData();
+            if (threadId == null) {
+                sendErrorMessage("缺少threadId");
+                return;
+            }
+            System.out.println("[Forum][Server] 处理主题点赞切换: threadId=" + threadId + ", userId=" + currentUserId);
+            ForumService forumService = new ForumService();
+            Boolean result = forumService.toggleThreadLike(threadId, currentUserId);
+            if (result != null) {
+                // 返回点赞结果和新的点赞数量
+                int newLikeCount = forumService.getThreadLikeCount(threadId);
+                System.out.println("[Forum][Server] 获取到新的点赞数量: " + newLikeCount + " for threadId=" + threadId);
+                
+                java.util.Map<String, Object> responseData = new java.util.HashMap<>();
+                responseData.put("isLiked", result);
+                responseData.put("likeCount", newLikeCount);
+                responseData.put("threadId", threadId);
+                
+                String message = result ? "点赞成功" : "取消点赞成功";
+                Message response = new Message(MessageType.TOGGLE_THREAD_LIKE_SUCCESS, StatusCode.SUCCESS, responseData, message);
+                sendMessage(response);
+                System.out.println("[Forum][Server] 主题点赞切换成功: " + message + ", 返回likeCount=" + newLikeCount);
+            } else {
+                sendErrorMessage("点赞操作失败");
+            }
+        } catch (Exception e) {
+            System.err.println("处理主题点赞异常: " + e.getMessage());
+            sendErrorMessage("点赞操作异常: " + e.getMessage());
+        }
+    }
+    
+    private void handleTogglePostLike(Message request) {
+        try {
+            if (!isLoggedIn()) {
+                sendUnauthorizedMessage();
+                return;
+            }
+            Integer postId = (Integer) request.getData();
+            if (postId == null) {
+                sendErrorMessage("缺少postId");
+                return;
+            }
+            System.out.println("[Forum][Server] 处理回复点赞切换: postId=" + postId + ", userId=" + currentUserId);
+            ForumService forumService = new ForumService();
+            Boolean result = forumService.togglePostLike(postId, currentUserId);
+            if (result != null) {
+                // 返回点赞结果和新的点赞数量
+                java.util.Map<String, Object> responseData = new java.util.HashMap<>();
+                responseData.put("isLiked", result);
+                responseData.put("likeCount", forumService.getPostLikeCount(postId));
+                responseData.put("postId", postId);
+                
+                String message = result ? "点赞成功" : "取消点赞成功";
+                Message response = new Message(MessageType.TOGGLE_POST_LIKE_SUCCESS, StatusCode.SUCCESS, responseData, message);
+                sendMessage(response);
+                System.out.println("[Forum][Server] 回复点赞切换成功: " + message);
+            } else {
+                sendErrorMessage("点赞操作失败");
+            }
+        } catch (Exception e) {
+            System.err.println("处理回复点赞异常: " + e.getMessage());
+            sendErrorMessage("点赞操作异常: " + e.getMessage());
+        }
+    }
 
     /**
      * 处理登录请求

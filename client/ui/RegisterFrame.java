@@ -18,6 +18,7 @@ import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
 import java.util.regex.Pattern;
+import client.ui.util.ScreenUtils;
 
 /**
  * 注册页面
@@ -27,9 +28,9 @@ public class RegisterFrame extends JFrame {
     
     // ==================== 设计常量 ====================
     
-    // 尺寸常量
-    private static final int FRAME_WIDTH = 1200;
-    private static final int FRAME_HEIGHT = 800;
+    // 尺寸常量 - 基础尺寸，实际大小将根据屏幕分辨率动态调整
+    private static final int BASE_FRAME_WIDTH = 1200;
+    private static final int BASE_FRAME_HEIGHT = 800;
     private static final int CARD_WIDTH = 580;
     private static final int CARD_PADDING = 30;
     private static final int COMPONENT_HEIGHT = 30;
@@ -150,9 +151,20 @@ public class RegisterFrame extends JFrame {
         
         setTitle("虚拟校园系统 - 用户注册");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(FRAME_WIDTH, FRAME_HEIGHT);
-        setLocationRelativeTo(null);
-        setResizable(false);
+        
+        // 使用屏幕适配工具计算窗口大小
+        Dimension windowSize = ScreenUtils.getRegisterWindowSize();
+        setSize(windowSize);
+        
+        // 设置窗口居中显示
+        Point centerLocation = ScreenUtils.getCenteredLocation(windowSize);
+        setLocation(centerLocation);
+        
+        // 允许窗口大小调整
+        setResizable(true);
+        
+        // 设置最小窗口大小
+        setMinimumSize(new Dimension(900, 700));
     }
     
     // ==================== 初始化方法 ====================
@@ -175,22 +187,15 @@ public class RegisterFrame extends JFrame {
             
             for (String path : possiblePaths) {
                 File imageFile = new File(path);
-                System.out.println("尝试加载背景图片: " + imageFile.getAbsolutePath());
-                
                 if (imageFile.exists()) {
                     backgroundImage = ImageIO.read(imageFile);
-                    System.out.println("✅ 背景图片加载成功: " + imageFile.getAbsolutePath());
                     return;
-                } else {
-                    System.out.println("❌ 文件不存在: " + imageFile.getAbsolutePath());
                 }
             }
             
-            System.out.println("⚠️ 所有路径都未找到背景图片，使用默认渐变背景");
             backgroundImage = null;
             
         } catch (IOException e) {
-            System.err.println("❌ 加载背景图片失败，使用默认渐变背景: " + e.getMessage());
             backgroundImage = null;
         }
     }

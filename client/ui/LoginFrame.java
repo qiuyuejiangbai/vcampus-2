@@ -21,14 +21,16 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import client.ui.util.ScreenUtils;
 
 /**
  * 登录界面
  * 系统的入口界面，提供用户登录和注册功能
  */
 public class LoginFrame extends JFrame {
-    private static final int FRAME_WIDTH = 1000;
-    private static final int FRAME_HEIGHT = 700;
+    // 窗口大小 - 恢复为合适的固定大小，确保内容完整展示
+    private static final int BASE_FRAME_WIDTH = 1200;
+    private static final int BASE_FRAME_HEIGHT = 800;
     
     // UI组件
     private JTextField loginIdField;
@@ -113,22 +115,15 @@ public class LoginFrame extends JFrame {
             
             for (String path : possiblePaths) {
                 File imageFile = new File(path);
-                System.out.println("尝试加载背景图片: " + imageFile.getAbsolutePath());
-                
                 if (imageFile.exists()) {
                     backgroundImage = ImageIO.read(imageFile);
-                    System.out.println("✅ 背景图片加载成功: " + imageFile.getAbsolutePath());
                     return;
-                } else {
-                    System.out.println("❌ 文件不存在: " + imageFile.getAbsolutePath());
                 }
             }
             
-            System.out.println("⚠️ 所有路径都未找到背景图片，使用默认渐变背景");
             backgroundImage = null;
             
         } catch (IOException e) {
-            System.err.println("❌ 加载背景图片失败，使用默认渐变背景: " + e.getMessage());
             backgroundImage = null;
         }
     }
@@ -139,9 +134,19 @@ public class LoginFrame extends JFrame {
     private void initComponents() {
         setTitle("虚拟校园系统");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(FRAME_WIDTH, FRAME_HEIGHT);
-        setLocationRelativeTo(null);
-        setResizable(false);
+        
+        // 使用固定的窗口大小，确保内容完整展示
+        setSize(BASE_FRAME_WIDTH, BASE_FRAME_HEIGHT);
+        
+        // 设置窗口居中显示
+        Point centerLocation = ScreenUtils.getCenteredLocation(new Dimension(BASE_FRAME_WIDTH, BASE_FRAME_HEIGHT));
+        setLocation(centerLocation);
+        
+        // 允许窗口大小调整
+        setResizable(true);
+        
+        // 设置最小窗口大小，确保内容不被压缩
+        setMinimumSize(new Dimension(1000, 700));
         
         // 创建输入框 - 简化占位文本
         loginIdField = createStyledTextField("学号/教工号");
@@ -224,7 +229,7 @@ public class LoginFrame extends JFrame {
             new RoundedBorder(BORDER_COLOR, 1, 12),
             BorderFactory.createEmptyBorder(12, 16, 12, 16) // 统一内边距
         ));
-        field.setPreferredSize(new Dimension(360, 44)); // 恢复输入框宽度360px，统一高度44px
+        field.setPreferredSize(new Dimension(400, 44)); // 增加输入框宽度到400px，统一高度44px
         field.setBackground(new Color(248, 250, 252));
         field.setOpaque(false);
         
@@ -270,7 +275,7 @@ public class LoginFrame extends JFrame {
             new RoundedBorder(BORDER_COLOR, 1, 12),
             BorderFactory.createEmptyBorder(12, 16, 12, 48) // 右侧留空间给眼睛图标
         ));
-        field.setPreferredSize(new Dimension(360, 44)); // 恢复输入框宽度360px，统一高度44px
+        field.setPreferredSize(new Dimension(400, 44)); // 增加密码框宽度到400px，统一高度44px
         field.setBackground(new Color(248, 250, 252));
         field.setOpaque(false);
         field.setEchoChar('•'); // 使用更小的密码字符
@@ -336,7 +341,7 @@ public class LoginFrame extends JFrame {
         button.setFocusPainted(false);
         button.setContentAreaFilled(false);
         button.setRolloverEnabled(true);
-        button.setPreferredSize(new Dimension(360, 44)); // 恢复按钮宽度360px，统一高度44px
+        button.setPreferredSize(new Dimension(400, 44)); // 增加按钮宽度到400px，统一高度44px
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         
         return button;
@@ -431,14 +436,14 @@ public class LoginFrame extends JFrame {
         
         // 使用LayeredPane来处理Toast叠加
         JLayeredPane layeredPane = new JLayeredPane();
-        layeredPane.setPreferredSize(new Dimension(FRAME_WIDTH, FRAME_HEIGHT));
+        layeredPane.setPreferredSize(new Dimension(BASE_FRAME_WIDTH, BASE_FRAME_HEIGHT));
         
         // 设置主要内容位置
-        backgroundPanel.setBounds(0, 0, FRAME_WIDTH, FRAME_HEIGHT - 40);
-        statusPanel.setBounds(0, FRAME_HEIGHT - 40, FRAME_WIDTH, 40);
+        backgroundPanel.setBounds(0, 0, BASE_FRAME_WIDTH, BASE_FRAME_HEIGHT - 40);
+        statusPanel.setBounds(0, BASE_FRAME_HEIGHT - 40, BASE_FRAME_WIDTH, 40);
         
         // 设置Toast位置（右上角）
-        connectionToast.setBounds(FRAME_WIDTH - 200, 16, 180, 40);
+        connectionToast.setBounds(BASE_FRAME_WIDTH - 200, 16, 180, 40);
         
         // 添加到层级面板
         layeredPane.add(backgroundPanel, JLayeredPane.DEFAULT_LAYER);
@@ -489,7 +494,7 @@ public class LoginFrame extends JFrame {
         };
         
         card.setOpaque(false);
-        card.setPreferredSize(new Dimension(440, 580)); // 恢复到合适的卡片宽度440px
+        card.setPreferredSize(new Dimension(480, 640)); // 增加卡片大小，确保内容完整展示
         card.setLayout(new GridBagLayout());
         card.setBorder(new EmptyBorder(32, 32, 32, 32)); // 卡片内边距32px
         
@@ -655,7 +660,7 @@ public class LoginFrame extends JFrame {
         JPanel passwordFieldContainer = new JPanel();
         passwordFieldContainer.setLayout(new OverlayLayout(passwordFieldContainer));
         passwordFieldContainer.setOpaque(false);
-        passwordFieldContainer.setPreferredSize(new Dimension(360, 44));
+        passwordFieldContainer.setPreferredSize(new Dimension(400, 44));
         
         passwordFieldContainer.add(passwordField);
         
@@ -706,7 +711,7 @@ public class LoginFrame extends JFrame {
         JPanel statusPanel = new JPanel(new BorderLayout());
         statusPanel.setBackground(new Color(245, 245, 245));
         statusPanel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
-        statusPanel.setPreferredSize(new Dimension(FRAME_WIDTH, 40));
+        statusPanel.setPreferredSize(new Dimension(BASE_FRAME_WIDTH, 40));
         
         JPanel statusLeftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         statusLeftPanel.setOpaque(false);
@@ -928,16 +933,27 @@ public class LoginFrame extends JFrame {
     private void openDashboard(common.vo.UserVO user) {
         // 隐藏登录界面
         setVisible(false);
-        
+
         // 根据角色打开对应 Dashboard 主界面
         if (user != null && user.isTeacher()) {
             new client.ui.dashboard.TeacherDashboardUI(user, serverConnection).setVisible(true);
         } else if (user != null && user.isAdmin()) {
             new client.ui.dashboard.AdminDashboardUI(user, serverConnection).setVisible(true);
-        } else {
+        } else if (user != null && user.isStudent()) {
             new client.ui.dashboard.StudentDashboardUI(user, serverConnection).setVisible(true);
+        } else {
+            // 未知用户角色，显示错误信息
+            JOptionPane.showMessageDialog(
+                this,
+                "未知的用户角色，请联系管理员",
+                "错误",
+                JOptionPane.ERROR_MESSAGE
+            );
+            // 重新显示登录界面
+            setVisible(true);
+            return;
         }
-        
+
         // 关闭登录界面
         dispose();
     }
@@ -1043,7 +1059,6 @@ public class LoginFrame extends JFrame {
     private void startFadeInAnimation() {
         // 简化处理：移除透明度动画，避免兼容性问题
         // 直接显示窗口，保持良好的用户体验
-        System.out.println("登录界面已准备就绪");
     }
     
     /**
@@ -1200,11 +1215,6 @@ public class LoginFrame extends JFrame {
             // 可选：启用一些现代化特性
             System.setProperty("flatlaf.useRoundedBorders", "true");
             System.setProperty("flatlaf.menuBarEmbedded", "false");
-            
-            // 高DPI支持 - 处理Windows缩放问题
-            System.setProperty("sun.java2d.dpiaware", "true");
-            System.setProperty("awt.useSystemAAFontSettings", "on");
-            System.setProperty("swing.aatext", "true");
             
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             System.err.println("Failed to initialize FlatLaf, using system default");
