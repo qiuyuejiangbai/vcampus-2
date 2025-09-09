@@ -114,6 +114,11 @@ public enum MessageType {
     GET_BORROW_RECORDS_SUCCESS,   // 获取借阅记录成功
     GET_BORROW_RECORDS_FAIL,     // 获取借阅记录失败
 
+    // 借阅历史搜索
+    SEARCH_BORROW_HISTORY_REQUEST,   // 搜索借阅历史请求
+    SEARCH_BORROW_HISTORY_SUCCESS,   // 搜索借阅历史成功
+    SEARCH_BORROW_HISTORY_FAIL,      // 搜索借阅历史失败
+
     // 文献检索
     SEARCH_DOCUMENTS_REQUEST,
     SEARCH_DOCUMENTS_RESPONSE,

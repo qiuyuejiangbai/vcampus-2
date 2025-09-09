@@ -218,4 +218,17 @@ public class LibraryController {
         return resp != null && resp.getStatusCode() == StatusCode.SUCCESS;
     }
 
+    public List<BorrowRecordVO> searchBorrowHistory(String keyword) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("userId", currentUserId);
+        params.put("keyword", keyword);
+        Message request = new Message(MessageType.SEARCH_BORROW_HISTORY_REQUEST, StatusCode.SUCCESS, params);
+        Message response = sendRequest(request);
+        if (response.getStatusCode() == StatusCode.SUCCESS) {
+            return (List<BorrowRecordVO>) response.getData();
+        }
+        return Collections.emptyList();
+    }
+
+
 }
