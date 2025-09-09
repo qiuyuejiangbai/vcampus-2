@@ -548,4 +548,33 @@ public class LibraryServiceImpl implements LibraryService {
         return doc;
     }
 
+    public List<BorrowRecordVO> searchBorrowHistory(Integer userId, String keyword) {
+        List<BorrowRecordVO> list = new ArrayList<>();
+        String sql = "SELECT br.record_id, br.book_id, b.title, br.borrow_time, br.due_time, br.return_time, br.status, br.user_id "
+                + "FROM borrow_records br JOIN books b ON br.book_id = b.book_id "
+                + "WHERE br.user_id=? AND b.title LIKE ?";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setString(2, "%" + keyword + "%");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                BorrowRecordVO record = new BorrowRecordVO();
+                record.setRecordId(rs.getInt("record_id"));
+                record.setUserId(rs.getInt("user_id"));
+                record.setBookId(rs.getInt("book_id"));
+                record.setBorrowTime(rs.getTimestamp("borrow_time"));
+                record.setBookTitle(rs.getString("title"));
+                record.setDueTime(rs.getTimestamp("due_time"));
+                record.setReturnTime(rs.getTimestamp("return_time"));
+                record.setStatus(rs.getInt("status"));
+                list.add(record);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+
 }

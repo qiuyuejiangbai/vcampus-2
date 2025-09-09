@@ -27,7 +27,6 @@ public class LibraryDocumentEditDialog extends JDialog {
         initUI();
     }
 
-
     private void initUI() {
         JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
 

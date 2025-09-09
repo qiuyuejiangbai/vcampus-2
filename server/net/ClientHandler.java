@@ -185,6 +185,9 @@ public class ClientHandler implements Runnable {
                 case DELETE_DOCUMENT_REQUEST:
                     handleDeleteDocument(request);
                     break;
+                case SEARCH_BORROW_HISTORY_REQUEST:
+                    handleSearchBorrowHistory(request);
+                    break;
                 // 论坛模块
                 case GET_ALL_THREADS_REQUEST:
                     System.out.println("[Forum][Server] 收到请求: GET_ALL_THREADS_REQUEST");
@@ -386,6 +389,29 @@ public class ClientHandler implements Runnable {
             sendErrorMessage("查询图书失败: " + e.getMessage());
         }
     }
+
+    private void handleSearchBorrowHistory(Message request) {
+        try {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> params = (java.util.Map<String, Object>) request.getData();
+            Integer userId = (Integer) params.get("userId");
+            String keyword = (String) params.get("keyword");
+
+            LibraryServiceImpl libraryService = new server.dao.impl.LibraryServiceImpl();
+            List<BorrowRecordVO> records = libraryService.searchBorrowHistory(userId, keyword);
+
+            Message response = new Message(
+                    MessageType.SEARCH_BORROW_HISTORY_SUCCESS,
+                    StatusCode.SUCCESS,
+                    records,
+                    "搜索借阅记录成功"
+            );
+            sendMessage(response);
+        } catch (Exception e) {
+            sendErrorMessage("搜索借阅历史失败: " + e.getMessage());
+        }
+    }
+
 
     // ================= 文献模块 =================
 

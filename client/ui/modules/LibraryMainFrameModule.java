@@ -18,7 +18,6 @@ public class LibraryMainFrameModule extends JFrame {
     private LibraryBookSearchModule libraryBookSearchModule;
     private LibraryBorrowHistoryModule libraryBorrowHistoryModule;
     private LibraryBookManageModule libraryBookManageModule;
-    private LibraryBookAddModule libraryBookAddModule;
 
     // 新增的文献模块
     private LibraryDocumentSearchModule libraryDocumentSearchModule;
@@ -139,12 +138,13 @@ public class LibraryMainFrameModule extends JFrame {
             });
 
             btnHistory.addActionListener(e -> {
-                libraryBorrowHistoryModule.refreshTable();
+                libraryBorrowHistoryModule.refreshData();
                 cardLayout.show(contentPanel, "history");
                 titleLabel.setText("借阅记录");
             });
 
             btnDocSearch.addActionListener(e -> {
+                libraryDocumentSearchModule.refreshTable();
                 cardLayout.show(contentPanel, "docSearch");
                 titleLabel.setText("文献检索");
             });
@@ -156,26 +156,18 @@ public class LibraryMainFrameModule extends JFrame {
         // === 管理员 ===
         if (user.getRole() == 2) {
             libraryBookManageModule = new LibraryBookManageModule(controller);
-            libraryBookAddModule = new LibraryBookAddModule(controller);
             libraryDocumentManageModule = new LibraryDocumentManageModule(controller);
 
             contentPanel.add(libraryBookManageModule, "manage");
-            contentPanel.add(libraryBookAddModule, "add");
             contentPanel.add(libraryDocumentManageModule, "docManage");
 
             JToggleButton btnManage = createNavButton.apply("图书管理");
-            JToggleButton btnAdd = createNavButton.apply("新增书籍");
             JToggleButton btnDocManage = createNavButton.apply("文献管理");
 
             btnManage.addActionListener(e -> {
                 libraryBookManageModule.refreshTable();
                 cardLayout.show(contentPanel, "manage");
                 titleLabel.setText("图书管理");
-            });
-
-            btnAdd.addActionListener(e -> {
-                cardLayout.show(contentPanel, "add");
-                titleLabel.setText("新增书籍");
             });
 
             btnDocManage.addActionListener(e -> {
