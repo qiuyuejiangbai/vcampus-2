@@ -418,6 +418,8 @@ CREATE TABLE IF NOT EXISTS forum_posts (
     author_id INT NOT NULL,
     parent_post_id INT COMMENT '父回复ID（支持嵌套回复）',
     quote_post_id INT COMMENT '引用回复ID',
+    reply_level INT DEFAULT 0 COMMENT '回复层级：0-顶级回复，1-二级回复，2-三级回复等',
+    reply_path VARCHAR(500) COMMENT '回复路径，用于快速查询子回复（如：1/2/3）',
     like_count INT DEFAULT 0 COMMENT '点赞数',
     edit_count INT DEFAULT 0 COMMENT '编辑次数',
     edited_time TIMESTAMP NULL DEFAULT NULL COMMENT '最后编辑时间',
@@ -426,7 +428,16 @@ CREATE TABLE IF NOT EXISTS forum_posts (
     FOREIGN KEY (thread_id) REFERENCES forum_threads(thread_id) ON DELETE CASCADE,
     FOREIGN KEY (author_id) REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (parent_post_id) REFERENCES forum_posts(post_id) ON DELETE SET NULL,
-    FOREIGN KEY (quote_post_id) REFERENCES forum_posts(post_id) ON DELETE SET NULL
+    FOREIGN KEY (quote_post_id) REFERENCES forum_posts(post_id) ON DELETE SET NULL,
+    
+    -- 索引
+    INDEX idx_thread_id (thread_id),
+    INDEX idx_author_id (author_id),
+    INDEX idx_parent_post_id (parent_post_id),
+    INDEX idx_reply_level (reply_level),
+    INDEX idx_reply_path (reply_path),
+    INDEX idx_created_time (created_time),
+    INDEX idx_status (status)
 ) COMMENT='论坛回复表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 板块表
