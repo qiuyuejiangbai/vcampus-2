@@ -209,14 +209,14 @@ INSERT INTO forum_threads (title, content, author_id, section_id, category, is_e
 ('校园商店优惠活动', '本月校园商店文具用品八折优惠，需要购买学习用品的同学不要错过哦！', 1, 2, '活动通知', FALSE, 0, 45, 0, 0, FALSE, FALSE, 1, NOW() - INTERVAL 3 DAY, NULL);
 
 -- ========================================
--- 插入论坛回复（补充 like_count / 层级）
-INSERT INTO forum_posts (thread_id, content, author_id, parent_post_id, like_count, created_time) VALUES 
-(1, '系统界面很友好，功能很全面，点赞！', 5, NULL, 1, NOW() - INTERVAL 9 DAY),
-(1, '期待更多功能的上线，加油！', 6, NULL, 0, NOW() - INTERVAL 8 DAY),
-(2, '我在学习继承和多态时有些困惑，有同学能帮忙解答一下吗？', 7, NULL, 0, NOW() - INTERVAL 6 DAY),
-(2, '建议多做练习题，理论结合实践才能更好理解。', 8, 3, 0, NOW() - INTERVAL 6 DAY),
-(2, '可以参考一下《Java核心技术》这本书，讲得很详细。', 5, NULL, 1, NOW() - INTERVAL 5 DAY),
-(3, '《算法导论》确实是经典教材，值得深入学习！', 9, NULL, 0, NOW() - INTERVAL 5 DAY);
+-- 插入论坛回复（补充 like_count / 层级 / 路径）
+INSERT INTO forum_posts (thread_id, content, author_id, parent_post_id, reply_level, reply_path, like_count, created_time) VALUES 
+(1, '系统界面很友好，功能很全面，点赞！', 5, NULL, 0, '1', 1, NOW() - INTERVAL 9 DAY),
+(1, '期待更多功能的上线，加油！', 6, NULL, 0, '2', 0, NOW() - INTERVAL 8 DAY),
+(2, '我在学习继承和多态时有些困惑，有同学能帮忙解答一下吗？', 7, NULL, 0, '3', 0, NOW() - INTERVAL 6 DAY),
+(2, '建议多做练习题，理论结合实践才能更好理解。', 8, 3, 1, '3/4', 0, NOW() - INTERVAL 6 DAY),
+(2, '可以参考一下《Java核心技术》这本书，讲得很详细。', 5, NULL, 0, '5', 1, NOW() - INTERVAL 5 DAY),
+(3, '《算法导论》确实是经典教材，值得深入学习！', 9, NULL, 0, '6', 0, NOW() - INTERVAL 5 DAY);
 
 -- 标签与主题-标签
 INSERT INTO forum_tags (tag_name) VALUES ('Java'), ('学习'), ('公告'), ('活动'), ('图书');

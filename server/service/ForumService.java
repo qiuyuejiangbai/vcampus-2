@@ -5,6 +5,7 @@ import common.vo.ThreadVO;
 import server.util.DatabaseUtil;
 import common.vo.ForumSectionVO;
 import server.dao.ForumLikeDAO;
+import server.service.PostService;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.List;
 public class ForumService {
     
     private ForumLikeDAO likeDAO = new ForumLikeDAO();
+    private PostService postService = new PostService();
 
     public List<ThreadVO> getAllThreads() {
         return getAllThreads(null);
@@ -133,53 +135,8 @@ public class ForumService {
     }
     
     public List<PostVO> getPostsByThreadId(int threadId, Integer currentUserId) {
-        System.out.println("[Forum][Server][DAO] 准备执行SQL: 查询回复 threadId=" + threadId);
-        List<PostVO> list = new ArrayList<PostVO>();
-        String sql = "SELECT p.post_id, p.thread_id, p.content, p.author_id, p.created_time, p.status, p.like_count, " +
-                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id " +
-                "FROM forum_posts p " +
-                "LEFT JOIN users u ON p.author_id = u.user_id " +
-                "LEFT JOIN students s ON s.user_id = u.user_id " +
-                "LEFT JOIN teachers te ON te.user_id = u.user_id " +
-                "LEFT JOIN admins a ON a.user_id = u.user_id " +
-                "WHERE p.thread_id = ? AND p.status = 1 ORDER BY p.created_time ASC";
-
-        Connection conn = null; PreparedStatement ps = null; ResultSet rs = null;
-        try {
-            conn = DatabaseUtil.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, threadId);
-            System.out.println("[Forum][Server][DAO] 参数绑定完成，开始执行查询");
-            rs = ps.executeQuery();
-            while (rs.next()) {
-                PostVO vo = new PostVO();
-                vo.setPostId(rs.getInt("post_id"));
-                vo.setThreadId(rs.getInt("thread_id"));
-                vo.setContent(rs.getString("content"));
-                vo.setAuthorId((Integer) rs.getObject("author_id"));
-                vo.setCreatedTime(rs.getTimestamp("created_time"));
-                vo.setStatus((Integer) rs.getObject("status"));
-                vo.setLikeCount((Integer) rs.getObject("like_count"));
-                vo.setAuthorName(rs.getString("author_name"));
-                vo.setAuthorLoginId(rs.getString("author_login_id"));
-                
-                // 设置用户点赞状态
-                if (currentUserId != null) {
-                    boolean isLiked = likeDAO.isLiked("post", vo.getPostId(), currentUserId);
-                    vo.setIsLiked(isLiked);
-                } else {
-                    vo.setIsLiked(false);
-                }
-                
-                list.add(vo);
-            }
-            System.out.println("[Forum][Server][DAO] 回复查询结束，返回条数=" + list.size());
-        } catch (SQLException e) {
-            System.err.println("查询回复失败: " + e.getMessage());
-        } finally {
-            DatabaseUtil.closeAll(conn, ps, rs);
-        }
-        return list;
+        System.out.println("[Forum][Service] 获取主题回复: threadId=" + threadId + ", currentUserId=" + currentUserId);
+        return postService.getPostsByThreadId(threadId, currentUserId);
     }
 
     /**
@@ -244,30 +201,8 @@ public class ForumService {
     }
 
     public Integer createPost(PostVO post, int authorUserId) {
-        String sql = "INSERT INTO forum_posts (thread_id, content, author_id, parent_post_id, like_count, created_time, status) " +
-                "VALUES (?, ?, ?, NULL, 0, NOW(), 1)";
-        Connection conn = null; PreparedStatement ps = null; ResultSet rs = null;
-        try {
-            conn = DatabaseUtil.getConnection();
-            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setInt(1, post.getThreadId());
-            ps.setString(2, post.getContent());
-            ps.setInt(3, authorUserId);
-            int affected = ps.executeUpdate();
-            if (affected > 0) {
-                rs = ps.getGeneratedKeys();
-                if (rs.next()) {
-                    // 同步更新主题回复数与最后回复时间
-                    updateThreadReplyMeta(post.getThreadId());
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("创建回复失败: " + e.getMessage());
-        } finally {
-            DatabaseUtil.closeAll(conn, ps, rs);
-        }
-        return null;
+        System.out.println("[Forum][Service] 创建主题回复: threadId=" + post.getThreadId() + ", authorUserId=" + authorUserId);
+        return postService.createThreadReply(post, authorUserId);
     }
 
     private void updateThreadReplyMeta(int threadId) {
@@ -344,6 +279,133 @@ public class ForumService {
      */
     public int getPostLikeCount(int postId) {
         return likeDAO.getLikeCount("post", postId);
+    }
+    
+    // ========================================
+    // 新增的回复功能方法
+    // ========================================
+    
+    /**
+     * 创建对回复的回复
+     * @param post 回复对象
+     * @param parentPostId 父回复ID
+     * @param authorUserId 作者用户ID
+     * @return 创建的回复ID，失败返回null
+     */
+    public Integer createSubReply(PostVO post, Integer parentPostId, Integer authorUserId) {
+        System.out.println("[Forum][Service] 创建子回复: parentPostId=" + parentPostId + ", authorUserId=" + authorUserId);
+        return postService.createSubReply(post, parentPostId, authorUserId);
+    }
+    
+    /**
+     * 创建引用回复
+     * @param post 回复对象
+     * @param quotePostId 被引用的回复ID
+     * @param authorUserId 作者用户ID
+     * @return 创建的回复ID，失败返回null
+     */
+    public Integer createQuoteReply(PostVO post, Integer quotePostId, Integer authorUserId) {
+        System.out.println("[Forum][Service] 创建引用回复: quotePostId=" + quotePostId + ", authorUserId=" + authorUserId);
+        return postService.createQuoteReply(post, quotePostId, authorUserId);
+    }
+    
+    /**
+     * 获取子回复
+     * @param parentPostId 父回复ID
+     * @return 子回复列表
+     */
+    public List<PostVO> getSubReplies(Integer parentPostId) {
+        return getSubReplies(parentPostId, null);
+    }
+    
+    /**
+     * 获取子回复（包含用户信息）
+     * @param parentPostId 父回复ID
+     * @param currentUserId 当前用户ID
+     * @return 子回复列表
+     */
+    public List<PostVO> getSubReplies(Integer parentPostId, Integer currentUserId) {
+        System.out.println("[Forum][Service] 获取子回复: parentPostId=" + parentPostId + ", currentUserId=" + currentUserId);
+        return postService.getSubReplies(parentPostId, currentUserId);
+    }
+    
+    /**
+     * 获取回复详情
+     * @param postId 回复ID
+     * @return 回复对象，不存在返回null
+     */
+    public PostVO getPostById(Integer postId) {
+        System.out.println("[Forum][Service] 获取回复详情: postId=" + postId);
+        return postService.getPostById(postId);
+    }
+    
+    /**
+     * 更新回复内容
+     * @param post 回复对象
+     * @param userId 用户ID（用于权限验证）
+     * @return 更新成功返回true
+     */
+    public boolean updatePost(PostVO post, Integer userId) {
+        System.out.println("[Forum][Service] 更新回复: postId=" + post.getPostId() + ", userId=" + userId);
+        return postService.updatePost(post, userId);
+    }
+    
+    /**
+     * 删除回复（软删除）
+     * @param postId 回复ID
+     * @param userId 用户ID（用于权限验证）
+     * @return 删除成功返回true
+     */
+    public boolean deletePost(Integer postId, Integer userId) {
+        System.out.println("[Forum][Service] 删除回复: postId=" + postId + ", userId=" + userId);
+        return postService.deletePost(postId, userId);
+    }
+    
+    /**
+     * 获取用户的回复列表
+     * @param authorId 作者ID
+     * @return 回复列表
+     */
+    public List<PostVO> getUserPosts(Integer authorId) {
+        System.out.println("[Forum][Service] 获取用户回复: authorId=" + authorId);
+        return postService.getUserPosts(authorId);
+    }
+    
+    /**
+     * 检查回复是否存在
+     * @param postId 回复ID
+     * @return 存在返回true
+     */
+    public boolean existsPost(Integer postId) {
+        return postService.existsPost(postId);
+    }
+    
+    /**
+     * 检查回复是否属于指定主题
+     * @param postId 回复ID
+     * @param threadId 主题ID
+     * @return 属于返回true
+     */
+    public boolean isPostBelongsToThread(Integer postId, Integer threadId) {
+        return postService.isPostBelongsToThread(postId, threadId);
+    }
+    
+    /**
+     * 获取回复的层级
+     * @param postId 回复ID
+     * @return 回复层级
+     */
+    public Integer getReplyLevel(Integer postId) {
+        return postService.getReplyLevel(postId);
+    }
+    
+    /**
+     * 获取回复的路径
+     * @param postId 回复ID
+     * @return 回复路径
+     */
+    public String getReplyPath(Integer postId) {
+        return postService.getReplyPath(postId);
     }
 }
 
