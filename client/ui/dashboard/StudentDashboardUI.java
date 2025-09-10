@@ -128,7 +128,7 @@ public class StudentDashboardUI extends JFrame {
         // 图书馆
         ModuleRegistry.register(
                 new client.ui.modules.LibraryModule(
-                        ModuleKeys.STUDENT_LIBRARY, "图书馆", null
+                        ModuleKeys.STUDENT_LIBRARY, "图书馆", "resources/icons/LibraryIcon.png"
                 )
         );
 
