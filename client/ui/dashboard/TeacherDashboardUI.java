@@ -125,7 +125,7 @@ public class TeacherDashboardUI extends JFrame {
         // 注册图书馆模块
         ModuleRegistry.register(
                 new client.ui.modules.LibraryModule(
-                        ModuleKeys.TEACHER_LIBRARY, "图书馆", null
+                        ModuleKeys.TEACHER_LIBRARY, "图书馆", "resources/icons/LibraryIcon.png"
                 )
         );
 

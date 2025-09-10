@@ -125,7 +125,7 @@ public class AdminDashboardUI extends JFrame {
         // 注册管理员图书馆模块
         ModuleRegistry.register(
                 new client.ui.modules.LibraryModule(
-                        ModuleKeys.ADMIN_LIBRARY, "图书馆", null
+                        ModuleKeys.ADMIN_LIBRARY, "图书馆", "resources/icons/LibraryIcon.png"
                 )
         );
 
