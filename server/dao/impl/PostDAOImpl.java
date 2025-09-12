@@ -616,6 +616,34 @@ public class PostDAOImpl implements PostDAO {
     }
     
     /**
+     * 获取回复的子回复数量
+     * @param postId 回复ID
+     * @return 子回复数量
+     */
+    private int getReplyCount(Integer postId) {
+        String sql = "SELECT COUNT(*) FROM forum_posts WHERE parent_post_id = ? AND status = 1";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        
+        try {
+            conn = DatabaseUtil.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, postId);
+            rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("获取回复数量失败: " + e.getMessage());
+        } finally {
+            DatabaseUtil.closeAll(conn, ps, rs);
+        }
+        return 0;
+    }
+    
+    /**
      * 检查用户是否已点赞回复
      * @param postId 回复ID
      * @param userId 用户ID
@@ -661,9 +689,16 @@ public class PostDAOImpl implements PostDAO {
         post.setQuotePostId((Integer) rs.getObject("quote_post_id"));
         post.setReplyLevel((Integer) rs.getObject("reply_level"));
         post.setReplyPath(rs.getString("reply_path"));
+        
         post.setCreatedTime(rs.getTimestamp("created_time"));
+        
         post.setStatus((Integer) rs.getObject("status"));
         post.setLikeCount((Integer) rs.getObject("like_count"));
+        
+        // 计算回复数（子回复数量）
+        int replyCount = getReplyCount(post.getPostId());
+        post.setReplyCount(replyCount);
+        
         post.setAuthorName(rs.getString("author_name"));
         post.setAuthorLoginId(rs.getString("author_login_id"));
         return post;

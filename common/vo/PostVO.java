@@ -21,6 +21,7 @@ public class PostVO implements Serializable {
     private Timestamp createdTime;  // 创建时间
     private Integer status;         // 状态：0-已删除，1-正常
     private Integer likeCount;      // 点赞数
+    private Integer replyCount;     // 回复数（子回复数量）
     private Boolean isLiked;        // 当前用户是否已点赞
     
     // 关联信息（用于显示）
@@ -97,6 +98,14 @@ public class PostVO implements Serializable {
     
     public void setLikeCount(Integer likeCount) {
         this.likeCount = likeCount;
+    }
+    
+    public Integer getReplyCount() {
+        return replyCount;
+    }
+    
+    public void setReplyCount(Integer replyCount) {
+        this.replyCount = replyCount;
     }
     
     public Boolean getIsLiked() {
@@ -279,6 +288,8 @@ public class PostVO implements Serializable {
                 ", replyPath='" + replyPath + '\'' +
                 ", createdTime=" + createdTime +
                 ", status=" + status +
+                ", likeCount=" + likeCount +
+                ", replyCount=" + replyCount +
                 ", authorName='" + authorName + '\'' +
                 ", authorLoginId='" + authorLoginId + '\'' +
                 ", threadTitle='" + threadTitle + '\'' +

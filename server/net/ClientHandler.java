@@ -217,6 +217,14 @@ public class ClientHandler implements Runnable {
                     System.out.println("[Forum][Server] 收到请求: TOGGLE_POST_LIKE_REQUEST");
                     handleTogglePostLike(request);
                     break;
+                case CREATE_SUB_REPLY_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: CREATE_SUB_REPLY_REQUEST");
+                    handleCreateSubReply(request);
+                    break;
+                case CREATE_QUOTE_REPLY_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: CREATE_QUOTE_REPLY_REQUEST");
+                    handleCreateQuoteReply(request);
+                    break;
 
 
 
@@ -697,6 +705,78 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             System.err.println("处理回复点赞异常: " + e.getMessage());
             sendErrorMessage("点赞操作异常: " + e.getMessage());
+        }
+    }
+
+    private void handleCreateSubReply(Message request) {
+        try {
+            if (!isLoggedIn()) {
+                sendUnauthorizedMessage();
+                return;
+            }
+            
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> requestData = (java.util.Map<String, Object>) request.getData();
+            common.vo.PostVO post = (common.vo.PostVO) requestData.get("post");
+            Integer parentPostId = (Integer) requestData.get("parentPostId");
+            
+            if (post == null || parentPostId == null) {
+                sendErrorMessage("无效的子回复数据");
+                return;
+            }
+            
+            System.out.println("[Forum][Server] 处理创建子回复: parentPostId=" + parentPostId + ", userId=" + currentUserId);
+            ForumService forumService = new ForumService();
+            Integer newId = forumService.createSubReply(post, parentPostId, currentUserId);
+            
+            if (newId != null) {
+                post.setPostId(newId);
+                Message response = new Message(MessageType.CREATE_SUB_REPLY_SUCCESS, StatusCode.CREATED, post, "创建子回复成功");
+                sendMessage(response);
+                System.out.println("[Forum][Server] 子回复创建成功: postId=" + newId);
+            } else {
+                Message response = new Message(MessageType.ERROR, StatusCode.INTERNAL_ERROR, null, "创建子回复失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("处理创建子回复异常: " + e.getMessage());
+            sendErrorMessage("创建子回复异常: " + e.getMessage());
+        }
+    }
+
+    private void handleCreateQuoteReply(Message request) {
+        try {
+            if (!isLoggedIn()) {
+                sendUnauthorizedMessage();
+                return;
+            }
+            
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> requestData = (java.util.Map<String, Object>) request.getData();
+            common.vo.PostVO post = (common.vo.PostVO) requestData.get("post");
+            Integer quotePostId = (Integer) requestData.get("quotePostId");
+            
+            if (post == null || quotePostId == null) {
+                sendErrorMessage("无效的引用回复数据");
+                return;
+            }
+            
+            System.out.println("[Forum][Server] 处理创建引用回复: quotePostId=" + quotePostId + ", userId=" + currentUserId);
+            ForumService forumService = new ForumService();
+            Integer newId = forumService.createQuoteReply(post, quotePostId, currentUserId);
+            
+            if (newId != null) {
+                post.setPostId(newId);
+                Message response = new Message(MessageType.CREATE_QUOTE_REPLY_SUCCESS, StatusCode.CREATED, post, "创建引用回复成功");
+                sendMessage(response);
+                System.out.println("[Forum][Server] 引用回复创建成功: postId=" + newId);
+            } else {
+                Message response = new Message(MessageType.ERROR, StatusCode.INTERNAL_ERROR, null, "创建引用回复失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("处理创建引用回复异常: " + e.getMessage());
+            sendErrorMessage("创建引用回复异常: " + e.getMessage());
         }
     }
 

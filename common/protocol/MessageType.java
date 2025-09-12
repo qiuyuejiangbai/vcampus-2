@@ -176,6 +176,10 @@ public enum MessageType {
     TOGGLE_THREAD_LIKE_SUCCESS, // 切换主题点赞成功
     TOGGLE_POST_LIKE_REQUEST,   // 切换回复点赞请求
     TOGGLE_POST_LIKE_SUCCESS,   // 切换回复点赞成功
+    CREATE_SUB_REPLY_REQUEST,   // 创建子回复请求
+    CREATE_SUB_REPLY_SUCCESS,   // 创建子回复成功
+    CREATE_QUOTE_REPLY_REQUEST, // 创建引用回复请求
+    CREATE_QUOTE_REPLY_SUCCESS, // 创建引用回复成功
     
     // 文件资源模块
     GET_COURSE_FILES_REQUEST,   // 获取课程文件请求
