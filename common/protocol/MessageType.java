@@ -65,6 +65,8 @@ public enum MessageType {
     GET_ALL_ENROLLMENTS_SUCCESS, // 获取所有选课记录成功
     GET_STUDENT_ENROLLMENTS_REQUEST, // 获取学生选课记录请求
     GET_STUDENT_ENROLLMENTS_SUCCESS, // 获取学生选课记录成功
+    GET_ENROLLMENTS_BY_COURSE_REQUEST, // 获取指定课程的选课记录请求
+    GET_ENROLLMENTS_BY_COURSE_SUCCESS, // 获取指定课程的选课记录成功
 
     // ================= 图书馆模块 =================
 
