@@ -7,6 +7,7 @@ import common.protocol.MessageType;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
@@ -75,10 +76,13 @@ public class CourseTablePanel extends JPanel {
 
     private void setupLayout() {
         setLayout(new BorderLayout());
+        setBackground(UITheme.WHITE);
         
         // 创建主面板，使用垂直BoxLayout
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBackground(UITheme.WHITE);
+        mainPanel.setBorder(UITheme.createEmptyBorder(0, 0, 0, 0));
         
         // 添加表格面板
         mainPanel.add(scrollTablePane);
@@ -115,19 +119,54 @@ public class CourseTablePanel extends JPanel {
         courseTable.getColumnModel().getColumn(5).setPreferredWidth(100); // 状态
         
         // 设置表格样式
-        courseTable.setRowHeight(25);
+        courseTable.setRowHeight(UITheme.TABLE_ROW_HEIGHT);
         courseTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        courseTable.setGridColor(Color.LIGHT_GRAY);
+        courseTable.setGridColor(UITheme.LIGHT_GRAY);
         courseTable.setShowGrid(true);
+        courseTable.setBackground(UITheme.WHITE);
+        courseTable.setFont(UITheme.CONTENT_FONT);
+        courseTable.setSelectionBackground(UITheme.VERY_LIGHT_GREEN);
+        courseTable.setSelectionForeground(UITheme.DARK_GRAY);
         
         // 设置表头样式
-        courseTable.getTableHeader().setReorderingAllowed(false);
-        courseTable.getTableHeader().setResizingAllowed(true);
+        JTableHeader header = courseTable.getTableHeader();
+        header.setReorderingAllowed(false);
+        header.setResizingAllowed(true);
+        header.setFont(UITheme.SUBTITLE_FONT);
+        header.setBackground(UITheme.PRIMARY_GREEN);
+        header.setForeground(UITheme.WHITE);
+        header.setPreferredSize(new Dimension(header.getWidth(), 50));
+        
+        // 自定义表格渲染器
+        courseTable.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                
+                // 设置字体和颜色
+                c.setFont(UITheme.CONTENT_FONT);
+                
+                if (isSelected) {
+                    c.setBackground(UITheme.VERY_LIGHT_GREEN);
+                    c.setForeground(UITheme.DARK_GRAY);
+                } else {
+                    c.setBackground(row % 2 == 0 ? UITheme.WHITE : new Color(248, 250, 252));
+                    c.setForeground(UITheme.DARK_GRAY);
+                }
+                
+                // 设置边框
+                setBorder(BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_MEDIUM, UITheme.PADDING_SMALL, UITheme.PADDING_MEDIUM));
+                
+                return c;
+            }
+        });
         
         // 应用滚动样式
         scrollTablePane = new JScrollPane(courseTable);
         scrollTablePane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollTablePane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollTablePane.setBorder(UITheme.createCardBorder());
+        scrollTablePane.setBackground(UITheme.WHITE);
         
         // 创建教学班卡片面板
         courseClassCardPanel = new CourseClassCardPanel();

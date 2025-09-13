@@ -23,17 +23,15 @@ public class CourseClassCard extends JPanel {
         initComponents();
         setupLayout();
         updateCardContent();
+        setupHoverEffects();
     }
     
     private void initComponents() {
-        setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1),
-            BorderFactory.createEmptyBorder(10, 12, 10, 12)
-        ));
-        setBackground(Color.WHITE);
-        setPreferredSize(new Dimension(350, 250));
-        setMinimumSize(new Dimension(350, 250));
-        setMaximumSize(new Dimension(350, 250));
+        setBorder(UITheme.createCardBorder());
+        setBackground(UITheme.WHITE);
+        setPreferredSize(new Dimension(380, 280));
+        setMinimumSize(new Dimension(380, 280));
+        setMaximumSize(new Dimension(380, 280));
         
         // 创建标签
         classInfoLabel = new JLabel();
@@ -43,31 +41,39 @@ public class CourseClassCard extends JPanel {
         capacityLabel = new JLabel();
         enrolledCountLabel = new JLabel();
         
-        // 设置字体
-        Font titleFont = new Font("微软雅黑", Font.BOLD, 16);
-        Font contentFont = new Font("微软雅黑", Font.PLAIN, 14);
+        // 设置字体和颜色
+        classInfoLabel.setFont(UITheme.SUBTITLE_FONT);
+        classInfoLabel.setForeground(UITheme.PRIMARY_GREEN);
         
-        classInfoLabel.setFont(titleFont);
-        classInfoLabel.setForeground(new Color(51, 51, 51));
+        teacherLabel.setFont(UITheme.CONTENT_FONT);
+        teacherLabel.setForeground(UITheme.DARK_GRAY);
         
-        teacherLabel.setFont(contentFont);
-        classTimeLabel.setFont(contentFont);
-        locationLabel.setFont(contentFont);
-        capacityLabel.setFont(contentFont);
-        enrolledCountLabel.setFont(contentFont);
+        classTimeLabel.setFont(UITheme.CONTENT_FONT);
+        classTimeLabel.setForeground(UITheme.DARK_GRAY);
+        
+        locationLabel.setFont(UITheme.CONTENT_FONT);
+        locationLabel.setForeground(UITheme.DARK_GRAY);
+        
+        capacityLabel.setFont(UITheme.CONTENT_FONT);
+        capacityLabel.setForeground(UITheme.DARK_GRAY);
+        
+        enrolledCountLabel.setFont(UITheme.CONTENT_FONT);
+        enrolledCountLabel.setForeground(UITheme.MEDIUM_GRAY);
     }
     
     private void setupLayout() {
-        setLayout(new BorderLayout(0, 6));
+        setLayout(new BorderLayout(0, UITheme.PADDING_MEDIUM));
         
         // 顶部：教学班信息
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         topPanel.setOpaque(false);
+        topPanel.setBorder(UITheme.createEmptyBorder(0, 0, UITheme.PADDING_SMALL, 0));
         topPanel.add(classInfoLabel);
         
         // 中间：详细信息
-        JPanel detailPanel = new JPanel(new GridLayout(2, 2, 10, 6));
+        JPanel detailPanel = new JPanel(new GridLayout(2, 2, UITheme.PADDING_MEDIUM, UITheme.PADDING_SMALL));
         detailPanel.setOpaque(false);
+        detailPanel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_SMALL, 0, UITheme.PADDING_SMALL, 0));
         
         detailPanel.add(teacherLabel);
         detailPanel.add(classTimeLabel);
@@ -75,13 +81,36 @@ public class CourseClassCard extends JPanel {
         detailPanel.add(capacityLabel);
         
         // 底部：选课信息
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         bottomPanel.setOpaque(false);
+        bottomPanel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_SMALL, 0, 0, 0));
         bottomPanel.add(enrolledCountLabel);
         
         add(topPanel, BorderLayout.NORTH);
         add(detailPanel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
+    }
+    
+    private void setupHoverEffects() {
+        // 添加鼠标悬停效果
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                setBorder(UITheme.createRoundedBorder(UITheme.PRIMARY_GREEN, 2, UITheme.RADIUS_MEDIUM));
+                setBackground(UITheme.VERY_LIGHT_GREEN);
+                repaint();
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                setBorder(UITheme.createCardBorder());
+                setBackground(UITheme.WHITE);
+                repaint();
+            }
+        });
+        
+        // 设置鼠标指针
+        setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
     
     private void updateCardContent() {

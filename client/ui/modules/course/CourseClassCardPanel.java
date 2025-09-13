@@ -28,30 +28,65 @@ public class CourseClassCardPanel extends JPanel {
     
     private void initComponents() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createTitledBorder("教学班信息"));
-        setPreferredSize(new Dimension(0, 300));
-        setMinimumSize(new Dimension(0, 300));
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
+        setBackground(UITheme.WHITE);
+        setPreferredSize(new Dimension(0, 320));
+        setMinimumSize(new Dimension(0, 320));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 320));
+        
+        // 创建标题面板
+        JPanel titlePanel = createTitlePanel();
         
         // 创建卡片容器
-        cardContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        cardContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, UITheme.PADDING_MEDIUM, UITheme.PADDING_MEDIUM));
         cardContainer.setOpaque(false);
-        cardContainer.setPreferredSize(new Dimension(0, 250)); // 确保容器有足够高度
+        cardContainer.setPreferredSize(new Dimension(0, 280));
+        cardContainer.setBackground(UITheme.WHITE);
         
         // 创建滚动面板
         scrollPane = new JScrollPane(cardContainer);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setBorder(null);
+        scrollPane.setBorder(UITheme.createEmptyBorder(0, 0, 0, 0));
         scrollPane.getViewport().setOpaque(false);
         scrollPane.setOpaque(false);
+        scrollPane.setBackground(UITheme.WHITE);
+        
+        // 设置滚动条样式
+        JScrollBar horizontalScrollBar = scrollPane.getHorizontalScrollBar();
+        horizontalScrollBar.setPreferredSize(new Dimension(0, 8));
+        horizontalScrollBar.setBackground(UITheme.LIGHT_GRAY);
+        horizontalScrollBar.setForeground(UITheme.PRIMARY_GREEN);
+        
+        // 添加组件
+        add(titlePanel, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
         
         // 初始状态隐藏面板
         setVisible(false);
     }
     
+    private JPanel createTitlePanel() {
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titlePanel.setBackground(UITheme.WHITE);
+        titlePanel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_MEDIUM, UITheme.PADDING_MEDIUM, UITheme.PADDING_SMALL, UITheme.PADDING_MEDIUM));
+        
+        JLabel titleLabel = new JLabel("教学班信息");
+        titleLabel.setFont(UITheme.SUBTITLE_FONT);
+        titleLabel.setForeground(UITheme.PRIMARY_GREEN);
+        
+        // 添加装饰性图标
+        JLabel iconLabel = new JLabel("📚");
+        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        iconLabel.setBorder(UITheme.createEmptyBorder(0, 0, 0, UITheme.PADDING_SMALL));
+        
+        titlePanel.add(iconLabel);
+        titlePanel.add(titleLabel);
+        
+        return titlePanel;
+    }
+    
     private void setupLayout() {
-        add(scrollPane, BorderLayout.CENTER);
+        // 布局已在initComponents中设置
     }
     
     /**
