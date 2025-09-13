@@ -19,6 +19,9 @@ public class CourseTablePanel extends JPanel {
     private List<CourseVO> courseList;   // 课程数据列表
     private final ServerConnection serverConnection; // 服务器连接
 
+    // 课程教学班卡片组件
+    private CourseClassCardPanel courseClassCardPanel;  // 教学班卡片面板
+
     public CourseTablePanel() {
         this.serverConnection = ServerConnection.getInstance();
         this.courseList = new ArrayList<>();
@@ -37,6 +40,9 @@ public class CourseTablePanel extends JPanel {
                 if (selectedRow >= 0 && selectedRow < courseList.size()) {
                     selectedCourse = courseList.get(selectedRow);
                     System.out.println("选中课程: " + selectedCourse.getCourseName());
+                    showCourseClasses(selectedCourse.getCourseCode());
+                } else {
+                    hideCourseClasses();
                 }
             }
         });
@@ -56,6 +62,10 @@ public class CourseTablePanel extends JPanel {
                     List<CourseVO> courses = (List<CourseVO>) message.getData();
                     courseList.clear();
                     courseList.addAll(courses);
+                    
+                    // 按课程代码分组教学班数据
+                    courseClassCardPanel.groupCoursesByCode(courses);
+                    
                     updateTableData();
                     System.out.println("成功加载 " + courses.size() + " 门课程");
                 }
@@ -65,12 +75,26 @@ public class CourseTablePanel extends JPanel {
 
     private void setupLayout() {
         setLayout(new BorderLayout());
-        add(scrollTablePane, BorderLayout.CENTER);
+        
+        // 创建主面板，使用垂直BoxLayout
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        
+        // 添加表格面板
+        mainPanel.add(scrollTablePane);
+        
+        // 添加教学班卡片面板，设置固定高度
+        courseClassCardPanel.setPreferredSize(new Dimension(0, 300));
+        courseClassCardPanel.setMinimumSize(new Dimension(0, 300));
+        courseClassCardPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
+        mainPanel.add(courseClassCardPanel);
+        
+        add(mainPanel, BorderLayout.CENTER);
     }
 
     private void initComponents() {
         // 更新列定义以匹配数据库字段
-        String[] columnNames = {"课程代码", "课程名称", "学分", "开课院系", "任课教师", "学期", "上课时间", "上课地点", "容量", "已选人数", "状态"};
+        String[] columnNames = {"课程代码", "课程名称", "学分", "开课院系", "学期", "状态"};
         
         // 创建不可编辑的表格模型
         tableModel = new DefaultTableModel(columnNames, 0) {
@@ -83,17 +107,12 @@ public class CourseTablePanel extends JPanel {
         courseTable = new JTable(tableModel);
         
         // 设置列宽
-        courseTable.getColumnModel().getColumn(0).setPreferredWidth(100); // 课程代码
-        courseTable.getColumnModel().getColumn(1).setPreferredWidth(200); // 课程名称
-        courseTable.getColumnModel().getColumn(2).setPreferredWidth(60);  // 学分
-        courseTable.getColumnModel().getColumn(3).setPreferredWidth(120); // 开课院系
-        courseTable.getColumnModel().getColumn(4).setPreferredWidth(100); // 任课教师
-        courseTable.getColumnModel().getColumn(5).setPreferredWidth(80);  // 学期
-        courseTable.getColumnModel().getColumn(6).setPreferredWidth(150); // 上课时间
-        courseTable.getColumnModel().getColumn(7).setPreferredWidth(120); // 上课地点
-        courseTable.getColumnModel().getColumn(8).setPreferredWidth(60);  // 容量
-        courseTable.getColumnModel().getColumn(9).setPreferredWidth(80);  // 已选人数
-        courseTable.getColumnModel().getColumn(10).setPreferredWidth(80); // 状态
+        courseTable.getColumnModel().getColumn(0).setPreferredWidth(120); // 课程代码
+        courseTable.getColumnModel().getColumn(1).setPreferredWidth(250); // 课程名称
+        courseTable.getColumnModel().getColumn(2).setPreferredWidth(80);  // 学分
+        courseTable.getColumnModel().getColumn(3).setPreferredWidth(150); // 开课院系
+        courseTable.getColumnModel().getColumn(4).setPreferredWidth(100); // 学期
+        courseTable.getColumnModel().getColumn(5).setPreferredWidth(100); // 状态
         
         // 设置表格样式
         courseTable.setRowHeight(25);
@@ -109,6 +128,9 @@ public class CourseTablePanel extends JPanel {
         scrollTablePane = new JScrollPane(courseTable);
         scrollTablePane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollTablePane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        
+        // 创建教学班卡片面板
+        courseClassCardPanel = new CourseClassCardPanel();
     }
     
     /**
@@ -166,12 +188,7 @@ public class CourseTablePanel extends JPanel {
                 course.getCourseName(),
                 course.getCredits(),
                 course.getDepartment(),
-                course.getTeacherName(),
                 course.getSemester(),
-                course.getClassTime(),
-                course.getLocation(),
-                course.getCapacity(),
-                course.getEnrolledCount(),
                 course.getStatusName()
             };
             tableModel.addRow(rowData);
@@ -258,5 +275,25 @@ public class CourseTablePanel extends JPanel {
      */
     public JScrollPane getScrollPane() {
         return scrollTablePane;
+    }
+    
+    /**
+     * 显示指定课程的教学班信息
+     * @param courseCode 课程代码
+     */
+    private void showCourseClasses(String courseCode) {
+        if (courseCode != null && courseClassCardPanel.hasCourseClasses(courseCode)) {
+            List<CourseVO> classes = courseClassCardPanel.getCourseClasses(courseCode);
+            courseClassCardPanel.showCourseClasses(courseCode, classes);
+        } else {
+            hideCourseClasses();
+        }
+    }
+    
+    /**
+     * 隐藏教学班信息
+     */
+    private void hideCourseClasses() {
+        courseClassCardPanel.hideCourseClasses();
     }
 }
