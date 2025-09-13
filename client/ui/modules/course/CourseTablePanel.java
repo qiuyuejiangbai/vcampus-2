@@ -72,6 +72,67 @@ public class CourseTablePanel extends JPanel {
                 }
             });
         });
+        
+        // 设置课程更新成功响应监听器
+        serverConnection.setMessageListener(MessageType.UPDATE_COURSE_SUCCESS, message -> {
+            SwingUtilities.invokeLater(() -> {
+                if (message.getData() instanceof CourseVO) {
+                    CourseVO updatedCourse = (CourseVO) message.getData();
+                    System.out.println("课程更新成功: " + updatedCourse.getCourseName());
+                    
+                    // 更新本地课程列表
+                    for (int i = 0; i < courseList.size(); i++) {
+                        if (courseList.get(i).getCourseId().equals(updatedCourse.getCourseId())) {
+                            courseList.set(i, updatedCourse);
+                            break;
+                        }
+                    }
+                    
+                    // 更新教学班卡片面板的数据
+                    courseClassCardPanel.groupCoursesByCode(courseList);
+                    
+                    // 刷新表格显示
+                    updateTableData();
+                    
+                    // 刷新卡片显示
+                    courseClassCardPanel.refreshCards();
+                    
+                    // 如果当前选中的课程被更新，刷新教学班显示
+                    if (selectedCourse != null && selectedCourse.getCourseId().equals(updatedCourse.getCourseId())) {
+                        selectedCourse = updatedCourse;
+                        showCourseClasses(selectedCourse.getCourseCode());
+                    }
+                }
+            });
+        });
+        
+        // 设置课程删除成功响应监听器
+        serverConnection.setMessageListener(MessageType.DELETE_COURSE_SUCCESS, message -> {
+            SwingUtilities.invokeLater(() -> {
+                if (message.getData() instanceof Integer) {
+                    Integer deletedCourseId = (Integer) message.getData();
+                    System.out.println("课程删除成功，ID: " + deletedCourseId);
+                    
+                    // 从本地课程列表中移除删除的课程
+                    courseList.removeIf(course -> course.getCourseId().equals(deletedCourseId));
+                    
+                    // 从教学班卡片面板中移除对应的卡片
+                    courseClassCardPanel.removeCourseCard(deletedCourseId);
+                    
+                    // 更新教学班卡片面板的数据
+                    courseClassCardPanel.groupCoursesByCode(courseList);
+                    
+                    // 刷新表格显示
+                    updateTableData();
+                    
+                    // 如果当前选中的课程被删除，隐藏教学班显示
+                    if (selectedCourse != null && selectedCourse.getCourseId().equals(deletedCourseId)) {
+                        selectedCourse = null;
+                        hideCourseClasses();
+                    }
+                }
+            });
+        });
     }
 
     private void setupLayout() {
@@ -88,9 +149,9 @@ public class CourseTablePanel extends JPanel {
         mainPanel.add(scrollTablePane);
         
         // 添加教学班卡片面板，设置固定高度
-        courseClassCardPanel.setPreferredSize(new Dimension(0, 300));
-        courseClassCardPanel.setMinimumSize(new Dimension(0, 300));
-        courseClassCardPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
+        courseClassCardPanel.setPreferredSize(new Dimension(0, 360)); // 增加高度以适应新的卡片高度
+        courseClassCardPanel.setMinimumSize(new Dimension(0, 360));
+        courseClassCardPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 360));
         mainPanel.add(courseClassCardPanel);
         
         add(mainPanel, BorderLayout.CENTER);

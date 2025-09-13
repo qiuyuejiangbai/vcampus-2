@@ -1,6 +1,9 @@
  package client.ui.modules.course;
 
 import common.vo.CourseVO;
+import client.net.ServerConnection;
+import common.protocol.Message;
+import common.protocol.MessageType;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,21 +20,26 @@ public class CourseClassCard extends JPanel {
     private JLabel capacityLabel;
     private JLabel enrolledCountLabel;
     private JLabel classInfoLabel;
+    private JButton editButton;
+    private JButton deleteButton;
+    private CourseClassCardPanel parentPanel;
     
-    public CourseClassCard(CourseVO course) {
+    public CourseClassCard(CourseVO course, CourseClassCardPanel parentPanel) {
         this.course = course;
+        this.parentPanel = parentPanel;
         initComponents();
         setupLayout();
         updateCardContent();
         setupHoverEffects();
+        setupButtonEvents();
     }
     
     private void initComponents() {
         setBorder(UITheme.createCardBorder());
         setBackground(UITheme.WHITE);
-        setPreferredSize(new Dimension(380, 280));
-        setMinimumSize(new Dimension(380, 280));
-        setMaximumSize(new Dimension(380, 280));
+        setPreferredSize(new Dimension(380, 320)); // 增加高度以容纳按钮
+        setMinimumSize(new Dimension(380, 320));
+        setMaximumSize(new Dimension(380, 320));
         
         // 创建标签
         classInfoLabel = new JLabel();
@@ -40,6 +48,10 @@ public class CourseClassCard extends JPanel {
         locationLabel = new JLabel();
         capacityLabel = new JLabel();
         enrolledCountLabel = new JLabel();
+        
+        // 创建按钮
+        editButton = new JButton("编辑");
+        deleteButton = new JButton("删除");
         
         // 设置字体和颜色
         classInfoLabel.setFont(UITheme.SUBTITLE_FONT);
@@ -59,6 +71,17 @@ public class CourseClassCard extends JPanel {
         
         enrolledCountLabel.setFont(UITheme.CONTENT_FONT);
         enrolledCountLabel.setForeground(UITheme.MEDIUM_GRAY);
+        
+        // 设置按钮样式
+        UITheme.styleButton(editButton);
+        editButton.setPreferredSize(new Dimension(60, 30));
+        editButton.setBackground(UITheme.PRIMARY_GREEN);
+        editButton.setForeground(UITheme.WHITE);
+        
+        UITheme.styleButton(deleteButton);
+        deleteButton.setPreferredSize(new Dimension(60, 30));
+        deleteButton.setBackground(new Color(220, 53, 69)); // 红色
+        deleteButton.setForeground(UITheme.WHITE);
     }
     
     private void setupLayout() {
@@ -80,11 +103,24 @@ public class CourseClassCard extends JPanel {
         detailPanel.add(locationLabel);
         detailPanel.add(capacityLabel);
         
-        // 底部：选课信息
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        // 底部：选课信息和按钮
+        JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.setOpaque(false);
         bottomPanel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_SMALL, 0, 0, 0));
-        bottomPanel.add(enrolledCountLabel);
+        
+        // 选课信息
+        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        infoPanel.setOpaque(false);
+        infoPanel.add(enrolledCountLabel);
+        
+        // 按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, UITheme.PADDING_SMALL, 0));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(editButton);
+        buttonPanel.add(deleteButton);
+        
+        bottomPanel.add(infoPanel, BorderLayout.WEST);
+        bottomPanel.add(buttonPanel, BorderLayout.EAST);
         
         add(topPanel, BorderLayout.NORTH);
         add(detailPanel, BorderLayout.CENTER);
@@ -149,5 +185,85 @@ public class CourseClassCard extends JPanel {
     public void updateCourse(CourseVO course) {
         this.course = course;
         updateCardContent();
+    }
+    
+    /**
+     * 设置按钮事件
+     */
+    private void setupButtonEvents() {
+        // 编辑按钮事件
+        editButton.addActionListener(e -> {
+            showEditDialog();
+        });
+        
+        // 删除按钮事件
+        deleteButton.addActionListener(e -> {
+            showDeleteConfirmation();
+        });
+    }
+    
+    /**
+     * 显示编辑对话框
+     */
+    private void showEditDialog() {
+        CourseEditDialog dialog = new CourseEditDialog(
+            SwingUtilities.getWindowAncestor(this), 
+            course, 
+            this
+        );
+        dialog.setVisible(true);
+    }
+    
+    /**
+     * 显示删除确认对话框
+     */
+    private void showDeleteConfirmation() {
+        int result = JOptionPane.showConfirmDialog(
+            this,
+            "确定要删除这个教学班吗？\n删除后无法恢复！",
+            "确认删除",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+        
+        if (result == JOptionPane.YES_OPTION) {
+            deleteCourse();
+        }
+    }
+    
+    /**
+     * 删除课程
+     */
+    private void deleteCourse() {
+        try {
+            ServerConnection connection = ServerConnection.getInstance();
+            if (!connection.isConnected()) {
+                JOptionPane.showMessageDialog(this, "无法连接到服务器", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // 创建删除请求消息
+            Message request = new Message();
+            request.setType(MessageType.DELETE_COURSE_REQUEST);
+            request.setData(course.getCourseId());
+            
+            // 发送删除请求
+            if (connection.sendMessage(request)) {
+                System.out.println("已发送删除课程请求: " + course.getCourseName());
+            } else {
+                JOptionPane.showMessageDialog(this, "发送删除请求失败", "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            System.err.println("删除课程时发生错误: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "删除课程时发生错误: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * 获取父面板
+     * @return CourseClassCardPanel对象
+     */
+    public CourseClassCardPanel getParentPanel() {
+        return parentPanel;
     }
 }

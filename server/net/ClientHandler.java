@@ -141,6 +141,16 @@ public class ClientHandler implements Runnable {
                     handleGetAllCourses(request);
                     break;
                     
+                case UPDATE_COURSE_REQUEST:
+                    System.out.println("[Course][Server] 收到请求: UPDATE_COURSE_REQUEST");
+                    handleUpdateCourse(request);
+                    break;
+                    
+                case DELETE_COURSE_REQUEST:
+                    System.out.println("[Course][Server] 收到请求: DELETE_COURSE_REQUEST");
+                    handleDeleteCourse(request);
+                    break;
+                    
                 case HEARTBEAT:
                     handleHeartbeat(request);
                     break;
@@ -1092,6 +1102,62 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             System.err.println("处理获取课程请求时发生异常: " + e.getMessage());
             sendErrorMessage("获取课程失败: " + e.getMessage());
+        }
+    }
+    
+    private void handleUpdateCourse(Message request) {
+        try {
+            if (request.getData() instanceof common.vo.CourseVO) {
+                common.vo.CourseVO course = (common.vo.CourseVO) request.getData();
+                System.out.println("[Course][Server] 开始更新课程: " + course.getCourseName());
+                
+                server.service.CourseService courseService = new server.service.CourseService();
+                boolean success = courseService.updateCourse(course);
+                
+                if (success) {
+                    System.out.println("[Course][Server] 课程更新成功");
+                    Message response = new Message(MessageType.UPDATE_COURSE_SUCCESS, StatusCode.SUCCESS, course, "课程更新成功");
+                    sendMessage(response);
+                    System.out.println("[Course][Server] 已发送响应: UPDATE_COURSE_SUCCESS");
+                } else {
+                    System.err.println("[Course][Server] 课程更新失败");
+                    sendErrorMessage("课程更新失败");
+                }
+            } else {
+                System.err.println("[Course][Server] 无效的课程数据");
+                sendErrorMessage("无效的课程数据");
+            }
+        } catch (Exception e) {
+            System.err.println("处理更新课程请求时发生异常: " + e.getMessage());
+            sendErrorMessage("更新课程失败: " + e.getMessage());
+        }
+    }
+    
+    private void handleDeleteCourse(Message request) {
+        try {
+            if (request.getData() instanceof Integer) {
+                Integer courseId = (Integer) request.getData();
+                System.out.println("[Course][Server] 开始删除课程ID: " + courseId);
+                
+                server.service.CourseService courseService = new server.service.CourseService();
+                boolean success = courseService.deleteCourse(courseId);
+                
+                if (success) {
+                    System.out.println("[Course][Server] 课程删除成功");
+                    Message response = new Message(MessageType.DELETE_COURSE_SUCCESS, StatusCode.SUCCESS, courseId, "课程删除成功");
+                    sendMessage(response);
+                    System.out.println("[Course][Server] 已发送响应: DELETE_COURSE_SUCCESS");
+                } else {
+                    System.err.println("[Course][Server] 课程删除失败");
+                    sendErrorMessage("课程删除失败");
+                }
+            } else {
+                System.err.println("[Course][Server] 无效的课程ID");
+                sendErrorMessage("无效的课程ID");
+            }
+        } catch (Exception e) {
+            System.err.println("处理删除课程请求时发生异常: " + e.getMessage());
+            sendErrorMessage("删除课程失败: " + e.getMessage());
         }
     }
     

@@ -29,9 +29,9 @@ public class CourseClassCardPanel extends JPanel {
     private void initComponents() {
         setLayout(new BorderLayout());
         setBackground(UITheme.WHITE);
-        setPreferredSize(new Dimension(0, 320));
-        setMinimumSize(new Dimension(0, 320));
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 320));
+        setPreferredSize(new Dimension(0, 360)); // 增加高度以适应新的卡片高度
+        setMinimumSize(new Dimension(0, 360));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 360));
         
         // 创建标题面板
         JPanel titlePanel = createTitlePanel();
@@ -39,7 +39,7 @@ public class CourseClassCardPanel extends JPanel {
         // 创建卡片容器
         cardContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, UITheme.PADDING_MEDIUM, UITheme.PADDING_MEDIUM));
         cardContainer.setOpaque(false);
-        cardContainer.setPreferredSize(new Dimension(0, 280));
+        cardContainer.setPreferredSize(new Dimension(0, 320)); // 增加高度以适应新的卡片高度
         cardContainer.setBackground(UITheme.WHITE);
         
         // 创建滚动面板
@@ -105,7 +105,7 @@ public class CourseClassCardPanel extends JPanel {
         
         // 创建新的教学班卡片
         for (CourseVO course : courses) {
-            CourseClassCard card = new CourseClassCard(course);
+            CourseClassCard card = new CourseClassCard(course, this);
             classCards.add(card);
             cardContainer.add(card);
         }
@@ -193,5 +193,68 @@ public class CourseClassCardPanel extends JPanel {
      */
     public JScrollPane getScrollPane() {
         return scrollPane;
+    }
+    
+    /**
+     * 刷新卡片显示
+     * 当课程数据更新后调用此方法刷新卡片内容
+     */
+    public void refreshCards() {
+        for (CourseClassCard card : classCards) {
+            // 从最新的课程数据中查找对应的课程信息
+            String courseCode = card.getCourse().getCourseCode();
+            List<CourseVO> courseClasses = courseClassesMap.get(courseCode);
+            if (courseClasses != null) {
+                for (CourseVO course : courseClasses) {
+                    if (course.getCourseId().equals(card.getCourse().getCourseId())) {
+                        card.updateCourse(course);
+                        break;
+                    }
+                }
+            }
+        }
+        cardContainer.revalidate();
+        cardContainer.repaint();
+    }
+    
+    /**
+     * 删除指定的教学班卡片
+     * @param courseId 要删除的课程ID
+     */
+    public void removeCourseCard(Integer courseId) {
+        // 从卡片列表中移除
+        CourseClassCard cardToRemove = null;
+        for (CourseClassCard card : classCards) {
+            if (card.getCourse().getCourseId().equals(courseId)) {
+                cardToRemove = card;
+                break;
+            }
+        }
+        
+        if (cardToRemove != null) {
+            classCards.remove(cardToRemove);
+            cardContainer.remove(cardToRemove);
+            
+            // 从课程分组数据中移除
+            String courseCode = cardToRemove.getCourse().getCourseCode();
+            List<CourseVO> courseClasses = courseClassesMap.get(courseCode);
+            if (courseClasses != null) {
+                courseClasses.removeIf(course -> course.getCourseId().equals(courseId));
+                
+                // 如果该课程代码下没有其他教学班，从分组数据中移除整个课程
+                if (courseClasses.isEmpty()) {
+                    courseClassesMap.remove(courseCode);
+                }
+            }
+            
+            // 刷新显示
+            cardContainer.revalidate();
+            cardContainer.repaint();
+            
+            // 如果当前没有卡片了，隐藏面板
+            if (classCards.isEmpty()) {
+                hideCourseClasses();
+            }
+        }
     }
 }
