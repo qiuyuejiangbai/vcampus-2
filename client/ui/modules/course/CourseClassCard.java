@@ -1,6 +1,7 @@
- package client.ui.modules.course;
+package client.ui.modules.course;
 
 import common.vo.CourseVO;
+import common.vo.UserVO;
 import client.net.ServerConnection;
 import common.protocol.Message;
 import common.protocol.MessageType;
@@ -14,6 +15,7 @@ import java.awt.*;
  */
 public class CourseClassCard extends JPanel {
     private CourseVO course;
+    private UserVO currentUser;
     private JLabel teacherLabel;
     private JLabel classTimeLabel;
     private JLabel locationLabel;
@@ -22,16 +24,21 @@ public class CourseClassCard extends JPanel {
     private JLabel classInfoLabel;
     private JButton editButton;
     private JButton deleteButton;
+    private JButton enrollButton;
+    private JButton dropButton;
     private CourseClassCardPanel parentPanel;
+    private boolean isEnrolled = false; // 是否已选课
     
-    public CourseClassCard(CourseVO course, CourseClassCardPanel parentPanel) {
+    public CourseClassCard(CourseVO course, CourseClassCardPanel parentPanel, UserVO currentUser) {
         this.course = course;
         this.parentPanel = parentPanel;
+        this.currentUser = currentUser;
         initComponents();
         setupLayout();
         updateCardContent();
         setupHoverEffects();
         setupButtonEvents();
+        // 不在这里设置消息监听器，避免重复设置
     }
     
     private void initComponents() {
@@ -49,9 +56,37 @@ public class CourseClassCard extends JPanel {
         capacityLabel = new JLabel();
         enrolledCountLabel = new JLabel();
         
-        // 创建按钮
-        editButton = new JButton("编辑");
-        deleteButton = new JButton("删除");
+        // 根据用户身份创建不同的按钮
+        if (currentUser != null && currentUser.isAdmin()) {
+            // 管理员：编辑和删除按钮
+            editButton = new JButton("编辑");
+            deleteButton = new JButton("删除");
+            
+            UITheme.styleButton(editButton);
+            editButton.setPreferredSize(new Dimension(60, 30));
+            editButton.setBackground(UITheme.PRIMARY_GREEN);
+            editButton.setForeground(UITheme.WHITE);
+            
+            UITheme.styleButton(deleteButton);
+            deleteButton.setPreferredSize(new Dimension(60, 30));
+            deleteButton.setBackground(new Color(220, 53, 69)); // 红色
+            deleteButton.setForeground(UITheme.WHITE);
+        } else if (currentUser != null && currentUser.isStudent()) {
+            // 学生：选课和退选按钮
+            enrollButton = new JButton("选课");
+            dropButton = new JButton("退选");
+            
+            UITheme.styleButton(enrollButton);
+            enrollButton.setPreferredSize(new Dimension(60, 30));
+            enrollButton.setBackground(UITheme.PRIMARY_GREEN);
+            enrollButton.setForeground(UITheme.WHITE);
+            
+            UITheme.styleButton(dropButton);
+            dropButton.setPreferredSize(new Dimension(60, 30));
+            dropButton.setBackground(new Color(220, 53, 69)); // 红色
+            dropButton.setForeground(UITheme.WHITE);
+            dropButton.setVisible(false); // 初始隐藏退选按钮
+        }
         
         // 设置字体和颜色
         classInfoLabel.setFont(UITheme.SUBTITLE_FONT);
@@ -71,17 +106,6 @@ public class CourseClassCard extends JPanel {
         
         enrolledCountLabel.setFont(UITheme.CONTENT_FONT);
         enrolledCountLabel.setForeground(UITheme.MEDIUM_GRAY);
-        
-        // 设置按钮样式
-        UITheme.styleButton(editButton);
-        editButton.setPreferredSize(new Dimension(60, 30));
-        editButton.setBackground(UITheme.PRIMARY_GREEN);
-        editButton.setForeground(UITheme.WHITE);
-        
-        UITheme.styleButton(deleteButton);
-        deleteButton.setPreferredSize(new Dimension(60, 30));
-        deleteButton.setBackground(new Color(220, 53, 69)); // 红色
-        deleteButton.setForeground(UITheme.WHITE);
     }
     
     private void setupLayout() {
@@ -116,8 +140,15 @@ public class CourseClassCard extends JPanel {
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, UITheme.PADDING_SMALL, 0));
         buttonPanel.setOpaque(false);
-        buttonPanel.add(editButton);
-        buttonPanel.add(deleteButton);
+        
+        // 根据用户身份添加不同的按钮
+        if (currentUser != null && currentUser.isAdmin()) {
+            if (editButton != null) buttonPanel.add(editButton);
+            if (deleteButton != null) buttonPanel.add(deleteButton);
+        } else if (currentUser != null && currentUser.isStudent()) {
+            if (enrollButton != null) buttonPanel.add(enrollButton);
+            if (dropButton != null) buttonPanel.add(dropButton);
+        }
         
         bottomPanel.add(infoPanel, BorderLayout.WEST);
         bottomPanel.add(buttonPanel, BorderLayout.EAST);
@@ -188,18 +219,120 @@ public class CourseClassCard extends JPanel {
     }
     
     /**
+     * 设置当前用户
+     * @param currentUser 当前用户
+     */
+    public void setCurrentUser(UserVO currentUser) {
+        this.currentUser = currentUser;
+        // 重新创建按钮
+        recreateButtons();
+    }
+    
+    /**
+     * 重新创建按钮
+     */
+    private void recreateButtons() {
+        // 移除现有按钮
+        if (editButton != null) {
+            editButton.getParent().remove(editButton);
+        }
+        if (deleteButton != null) {
+            deleteButton.getParent().remove(deleteButton);
+        }
+        if (enrollButton != null) {
+            enrollButton.getParent().remove(enrollButton);
+        }
+        if (dropButton != null) {
+            dropButton.getParent().remove(dropButton);
+        }
+        
+        // 重新创建按钮
+        if (currentUser != null && currentUser.isAdmin()) {
+            // 管理员：编辑和删除按钮
+            editButton = new JButton("编辑");
+            deleteButton = new JButton("删除");
+            
+            UITheme.styleButton(editButton);
+            editButton.setPreferredSize(new Dimension(60, 30));
+            editButton.setBackground(UITheme.PRIMARY_GREEN);
+            editButton.setForeground(UITheme.WHITE);
+            
+            UITheme.styleButton(deleteButton);
+            deleteButton.setPreferredSize(new Dimension(60, 30));
+            deleteButton.setBackground(new Color(220, 53, 69)); // 红色
+            deleteButton.setForeground(UITheme.WHITE);
+            
+            // 添加事件监听器
+            editButton.addActionListener(e -> showEditDialog());
+            deleteButton.addActionListener(e -> showDeleteConfirmation());
+            
+        } else if (currentUser != null && currentUser.isStudent()) {
+            // 学生：选课和退选按钮
+            enrollButton = new JButton("选课");
+            dropButton = new JButton("退选");
+            
+            UITheme.styleButton(enrollButton);
+            enrollButton.setPreferredSize(new Dimension(60, 30));
+            enrollButton.setBackground(UITheme.PRIMARY_GREEN);
+            enrollButton.setForeground(UITheme.WHITE);
+            
+            UITheme.styleButton(dropButton);
+            dropButton.setPreferredSize(new Dimension(60, 30));
+            dropButton.setBackground(new Color(220, 53, 69)); // 红色
+            dropButton.setForeground(UITheme.WHITE);
+            dropButton.setVisible(false); // 初始隐藏退选按钮
+            
+            // 添加事件监听器
+            enrollButton.addActionListener(e -> enrollCourse());
+            dropButton.addActionListener(e -> dropCourse());
+        }
+        
+        // 重新添加到按钮面板
+        JPanel buttonPanel = (JPanel) ((JPanel) getComponent(2)).getComponent(1);
+        if (currentUser != null && currentUser.isAdmin()) {
+            if (editButton != null) buttonPanel.add(editButton);
+            if (deleteButton != null) buttonPanel.add(deleteButton);
+        } else if (currentUser != null && currentUser.isStudent()) {
+            if (enrollButton != null) buttonPanel.add(enrollButton);
+            if (dropButton != null) buttonPanel.add(dropButton);
+        }
+        
+        // 刷新显示
+        revalidate();
+        repaint();
+    }
+    
+    /**
      * 设置按钮事件
      */
     private void setupButtonEvents() {
-        // 编辑按钮事件
-        editButton.addActionListener(e -> {
-            showEditDialog();
-        });
-        
-        // 删除按钮事件
-        deleteButton.addActionListener(e -> {
-            showDeleteConfirmation();
-        });
+        if (currentUser != null && currentUser.isAdmin()) {
+            // 管理员按钮事件
+            if (editButton != null) {
+                editButton.addActionListener(e -> {
+                    showEditDialog();
+                });
+            }
+            
+            if (deleteButton != null) {
+                deleteButton.addActionListener(e -> {
+                    showDeleteConfirmation();
+                });
+            }
+        } else if (currentUser != null && currentUser.isStudent()) {
+            // 学生按钮事件
+            if (enrollButton != null) {
+                enrollButton.addActionListener(e -> {
+                    enrollCourse();
+                });
+            }
+            
+            if (dropButton != null) {
+                dropButton.addActionListener(e -> {
+                    dropCourse();
+                });
+            }
+        }
     }
     
     /**
@@ -266,4 +399,81 @@ public class CourseClassCard extends JPanel {
     public CourseClassCardPanel getParentPanel() {
         return parentPanel;
     }
+    
+    /**
+     * 选课方法
+     */
+    private void enrollCourse() {
+        try {
+            ServerConnection connection = ServerConnection.getInstance();
+            if (!connection.isConnected()) {
+                JOptionPane.showMessageDialog(this, "无法连接到服务器", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // 创建选课请求消息
+            Message request = new Message();
+            request.setType(MessageType.ENROLL_COURSE_REQUEST);
+            request.setData(course.getCourseId());
+            
+            // 发送选课请求
+            if (connection.sendMessage(request)) {
+                System.out.println("已发送选课请求: " + course.getCourseName());
+            } else {
+                JOptionPane.showMessageDialog(this, "发送选课请求失败", "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            System.err.println("选课时发生错误: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "选课时发生错误: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * 退选方法
+     */
+    private void dropCourse() {
+        try {
+            ServerConnection connection = ServerConnection.getInstance();
+            if (!connection.isConnected()) {
+                JOptionPane.showMessageDialog(this, "无法连接到服务器", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // 创建退选请求消息
+            Message request = new Message();
+            request.setType(MessageType.DROP_COURSE_REQUEST);
+            request.setData(course.getCourseId());
+            
+            // 发送退选请求
+            if (connection.sendMessage(request)) {
+                System.out.println("已发送退选请求: " + course.getCourseName());
+            } else {
+                JOptionPane.showMessageDialog(this, "发送退选请求失败", "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            System.err.println("退选时发生错误: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "退选时发生错误: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * 更新选课状态
+     * @param enrolled 是否已选课
+     */
+    public void updateEnrollmentStatus(boolean enrolled) {
+        this.isEnrolled = enrolled;
+        if (enrollButton != null && dropButton != null) {
+            enrollButton.setVisible(!enrolled);
+            dropButton.setVisible(enrolled);
+        }
+    }
+    
+    /**
+     * 检查是否已选课
+     * @return 是否已选课
+     */
+    public boolean isEnrolled() {
+        return isEnrolled;
+    }
+    
 }

@@ -140,7 +140,8 @@ public class EnrollmentDAOImpl implements EnrollmentDAO {
     public List<EnrollmentVO> findByStudentId(Integer studentId) {
         if (studentId == null) return new ArrayList<>();
         
-        String sql = "SELECT * FROM enrollments WHERE student_id = ? ORDER BY enrollment_time DESC";
+        // 只返回状态为'enrolled'的选课记录（当前有效的选课）
+        String sql = "SELECT * FROM enrollments WHERE student_id = ? AND status = 'enrolled' ORDER BY enrollment_time DESC";
         List<EnrollmentVO> enrollments = new ArrayList<>();
         
         try (Connection conn = DatabaseUtil.getConnection();

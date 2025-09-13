@@ -1,6 +1,7 @@
 package client.ui.modules.course;
 
 import common.vo.CourseVO;
+import common.vo.UserVO;
 import client.net.ServerConnection;
 import common.protocol.Message;
 import common.protocol.MessageType;
@@ -19,6 +20,7 @@ public class CourseTablePanel extends JPanel {
     private DefaultTableModel tableModel; // 表格模型
     private List<CourseVO> courseList;   // 课程数据列表
     private final ServerConnection serverConnection; // 服务器连接
+    private UserVO currentUser; // 当前用户
 
     // 课程教学班卡片组件
     private CourseClassCardPanel courseClassCardPanel;  // 教学班卡片面板
@@ -31,6 +33,32 @@ public class CourseTablePanel extends JPanel {
         setupEventHandlers();  // 设置事件处理器
         setupMessageListener(); // 设置消息监听器
         loadCourseData();      // 加载课程数据
+    }
+    
+    public CourseTablePanel(UserVO currentUser) {
+        this.serverConnection = ServerConnection.getInstance();
+        this.courseList = new ArrayList<>();
+        this.currentUser = currentUser;
+        initComponents();      // 初始化组件
+        setupLayout();         // 设置布局
+        setupEventHandlers();  // 设置事件处理器
+        setupMessageListener(); // 设置消息监听器
+        loadCourseData();      // 加载课程数据
+    }
+    
+    /**
+     * 设置当前用户
+     * @param currentUser 当前用户
+     */
+    public void setCurrentUser(UserVO currentUser) {
+        this.currentUser = currentUser;
+        if (courseClassCardPanel != null) {
+            courseClassCardPanel.setCurrentUser(currentUser);
+            // 如果当前有选中的课程，重新显示教学班以更新按钮
+            if (selectedCourse != null) {
+                showCourseClasses(selectedCourse.getCourseCode());
+            }
+        }
     }
 
     private void setupEventHandlers() {
@@ -133,6 +161,64 @@ public class CourseTablePanel extends JPanel {
                 }
             });
         });
+        
+        // 设置选课成功响应监听器
+        serverConnection.setMessageListener(MessageType.ENROLL_COURSE_SUCCESS, message -> {
+            SwingUtilities.invokeLater(() -> {
+                if (message.getData() instanceof Integer) {
+                    Integer courseId = (Integer) message.getData();
+                    System.out.println("选课成功，课程ID: " + courseId);
+                    
+                    // 更新对应卡片的选课状态
+                    for (CourseClassCard card : courseClassCardPanel.getClassCards()) {
+                        if (card.getCourse().getCourseId().equals(courseId)) {
+                            card.updateEnrollmentStatus(true);
+                            break;
+                        }
+                    }
+                    
+                    JOptionPane.showMessageDialog(this, "选课成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                }
+            });
+        });
+        
+        // 设置选课失败响应监听器
+        serverConnection.setMessageListener(MessageType.ENROLL_COURSE_FAIL, message -> {
+            SwingUtilities.invokeLater(() -> {
+                String errorMessage = message.getData() != null ? message.getData().toString() : "选课失败";
+                System.out.println("选课失败: " + errorMessage);
+                JOptionPane.showMessageDialog(this, "选课失败: " + errorMessage, "错误", JOptionPane.ERROR_MESSAGE);
+            });
+        });
+        
+        // 设置退选成功响应监听器
+        serverConnection.setMessageListener(MessageType.DROP_COURSE_SUCCESS, message -> {
+            SwingUtilities.invokeLater(() -> {
+                if (message.getData() instanceof Integer) {
+                    Integer courseId = (Integer) message.getData();
+                    System.out.println("退选成功，课程ID: " + courseId);
+                    
+                    // 更新对应卡片的选课状态
+                    for (CourseClassCard card : courseClassCardPanel.getClassCards()) {
+                        if (card.getCourse().getCourseId().equals(courseId)) {
+                            card.updateEnrollmentStatus(false);
+                            break;
+                        }
+                    }
+                    
+                    JOptionPane.showMessageDialog(this, "退选成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                }
+            });
+        });
+        
+        // 设置退选失败响应监听器
+        serverConnection.setMessageListener(MessageType.DROP_COURSE_FAIL, message -> {
+            SwingUtilities.invokeLater(() -> {
+                String errorMessage = message.getData() != null ? message.getData().toString() : "退选失败";
+                System.out.println("退选失败: " + errorMessage);
+                JOptionPane.showMessageDialog(this, "退选失败: " + errorMessage, "错误", JOptionPane.ERROR_MESSAGE);
+            });
+        });
     }
 
     private void setupLayout() {
@@ -230,7 +316,7 @@ public class CourseTablePanel extends JPanel {
         scrollTablePane.setBackground(UITheme.WHITE);
         
         // 创建教学班卡片面板
-        courseClassCardPanel = new CourseClassCardPanel();
+        courseClassCardPanel = new CourseClassCardPanel(currentUser);
     }
     
     /**

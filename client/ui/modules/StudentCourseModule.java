@@ -1,4 +1,4 @@
-package client.ui.modules;
+ package client.ui.modules;
 
 import client.net.ServerConnection;
 import client.ui.api.IModuleView;
@@ -128,7 +128,7 @@ public class StudentCourseModule implements IModuleView {
         panel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE));
         
         // 创建课程表格面板
-        CourseTablePanel courseTablePanel = new CourseTablePanel();
+        CourseTablePanel courseTablePanel = new CourseTablePanel(currentUser);
         
         // 创建搜索面板
         JPanel searchPanel = createSearchPanel(courseTablePanel);
@@ -326,6 +326,172 @@ public class StudentCourseModule implements IModuleView {
     public void initContext(common.vo.UserVO currentUser, client.net.ServerConnection connection) {
         this.currentUser = currentUser;
         this.connection = connection;
+        
+        // 更新课程表格面板的用户信息
+        updateCourseTablePanelUser();
+        
+        // 设置选课成功和失败的消息监听器，用于刷新选课记录表格
+        setupEnrollmentMessageListeners();
+    }
+    
+    /**
+     * 更新课程表格面板的用户信息
+     */
+    private void updateCourseTablePanelUser() {
+        // 获取课程管理选项卡中的课程表格面板
+        JTabbedPane tabbedPane = (JTabbedPane) root.getComponent(0);
+        if (tabbedPane.getTabCount() > 0) {
+            JPanel coursePanel = (JPanel) tabbedPane.getComponentAt(0);
+            CourseTablePanel courseTablePanel = findCourseTablePanel(coursePanel);
+            if (courseTablePanel != null) {
+                courseTablePanel.setCurrentUser(currentUser);
+            }
+        }
+    }
+    
+    /**
+     * 在面板中查找课程表格面板
+     */
+    private CourseTablePanel findCourseTablePanel(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof CourseTablePanel) {
+                return (CourseTablePanel) component;
+            } else if (component instanceof Container) {
+                CourseTablePanel result = findCourseTablePanel((Container) component);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 设置选课相关的消息监听器
+     */
+    private void setupEnrollmentMessageListeners() {
+        if (connection != null) {
+            // 选课成功后刷新选课记录表格和更新按钮状态
+            connection.setMessageListener(common.protocol.MessageType.ENROLL_COURSE_SUCCESS, message -> {
+                SwingUtilities.invokeLater(() -> {
+                    System.out.println("收到选课成功消息: " + message.getData());
+                    // 刷新选课记录表格
+                    refreshEnrollmentTable();
+                    // 通知所有课程卡片更新按钮状态
+                    notifyCourseCardsEnrollmentSuccess((Integer) message.getData());
+                });
+            });
+            
+            // 选课失败后显示错误信息
+            connection.setMessageListener(common.protocol.MessageType.ENROLL_COURSE_FAIL, message -> {
+                SwingUtilities.invokeLater(() -> {
+                    System.out.println("收到选课失败消息: " + message.getData());
+                    String errorMessage = message.getData() != null ? message.getData().toString() : "选课失败";
+                    JOptionPane.showMessageDialog(root, "选课失败: " + errorMessage, "错误", JOptionPane.ERROR_MESSAGE);
+                });
+            });
+            
+            // 退选成功后刷新选课记录表格和更新按钮状态
+            connection.setMessageListener(common.protocol.MessageType.DROP_COURSE_SUCCESS, message -> {
+                SwingUtilities.invokeLater(() -> {
+                    System.out.println("收到退选成功消息: " + message.getData());
+                    // 刷新选课记录表格
+                    refreshEnrollmentTable();
+                    // 通知所有课程卡片更新按钮状态
+                    notifyCourseCardsDropSuccess((Integer) message.getData());
+                });
+            });
+            
+            // 退选失败后显示错误信息
+            connection.setMessageListener(common.protocol.MessageType.DROP_COURSE_FAIL, message -> {
+                SwingUtilities.invokeLater(() -> {
+                    System.out.println("收到退选失败消息: " + message.getData());
+                    String errorMessage = message.getData() != null ? message.getData().toString() : "退选失败";
+                    JOptionPane.showMessageDialog(root, "退选失败: " + errorMessage, "错误", JOptionPane.ERROR_MESSAGE);
+                });
+            });
+        }
+    }
+    
+    /**
+     * 刷新选课记录表格
+     */
+    private void refreshEnrollmentTable() {
+        // 这里需要获取选课记录表格面板并刷新
+        // 由于选课记录表格在另一个选项卡中，我们需要通过某种方式访问它
+        // 暂时通过重新加载整个模块来实现
+        SwingUtilities.invokeLater(() -> {
+            // 重新初始化选课记录选项卡
+            JTabbedPane tabbedPane = (JTabbedPane) root.getComponent(0);
+            if (tabbedPane.getTabCount() > 1) {
+                JPanel enrollmentPanel = (JPanel) tabbedPane.getComponentAt(1);
+                // 查找选课记录表格面板并刷新
+                refreshEnrollmentTableInPanel(enrollmentPanel);
+            }
+        });
+    }
+    
+    /**
+     * 在面板中查找并刷新选课记录表格
+     */
+    private void refreshEnrollmentTableInPanel(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof StudentEnrollmentTablePanel) {
+                ((StudentEnrollmentTablePanel) component).refreshData();
+                return;
+            } else if (component instanceof Container) {
+                refreshEnrollmentTableInPanel((Container) component);
+            }
+        }
+    }
+    
+    /**
+     * 通知所有课程卡片选课成功
+     */
+    private void notifyCourseCardsEnrollmentSuccess(Integer courseId) {
+        if (courseId == null) return;
+        
+        // 查找课程管理选项卡中的课程表格面板
+        JTabbedPane tabbedPane = (JTabbedPane) root.getComponent(0);
+        if (tabbedPane.getTabCount() > 0) {
+            JPanel coursePanel = (JPanel) tabbedPane.getComponentAt(0);
+            notifyCourseCardsInPanel(coursePanel, courseId, true);
+        }
+    }
+    
+    /**
+     * 通知所有课程卡片退选成功
+     */
+    private void notifyCourseCardsDropSuccess(Integer courseId) {
+        if (courseId == null) return;
+        
+        // 查找课程管理选项卡中的课程表格面板
+        JTabbedPane tabbedPane = (JTabbedPane) root.getComponent(0);
+        if (tabbedPane.getTabCount() > 0) {
+            JPanel coursePanel = (JPanel) tabbedPane.getComponentAt(0);
+            notifyCourseCardsInPanel(coursePanel, courseId, false);
+        }
+    }
+    
+    /**
+     * 在面板中查找并通知课程卡片
+     */
+    private void notifyCourseCardsInPanel(Container container, Integer courseId, boolean enrolled) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof client.ui.modules.course.CourseClassCard) {
+                client.ui.modules.course.CourseClassCard card = (client.ui.modules.course.CourseClassCard) component;
+                if (card.getCourse().getCourseId().equals(courseId)) {
+                    card.updateEnrollmentStatus(enrolled);
+                    if (enrolled) {
+                        JOptionPane.showMessageDialog(card, "选课成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(card, "退选成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    }
+                }
+            } else if (component instanceof Container) {
+                notifyCourseCardsInPanel((Container) component, courseId, enrolled);
+            }
+        }
     }
 
     public static void registerTo(Class<?> ignored) { 

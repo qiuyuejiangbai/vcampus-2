@@ -1,6 +1,7 @@
 package client.ui.modules.course;
 
 import common.vo.CourseVO;
+import common.vo.UserVO;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,10 +19,19 @@ public class CourseClassCardPanel extends JPanel {
     private JScrollPane scrollPane;
     private List<CourseClassCard> classCards;
     private Map<String, List<CourseVO>> courseClassesMap;
+    private UserVO currentUser;
     
     public CourseClassCardPanel() {
         this.classCards = new ArrayList<>();
         this.courseClassesMap = new HashMap<>();
+        initComponents();
+        setupLayout();
+    }
+    
+    public CourseClassCardPanel(UserVO currentUser) {
+        this.classCards = new ArrayList<>();
+        this.courseClassesMap = new HashMap<>();
+        this.currentUser = currentUser;
         initComponents();
         setupLayout();
     }
@@ -90,6 +100,18 @@ public class CourseClassCardPanel extends JPanel {
     }
     
     /**
+     * 设置当前用户
+     * @param currentUser 当前用户
+     */
+    public void setCurrentUser(UserVO currentUser) {
+        this.currentUser = currentUser;
+        // 更新所有现有卡片的用户信息
+        for (CourseClassCard card : classCards) {
+            card.setCurrentUser(currentUser);
+        }
+    }
+    
+    /**
      * 显示指定课程的所有教学班
      * @param courseCode 课程代码
      * @param courses 该课程的所有教学班列表
@@ -105,7 +127,7 @@ public class CourseClassCardPanel extends JPanel {
         
         // 创建新的教学班卡片
         for (CourseVO course : courses) {
-            CourseClassCard card = new CourseClassCard(course, this);
+            CourseClassCard card = new CourseClassCard(course, this, currentUser);
             classCards.add(card);
             cardContainer.add(card);
         }
@@ -196,6 +218,14 @@ public class CourseClassCardPanel extends JPanel {
     }
     
     /**
+     * 获取卡片列表
+     * @return 卡片列表
+     */
+    public List<CourseClassCard> getClassCards() {
+        return classCards;
+    }
+    
+    /**
      * 刷新卡片显示
      * 当课程数据更新后调用此方法刷新卡片内容
      */
@@ -254,6 +284,47 @@ public class CourseClassCardPanel extends JPanel {
             // 如果当前没有卡片了，隐藏面板
             if (classCards.isEmpty()) {
                 hideCourseClasses();
+            }
+        }
+    }
+    
+    /**
+     * 刷新选课记录表格
+     * 这个方法会被CourseClassCard调用，用于在选课/退选成功后刷新选课记录表格
+     */
+    public void refreshEnrollmentTable() {
+        // 通过反射或事件机制通知父组件刷新选课记录表格
+        // 这里我们通过查找父组件中的StudentEnrollmentTablePanel来实现
+        Container parent = getParent();
+        while (parent != null) {
+            if (parent instanceof javax.swing.JTabbedPane) {
+                javax.swing.JTabbedPane tabbedPane = (javax.swing.JTabbedPane) parent;
+                // 查找选课记录选项卡
+                for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+                    if ("选课记录".equals(tabbedPane.getTitleAt(i))) {
+                        java.awt.Component tabComponent = tabbedPane.getComponentAt(i);
+                        if (tabComponent instanceof Container) {
+                            refreshEnrollmentTableInContainer((Container) tabComponent);
+                        }
+                        return;
+                    }
+                }
+            }
+            parent = parent.getParent();
+        }
+    }
+    
+    /**
+     * 在容器中查找并刷新选课记录表格
+     * @param container 容器
+     */
+    private void refreshEnrollmentTableInContainer(Container container) {
+        for (java.awt.Component component : container.getComponents()) {
+            if (component instanceof StudentEnrollmentTablePanel) {
+                ((StudentEnrollmentTablePanel) component).refreshData();
+                return;
+            } else if (component instanceof Container) {
+                refreshEnrollmentTableInContainer((Container) component);
             }
         }
     }

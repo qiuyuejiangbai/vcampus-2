@@ -161,6 +161,16 @@ public class ClientHandler implements Runnable {
                     handleGetStudentEnrollments(request);
                     break;
                     
+                case ENROLL_COURSE_REQUEST:
+                    System.out.println("[Enrollment][Server] 收到请求: ENROLL_COURSE_REQUEST");
+                    handleEnrollCourse(request);
+                    break;
+                    
+                case DROP_COURSE_REQUEST:
+                    System.out.println("[Enrollment][Server] 收到请求: DROP_COURSE_REQUEST");
+                    handleDropCourse(request);
+                    break;
+                    
                 case HEARTBEAT:
                     handleHeartbeat(request);
                     break;
@@ -1223,6 +1233,112 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             System.err.println("处理删除课程请求时发生异常: " + e.getMessage());
             sendErrorMessage("删除课程失败: " + e.getMessage());
+        }
+    }
+    
+    private void handleEnrollCourse(Message request) {
+        try {
+            // 检查用户是否已登录
+            if (currentUser == null) {
+                sendErrorMessage("用户未登录");
+                return;
+            }
+            
+            // 检查用户是否为学生
+            if (currentUser.getRole() != 0) {
+                sendErrorMessage("只有学生可以选课");
+                return;
+            }
+            
+            // 获取课程ID
+            Integer courseId = null;
+            if (request.getData() instanceof Integer) {
+                courseId = (Integer) request.getData();
+            } else {
+                sendErrorMessage("无效的课程ID");
+                return;
+            }
+            
+            // 获取学生ID
+            server.dao.StudentDAO studentDAO = new server.dao.impl.StudentDAOImpl();
+            common.vo.StudentVO student = studentDAO.findByUserId(currentUser.getUserId());
+            if (student == null) {
+                sendErrorMessage("无法获取学生信息");
+                return;
+            }
+            
+            Integer studentId = student.getStudentId();
+            System.out.println("[Enrollment][Server] 学生 " + studentId + " 尝试选课 " + courseId);
+            
+            // 调用选课服务
+            server.service.EnrollmentService enrollmentService = new server.service.EnrollmentService();
+            boolean success = enrollmentService.enrollCourse(studentId, courseId);
+            
+            if (success) {
+                System.out.println("[Enrollment][Server] 选课成功");
+                Message response = new Message(MessageType.ENROLL_COURSE_SUCCESS, StatusCode.SUCCESS, courseId, "选课成功");
+                sendMessage(response);
+            } else {
+                System.out.println("[Enrollment][Server] 选课失败");
+                Message response = new Message(MessageType.ENROLL_COURSE_FAIL, StatusCode.BAD_REQUEST, null, "选课失败，可能已经选过该课程");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("处理选课请求时发生异常: " + e.getMessage());
+            sendErrorMessage("选课失败: " + e.getMessage());
+        }
+    }
+    
+    private void handleDropCourse(Message request) {
+        try {
+            // 检查用户是否已登录
+            if (currentUser == null) {
+                sendErrorMessage("用户未登录");
+                return;
+            }
+            
+            // 检查用户是否为学生
+            if (currentUser.getRole() != 0) {
+                sendErrorMessage("只有学生可以退选");
+                return;
+            }
+            
+            // 获取课程ID
+            Integer courseId = null;
+            if (request.getData() instanceof Integer) {
+                courseId = (Integer) request.getData();
+            } else {
+                sendErrorMessage("无效的课程ID");
+                return;
+            }
+            
+            // 获取学生ID
+            server.dao.StudentDAO studentDAO = new server.dao.impl.StudentDAOImpl();
+            common.vo.StudentVO student = studentDAO.findByUserId(currentUser.getUserId());
+            if (student == null) {
+                sendErrorMessage("无法获取学生信息");
+                return;
+            }
+            
+            Integer studentId = student.getStudentId();
+            System.out.println("[Enrollment][Server] 学生 " + studentId + " 尝试退选课程 " + courseId);
+            
+            // 调用退选服务
+            server.service.EnrollmentService enrollmentService = new server.service.EnrollmentService();
+            boolean success = enrollmentService.dropCourse(studentId, courseId);
+            
+            if (success) {
+                System.out.println("[Enrollment][Server] 退选成功");
+                Message response = new Message(MessageType.DROP_COURSE_SUCCESS, StatusCode.SUCCESS, courseId, "退选成功");
+                sendMessage(response);
+            } else {
+                System.out.println("[Enrollment][Server] 退选失败");
+                Message response = new Message(MessageType.DROP_COURSE_FAIL, StatusCode.BAD_REQUEST, null, "退选失败，可能未选该课程");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("处理退选请求时发生异常: " + e.getMessage());
+            sendErrorMessage("退选失败: " + e.getMessage());
         }
     }
     

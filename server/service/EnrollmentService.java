@@ -172,4 +172,71 @@ public class EnrollmentService {
         if (courseId == null) return 0;
         return enrollmentDAO.countActiveEnrollmentsByCourseId(courseId);
     }
+    
+    /**
+     * 学生选课
+     * @param studentId 学生ID
+     * @param courseId 课程ID
+     * @return 选课成功返回true，失败返回false
+     */
+    public boolean enrollCourse(Integer studentId, Integer courseId) {
+        if (studentId == null || courseId == null) return false;
+        
+        // 检查是否已经选过这门课
+        if (isEnrolled(studentId, courseId)) {
+            System.out.println("学生 " + studentId + " 已经选过课程 " + courseId);
+            return false;
+        }
+        
+        try {
+            // 获取课程信息
+            server.dao.CourseDAO courseDAO = new server.dao.impl.CourseDAOImpl();
+            common.vo.CourseVO course = courseDAO.findById(courseId);
+            if (course == null) {
+                System.out.println("课程不存在: " + courseId);
+                return false;
+            }
+            
+            // 获取学生信息
+            server.dao.StudentDAO studentDAO = new server.dao.impl.StudentDAOImpl();
+            common.vo.StudentVO student = studentDAO.findById(studentId);
+            if (student == null) {
+                System.out.println("学生不存在: " + studentId);
+                return false;
+            }
+            
+            // 创建选课记录
+            EnrollmentVO enrollment = new EnrollmentVO();
+            enrollment.setStudentId(studentId);
+            enrollment.setCourseId(courseId);
+            enrollment.setStatus("enrolled"); // enrolled表示已选课
+            enrollment.setEnrollmentTime(new java.sql.Timestamp(System.currentTimeMillis()));
+            
+            // 设置学期和学年（从课程信息中获取）
+            enrollment.setSemester(course.getSemester() != null ? course.getSemester() : "2024-1");
+            enrollment.setAcademicYear(course.getAcademicYear() != null ? course.getAcademicYear() : "2024-2025");
+            
+            // 设置关联信息（用于显示）
+            enrollment.setStudentName(student.getName());
+            enrollment.setStudentNo(student.getStudentNo());
+            enrollment.setCourseName(course.getCourseName());
+            enrollment.setCourseCode(course.getCourseCode());
+            enrollment.setCredits(course.getCredits());
+            enrollment.setTeacherName(course.getTeacherName());
+            
+            // 插入选课记录
+            Integer enrollmentId = enrollmentDAO.insert(enrollment);
+            if (enrollmentId != null) {
+                System.out.println("选课记录创建成功，ID: " + enrollmentId);
+                return true;
+            } else {
+                System.out.println("选课记录创建失败");
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("选课过程中发生异常: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

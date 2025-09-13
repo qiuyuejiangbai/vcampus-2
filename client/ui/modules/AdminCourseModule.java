@@ -122,7 +122,7 @@ public class AdminCourseModule implements IModuleView {
         panel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE));
         
         // 创建课程表格面板
-        CourseTablePanel courseTablePanel = new CourseTablePanel();
+        CourseTablePanel courseTablePanel = new CourseTablePanel(currentUser);
         
         // 创建搜索面板
         JPanel searchPanel = createSearchPanel(courseTablePanel);
@@ -319,6 +319,41 @@ public class AdminCourseModule implements IModuleView {
     public void initContext(common.vo.UserVO currentUser, client.net.ServerConnection connection) {
         this.currentUser = currentUser;
         this.connection = connection;
+        
+        // 更新课程表格面板的用户信息
+        updateCourseTablePanelUser();
+    }
+    
+    /**
+     * 更新课程表格面板的用户信息
+     */
+    private void updateCourseTablePanelUser() {
+        // 获取课程管理选项卡中的课程表格面板
+        JTabbedPane tabbedPane = (JTabbedPane) root.getComponent(0);
+        if (tabbedPane.getTabCount() > 0) {
+            JPanel coursePanel = (JPanel) tabbedPane.getComponentAt(0);
+            CourseTablePanel courseTablePanel = findCourseTablePanel(coursePanel);
+            if (courseTablePanel != null) {
+                courseTablePanel.setCurrentUser(currentUser);
+            }
+        }
+    }
+    
+    /**
+     * 在面板中查找课程表格面板
+     */
+    private CourseTablePanel findCourseTablePanel(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof CourseTablePanel) {
+                return (CourseTablePanel) component;
+            } else if (component instanceof Container) {
+                CourseTablePanel result = findCourseTablePanel((Container) component);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 
     public static void registerTo(Class<?> ignored) { 
