@@ -17,7 +17,7 @@ public class CourseTablePanel extends JPanel {
     private CourseVO selectedCourse;     // 当前选中的课程
     private DefaultTableModel tableModel; // 表格模型
     private List<CourseVO> courseList;   // 课程数据列表
-    private ServerConnection serverConnection; // 服务器连接
+    private final ServerConnection serverConnection; // 服务器连接
 
     public CourseTablePanel() {
         this.serverConnection = ServerConnection.getInstance();
@@ -41,7 +41,12 @@ public class CourseTablePanel extends JPanel {
             }
         });
     }
-    
+
+
+    /*
+     * 当从服务器接收到"获取所有课程成功"的消息时，将接收到的课程列表数据更新到客户端的courseList中
+     * 并刷新界面表格显示，最后打印加载的课程数量
+     */
     private void setupMessageListener() {
         // 设置课程列表响应监听器
         serverConnection.setMessageListener(MessageType.GET_ALL_COURSES_SUCCESS, message -> {
