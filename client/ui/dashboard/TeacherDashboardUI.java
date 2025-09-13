@@ -122,6 +122,9 @@ public class TeacherDashboardUI extends JFrame {
         ModuleRegistry.register(new client.ui.modules.TeacherForumModule());
         ModuleRegistry.register(new client.ui.modules.TeacherResourceCenterModule());
 
+        // 课程管理
+        client.ui.modules.TeacherCourseModule.registerTo(ModuleRegistry.class);
+
         // 注册图书馆模块
         ModuleRegistry.register(
                 new client.ui.modules.LibraryModule(

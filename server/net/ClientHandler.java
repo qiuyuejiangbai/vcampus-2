@@ -135,6 +135,12 @@ public class ClientHandler implements Runnable {
                     handleGetStudentInfo(request);
                     break;
                     
+                // 课程模块
+                case GET_ALL_COURSES_REQUEST:
+                    System.out.println("[Course][Server] 收到请求: GET_ALL_COURSES_REQUEST");
+                    handleGetAllCourses(request);
+                    break;
+                    
                 case HEARTBEAT:
                     handleHeartbeat(request);
                     break;
@@ -1070,6 +1076,23 @@ public class ClientHandler implements Runnable {
      */
     public UserVO getCurrentUser() {
         return currentUser;
+    }
+    
+    // ================= 课程模块 =================
+    
+    private void handleGetAllCourses(Message request) {
+        try {
+            System.out.println("[Course][Server] 开始查询所有课程");
+            server.service.CourseService courseService = new server.service.CourseService();
+            java.util.List<common.vo.CourseVO> courses = courseService.getAllCourses();
+            System.out.println("[Course][Server] 查询完成，返回条数=" + (courses != null ? courses.size() : -1));
+            Message response = new Message(MessageType.GET_ALL_COURSES_SUCCESS, StatusCode.SUCCESS, courses, "获取课程成功");
+            sendMessage(response);
+            System.out.println("[Course][Server] 已发送响应: GET_ALL_COURSES_SUCCESS");
+        } catch (Exception e) {
+            System.err.println("处理获取课程请求时发生异常: " + e.getMessage());
+            sendErrorMessage("获取课程失败: " + e.getMessage());
+        }
     }
     
     /**
