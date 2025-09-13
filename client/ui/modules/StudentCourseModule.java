@@ -95,28 +95,9 @@ public class StudentCourseModule implements IModuleView {
         JPanel enrollmentManagementPanel = createEnrollmentManagementPanel();
         tabbedPane.addTab("选课记录", enrollmentManagementPanel);
 
-        // 成绩查询选项卡
-        JPanel scoreQueryPanel = createScoreQueryPanel();
-        tabbedPane.addTab("成绩查询", scoreQueryPanel);
-
         return tabbedPane;
     }
 
-
-    //创建成绩查询选项卡
-    private JPanel createScoreQueryPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
-        panel.setBackground(UITheme.WHITE);
-        panel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_XLARGE, UITheme.PADDING_XLARGE, UITheme.PADDING_XLARGE, UITheme.PADDING_XLARGE));
-        
-        JLabel placeholderLabel = new JLabel("成绩查询功能正在开发中...", SwingConstants.CENTER);
-        placeholderLabel.setFont(UITheme.CONTENT_FONT);
-        placeholderLabel.setForeground(UITheme.MEDIUM_GRAY);
-        panel.add(placeholderLabel, BorderLayout.CENTER);
-        
-        return panel;
-    }
 
 
     //创建选课记录选项卡

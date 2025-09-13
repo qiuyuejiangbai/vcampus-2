@@ -151,6 +151,11 @@ public class ClientHandler implements Runnable {
                     handleDeleteCourse(request);
                     break;
                     
+                case GET_ALL_ENROLLMENTS_REQUEST:
+                    System.out.println("[Enrollment][Server] 收到请求: GET_ALL_ENROLLMENTS_REQUEST");
+                    handleGetAllEnrollments(request);
+                    break;
+                    
                 case HEARTBEAT:
                     handleHeartbeat(request);
                     break;
@@ -1102,6 +1107,21 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             System.err.println("处理获取课程请求时发生异常: " + e.getMessage());
             sendErrorMessage("获取课程失败: " + e.getMessage());
+        }
+    }
+    
+    private void handleGetAllEnrollments(Message request) {
+        try {
+            System.out.println("[Enrollment][Server] 开始查询所有选课记录");
+            server.service.EnrollmentService enrollmentService = new server.service.EnrollmentService();
+            java.util.List<common.vo.EnrollmentVO> enrollments = enrollmentService.getAllEnrollments();
+            System.out.println("[Enrollment][Server] 查询完成，返回条数=" + (enrollments != null ? enrollments.size() : -1));
+            Message response = new Message(MessageType.GET_ALL_ENROLLMENTS_SUCCESS, StatusCode.SUCCESS, enrollments, "获取选课记录成功");
+            sendMessage(response);
+            System.out.println("[Enrollment][Server] 已发送响应: GET_ALL_ENROLLMENTS_SUCCESS");
+        } catch (Exception e) {
+            System.err.println("处理获取选课记录请求时发生异常: " + e.getMessage());
+            sendErrorMessage("获取选课记录失败: " + e.getMessage());
         }
     }
     
