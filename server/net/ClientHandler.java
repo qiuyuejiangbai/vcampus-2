@@ -156,6 +156,11 @@ public class ClientHandler implements Runnable {
                     handleGetAllEnrollments(request);
                     break;
                     
+                case GET_STUDENT_ENROLLMENTS_REQUEST:
+                    System.out.println("[Enrollment][Server] 收到请求: GET_STUDENT_ENROLLMENTS_REQUEST");
+                    handleGetStudentEnrollments(request);
+                    break;
+                    
                 case HEARTBEAT:
                     handleHeartbeat(request);
                     break;
@@ -1122,6 +1127,46 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             System.err.println("处理获取选课记录请求时发生异常: " + e.getMessage());
             sendErrorMessage("获取选课记录失败: " + e.getMessage());
+        }
+    }
+    
+    private void handleGetStudentEnrollments(Message request) {
+        try {
+            System.out.println("[Enrollment][Server] 开始查询学生选课记录");
+            
+            // 检查用户是否已登录
+            if (currentUser == null) {
+                sendErrorMessage("用户未登录");
+                return;
+            }
+            
+            // 获取学生ID
+            Integer studentId = null;
+            if (request.getData() instanceof Integer) {
+                studentId = (Integer) request.getData();
+            } else if (currentUser.getRole() == 0) { // 学生角色
+                // 如果是学生，通过用户ID查找学生ID
+                server.dao.StudentDAO studentDAO = new server.dao.impl.StudentDAOImpl();
+                common.vo.StudentVO student = studentDAO.findByUserId(currentUser.getUserId());
+                if (student != null) {
+                    studentId = student.getStudentId();
+                }
+            }
+            
+            if (studentId == null) {
+                sendErrorMessage("无法获取学生ID");
+                return;
+            }
+            
+            server.service.EnrollmentService enrollmentService = new server.service.EnrollmentService();
+            java.util.List<common.vo.EnrollmentVO> enrollments = enrollmentService.getEnrollmentsByStudentId(studentId);
+            System.out.println("[Enrollment][Server] 查询完成，返回条数=" + (enrollments != null ? enrollments.size() : -1));
+            Message response = new Message(MessageType.GET_STUDENT_ENROLLMENTS_SUCCESS, StatusCode.SUCCESS, enrollments, "获取学生选课记录成功");
+            sendMessage(response);
+            System.out.println("[Enrollment][Server] 已发送响应: GET_STUDENT_ENROLLMENTS_SUCCESS");
+        } catch (Exception e) {
+            System.err.println("处理获取学生选课记录请求时发生异常: " + e.getMessage());
+            sendErrorMessage("获取学生选课记录失败: " + e.getMessage());
         }
     }
     

@@ -5,6 +5,7 @@ import client.ui.api.IModuleView;
 import client.ui.integration.ModuleKeys;
 import client.ui.integration.ModuleRegistry;
 import client.ui.modules.course.CourseTablePanel;
+import client.ui.modules.course.StudentEnrollmentTablePanel;
 import client.ui.modules.course.UITheme;
 import common.vo.UserVO;
 
@@ -102,15 +103,19 @@ public class StudentCourseModule implements IModuleView {
 
     //创建选课记录选项卡
     private JPanel createEnrollmentManagementPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(UITheme.WHITE);
-        panel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_XLARGE, UITheme.PADDING_XLARGE, UITheme.PADDING_XLARGE, UITheme.PADDING_XLARGE));
+        panel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE));
         
-        JLabel placeholderLabel = new JLabel("选课记录功能正在开发中...", SwingConstants.CENTER);
-        placeholderLabel.setFont(UITheme.CONTENT_FONT);
-        placeholderLabel.setForeground(UITheme.MEDIUM_GRAY);
-        panel.add(placeholderLabel, BorderLayout.CENTER);
+        // 创建学生选课记录表格面板
+        StudentEnrollmentTablePanel enrollmentTablePanel = new StudentEnrollmentTablePanel();
+        
+        // 创建搜索面板
+        JPanel searchPanel = createEnrollmentSearchPanel(enrollmentTablePanel);
+        
+        // 设置布局
+        panel.add(searchPanel, BorderLayout.NORTH);
+        panel.add(enrollmentTablePanel, BorderLayout.CENTER);
         
         return panel;
     }
@@ -199,6 +204,81 @@ public class StudentCourseModule implements IModuleView {
         SwingUtilities.invokeLater(() -> {
             int courseCount = courseTablePanel.getCourseTable().getRowCount();
             statusLabel.setText("课程总数: " + courseCount);
+        });
+        
+        rightPanel.add(statusLabel);
+        
+        // 添加到搜索面板
+        searchPanel.add(leftPanel, BorderLayout.WEST);
+        searchPanel.add(rightPanel, BorderLayout.EAST);
+        
+        return searchPanel;
+    }
+    
+    // 创建选课记录搜索面板
+    private JPanel createEnrollmentSearchPanel(StudentEnrollmentTablePanel enrollmentTablePanel) {
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setBackground(UITheme.WHITE);
+        searchPanel.setBorder(UITheme.createEmptyBorder(0, 0, UITheme.PADDING_LARGE, 0));
+        
+        // 左侧搜索区域
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, UITheme.PADDING_MEDIUM, 0));
+        leftPanel.setBackground(UITheme.WHITE);
+        
+        // 搜索标签
+        JLabel searchLabel = new JLabel("搜索选课记录:");
+        searchLabel.setFont(UITheme.CONTENT_FONT);
+        searchLabel.setForeground(UITheme.DARK_GRAY);
+        
+        // 搜索输入框
+        JTextField searchField = new JTextField(25);
+        UITheme.styleTextField(searchField);
+        searchField.setPreferredSize(new Dimension(300, UITheme.INPUT_HEIGHT));
+        
+        // 搜索按钮
+        JButton searchButton = new JButton("搜索");
+        UITheme.styleButton(searchButton);
+        searchButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        
+        // 刷新按钮
+        JButton refreshButton = new JButton("刷新");
+        UITheme.styleButton(refreshButton);
+        refreshButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        
+        // 添加事件监听器
+        searchButton.addActionListener(e -> {
+            String searchText = searchField.getText().trim();
+            if (!searchText.isEmpty()) {
+                enrollmentTablePanel.searchByCourseName(searchText);
+            } else {
+                enrollmentTablePanel.refreshData();
+            }
+        });
+        
+        refreshButton.addActionListener(e -> {
+            enrollmentTablePanel.refreshData();
+            searchField.setText("");
+        });
+        
+        // 添加到左侧面板
+        leftPanel.add(searchLabel);
+        leftPanel.add(searchField);
+        leftPanel.add(searchButton);
+        leftPanel.add(refreshButton);
+        
+        // 右侧状态区域
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, UITheme.PADDING_MEDIUM, 0));
+        rightPanel.setBackground(UITheme.WHITE);
+        
+        // 状态标签
+        JLabel statusLabel = new JLabel("选课记录总数: 0");
+        statusLabel.setFont(UITheme.CONTENT_FONT);
+        statusLabel.setForeground(UITheme.MEDIUM_GRAY);
+        
+        // 更新状态标签
+        SwingUtilities.invokeLater(() -> {
+            int enrollmentCount = enrollmentTablePanel.getEnrollmentTable().getRowCount();
+            statusLabel.setText("选课记录总数: " + enrollmentCount);
         });
         
         rightPanel.add(statusLabel);
