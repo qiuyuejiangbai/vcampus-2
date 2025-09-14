@@ -1,4 +1,4 @@
-package client.ui.modules;
+package client.ui.modules.Library;
 
 import client.ui.api.IModuleView;
 import client.ui.integration.ModuleKeys;

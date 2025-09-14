@@ -1,7 +1,8 @@
-package client.ui.modules;
+package client.ui.modules.Library;
 
-import client.controller.LibraryController;
 import common.vo.BookVO;
+import common.vo.UserVO;
+import client.controller.LibraryController;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -9,31 +10,31 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.HashSet;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
-public class LibraryBookManageModule extends JPanel {
-    private final LibraryController controller;
-    private JTable table;
-    private DefaultTableModel tableModel;
-
+public class LibraryBookSearchModule extends JPanel {
     private JTextField searchField;
     private JButton searchButton;
     private JButton clearButton;
-    private JButton editButton;
-    private JButton deleteButton;
-    private JButton addButton;
+    private JTable table;
+    private JButton borrowButton;
+    private JButton viewButton;
 
     private JCheckBox[] categoryChecks;
+
+    private final LibraryController Controller;
+    private final UserVO currentUser;
 
     // 鼠标悬停行索引
     private int hoverRow = -1;
 
-    public LibraryBookManageModule(LibraryController controller) {
-        this.controller = controller;
+    public LibraryBookSearchModule(LibraryController Controller, UserVO currentUser) {
+        this.Controller = Controller;
+        this.currentUser = currentUser;
         initUI();
-        refreshTable();
+        refreshTable(); // 初始化时加载所有书籍
     }
 
     /** 创建现代化按钮（圆角 + hover 效果） */
@@ -44,6 +45,7 @@ public class LibraryBookManageModule extends JPanel {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+                // 背景色（hover 时变浅）
                 if (getModel().isRollover()) {
                     g2.setColor(hoverColor);
                 } else {
@@ -51,6 +53,7 @@ public class LibraryBookManageModule extends JPanel {
                 }
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
 
+                // 文字
                 FontMetrics fm = g2.getFontMetrics();
                 Rectangle rect = new Rectangle(0, 0, getWidth(), getHeight());
                 int textHeight = fm.getAscent();
@@ -72,11 +75,11 @@ public class LibraryBookManageModule extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout());
 
-        Color themeColor = new Color(0, 64, 0);
-        Color hoverColor = new Color(0, 100, 0);
-        Color headerColor = new Color(0, 100, 0);
-        Color rowAltColor = new Color(220, 245, 220);
-        Color rowHoverColor = new Color(255, 250, 205);
+        Color themeColor = new Color(0, 64, 0);        // 深墨绿色（按钮主色）
+        Color hoverColor = new Color(0, 100, 0);       // hover 墨绿色
+        Color headerColor = new Color(0, 100, 0);      // 表头绿色（介于深墨绿和森林绿之间）
+        Color rowAltColor = new Color(220, 245, 220);  // 表格斑马纹浅绿色
+        Color rowHoverColor = new Color(255, 250, 205); // 浅黄色（鼠标悬停行）
 
         // --- 顶部搜索栏 ---
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -97,6 +100,8 @@ public class LibraryBookManageModule extends JPanel {
                 }
             }
         });
+
+        // 绑定回车触发搜索
         searchField.addActionListener(e -> doSearch());
 
         searchButton = createModernButton("搜索", themeColor, hoverColor);
@@ -130,18 +135,18 @@ public class LibraryBookManageModule extends JPanel {
 
         add(topContainer, BorderLayout.NORTH);
 
-        // --- 表格 ---
-        String[] columns = {"ID", "书名", "作者", "ISBN", "出版社", "分类", "总数", "可借", "位置"};
-        tableModel = new DefaultTableModel(columns, 0);
-        table = new JTable(tableModel) {
+        // 表格
+        String[] columnNames = {"ID", "书名", "作者", "ISBN", "出版社", "分类", "可借"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+        table = new JTable(model) {
             @Override
             public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
                 Component c = super.prepareRenderer(renderer, row, column);
                 if (!isRowSelected(row)) {
                     if (row == hoverRow) {
-                        c.setBackground(rowHoverColor);
+                        c.setBackground(rowHoverColor); // 鼠标悬停高亮
                     } else {
-                        c.setBackground(row % 2 == 0 ? rowAltColor : Color.WHITE);
+                        c.setBackground(row % 2 == 0 ? rowAltColor : Color.WHITE); // 斑马纹
                     }
                 }
                 return c;
@@ -150,8 +155,9 @@ public class LibraryBookManageModule extends JPanel {
 
         table.setRowHeight(28);
         table.setShowGrid(true);
-        table.setGridColor(new Color(180, 180, 180));
+        table.setGridColor(new Color(180, 180, 180)); // 分割线颜色
 
+        // 鼠标移动事件：更新 hoverRow
         table.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
@@ -162,6 +168,8 @@ public class LibraryBookManageModule extends JPanel {
                 }
             }
         });
+
+        // 鼠标移出表格时取消高亮
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseExited(MouseEvent e) {
@@ -185,82 +193,71 @@ public class LibraryBookManageModule extends JPanel {
         JScrollPane scrollPane = new JScrollPane(table);
         add(scrollPane, BorderLayout.CENTER);
 
-        // --- 底部按钮 ---
+        // 底部按钮
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        addButton = createModernButton("新增", themeColor, hoverColor);
-        editButton = createModernButton("编辑", themeColor, hoverColor);
-        deleteButton = createModernButton("删除", themeColor, hoverColor);
-        bottomPanel.add(addButton);
-        bottomPanel.add(editButton);
-        bottomPanel.add(deleteButton);
+        viewButton = createModernButton("查看", themeColor, hoverColor);
+        borrowButton = createModernButton("借阅", themeColor, hoverColor);
+        bottomPanel.add(viewButton);
+        bottomPanel.add(borrowButton);
         add(bottomPanel, BorderLayout.SOUTH);
 
         bindEvents();
     }
 
     private void bindEvents() {
+        // 搜索按钮
         searchButton.addActionListener(e -> doSearch());
+
+        // 清空按钮
         clearButton.addActionListener(e -> refreshTable());
 
-        // 新增按钮
-        addButton.addActionListener(e -> {
-            JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "新增书籍", true);
-            dialog.setSize(480, 615);   // 更紧凑的大小
-            dialog.setResizable(false); // 固定大小
-            dialog.setLocationRelativeTo(this);
-
-            LibraryBookAddModule addPanel = new LibraryBookAddModule(controller);
-            dialog.setContentPane(addPanel);
-            dialog.setVisible(true);
-
-            refreshTable(); // 新增后刷新表格
-        });
-
-
-        // 编辑按钮
-        editButton.addActionListener(e -> {
+        // 借阅按钮
+        borrowButton.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row >= 0) {
-                int bookId = (int) tableModel.getValueAt(row, 0);
-                BookVO book = controller.getBookById(bookId);
-                if (book != null) {
-                    LibraryBookEditDialogModule dialog = new LibraryBookEditDialogModule(controller, this, book);
-                    dialog.setVisible(true);
-                } else {
-                    JOptionPane.showMessageDialog(this, "未找到该书籍的详细信息！");
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "请先选择一本书再编辑！");
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "请先选择一本书！");
+                return;
             }
+            int bookId = (int) table.getValueAt(row, 0);
+            boolean success = Controller.requestBorrow(bookId);
+            JOptionPane.showMessageDialog(this,
+                    success ? "借阅成功！" : "借阅失败！");
+            refreshTable();
         });
 
-        // 删除按钮
-        deleteButton.addActionListener(e -> {
+        // 查看按钮
+        viewButton.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row >= 0) {
-                int bookId = (int) tableModel.getValueAt(row, 0);
-                int confirm = JOptionPane.showConfirmDialog(this, "确认删除该书籍？", "删除确认", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    if (controller.submitDeleteBook(bookId)) {
-                        JOptionPane.showMessageDialog(this, "删除成功");
-                        refreshTable();
-                    } else {
-                        JOptionPane.showMessageDialog(this, "删除失败，可能存在未归还记录");
-                    }
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "请选择要删除的书籍");
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "请先选择一本书！");
+                return;
+            }
+            int bookId = (int) table.getValueAt(row, 0);
+            BookVO book = Controller.getBookById(bookId);
+            if (book != null) {
+                JOptionPane.showMessageDialog(this,
+                        "书名: " + book.getTitle() + "\n" +
+                                "作者: " + book.getAuthor() + "\n" +
+                                "ISBN: " + book.getIsbn() + "\n" +
+                                "出版社: " + book.getPublisher() + "\n" +
+                                "分类: " + book.getCategory() + "\n" +
+                                "馆藏总数: " + book.getTotalStock() + "\n" +
+                                "可借数量: " + book.getAvailableStock() + "\n" +
+                                "状态: " + book.getStatus() + "\n" +
+                                "位置: " + book.getLocation()
+                );
             }
         });
     }
 
-    /** 搜索方法（关键词 + 分类，模糊匹配） */
+    /** 统一的搜索方法（关键词 + 分类，模糊匹配） */
     private void doSearch() {
         String keyword = searchField.getText().trim();
         if (keyword.equals("请输入关键词（书名/作者/ISBN/分类）")) {
             keyword = "";
         }
 
+        // 收集选中的分类
         Set<String> selectedCategories = new HashSet<>();
         for (JCheckBox cb : categoryChecks) {
             if (cb.isSelected()) {
@@ -268,9 +265,10 @@ public class LibraryBookManageModule extends JPanel {
             }
         }
 
-        List<BookVO> books = controller.searchBooks(keyword);
-        tableModel.setRowCount(0);
+        List<BookVO> books = Controller.searchBooks(keyword);
 
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        model.setRowCount(0);
         for (BookVO b : books) {
             boolean categoryMatch = selectedCategories.isEmpty();
             for (String cat : selectedCategories) {
@@ -279,17 +277,19 @@ public class LibraryBookManageModule extends JPanel {
                     break;
                 }
             }
-            if (categoryMatch) {
-                tableModel.addRow(new Object[]{
+
+            boolean keywordMatch = keyword.isEmpty()
+                    || (b.getCategory() != null && b.getCategory().contains(keyword));
+
+            if (categoryMatch && keywordMatch) {
+                model.addRow(new Object[]{
                         b.getBookId(),
                         b.getTitle(),
                         b.getAuthor(),
                         b.getIsbn(),
                         b.getPublisher(),
                         b.getCategory(),
-                        b.getTotalStock(),
-                        b.getAvailableStock(),
-                        b.getLocation()
+                        b.getAvailableStock()
                 });
             }
         }
@@ -299,6 +299,6 @@ public class LibraryBookManageModule extends JPanel {
         searchField.setText("请输入关键词（书名/作者/ISBN/分类）");
         searchField.setForeground(Color.GRAY);
         for (JCheckBox cb : categoryChecks) cb.setSelected(false);
-        doSearch();
+        doSearch(); // 默认查询全部
     }
 }

@@ -1,4 +1,4 @@
-package client.ui.modules;
+package client.ui.modules.Library;
 
 import common.vo.UserVO;
 

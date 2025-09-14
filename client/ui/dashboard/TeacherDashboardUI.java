@@ -7,6 +7,7 @@ import client.ui.dashboard.layout.SideNav;
 import client.ui.dashboard.titlebar.AppTitleBar;
 import client.ui.integration.ModuleKeys;
 import client.ui.integration.ModuleRegistry;
+import client.ui.modules.Library.LibraryModule;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 
@@ -124,7 +125,7 @@ public class TeacherDashboardUI extends JFrame {
 
         // 注册图书馆模块
         ModuleRegistry.register(
-                new client.ui.modules.LibraryModule(
+                new LibraryModule(
                         ModuleKeys.TEACHER_LIBRARY, "图书馆", "resources/icons/LibraryIcon.png"
                 )
         );
