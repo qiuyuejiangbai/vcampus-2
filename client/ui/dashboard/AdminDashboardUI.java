@@ -117,11 +117,8 @@ public class AdminDashboardUI extends JFrame {
     }
 
     private void initModules() {
-        // 管理员专属首页
-        client.ui.modules.AdminHomeModule.registerTo(ModuleRegistry.class);
-        // 管理员论坛与资源中心
+        // 管理员论坛
         client.ui.modules.AdminForumModule.registerTo(ModuleRegistry.class);
-        client.ui.modules.AdminResourceCenterModule.registerTo(ModuleRegistry.class);
 
         // 课程管理
         client.ui.modules.AdminCourseModule.registerTo(ModuleRegistry.class);
@@ -139,9 +136,11 @@ public class AdminDashboardUI extends JFrame {
             Icon icon = loadIcon(m.getIconPath());
             sideNav.addItem(m.getKey(), m.getDisplayName(), icon);
         }
-        contentHost.showPage(client.ui.integration.ModuleKeys.ADMIN_HOME);
-        sideNav.selectKey(client.ui.integration.ModuleKeys.ADMIN_HOME);
-        IModuleView home = ModuleRegistry.findByKey(client.ui.integration.ModuleKeys.ADMIN_HOME);
+        // 默认显示论坛模块
+        String defaultModuleKey = "admin_forum";
+        contentHost.showPage(defaultModuleKey);
+        sideNav.selectKey(defaultModuleKey);
+        IModuleView home = ModuleRegistry.findByKey(defaultModuleKey);
         if (home != null) appBar.setModuleName(home.getDisplayName());
     }
 

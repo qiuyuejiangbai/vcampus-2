@@ -6,10 +6,6 @@ public final class ModuleKeys {
 
     // 兼容保留：HOME 旧键（尽量不再使用）
     public static final String HOME = "home";
-    // 新增区分的首页键
-    public static final String STUDENT_HOME = "student_home";
-    public static final String TEACHER_HOME = "teacher_home";
-    public static final String ADMIN_HOME = "admin_home";
     public static final String COURSE = "course";
     public static final String TIMETABLE = "timetable";
     public static final String GRADE = "grade";

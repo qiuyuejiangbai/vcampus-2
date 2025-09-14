@@ -143,12 +143,47 @@ public class AdminForumModule implements IModuleView {
      * 加载并缩放图标到指定尺寸（用于按钮/标签的统一大小）。
      */
     private ImageIcon loadScaledIcon(String path, int width, int height) {
+        if (path == null || path.trim().isEmpty()) return null;
+        final String normalized = path.replace('\\', '/');
+        
         try {
-            java.net.URL url = getClass().getClassLoader().getResource(path);
-            if (url == null) return null;
-            Image img = new ImageIcon(url).getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
-            return new ImageIcon(img);
-        } catch (Exception ignored) { return null; }
+            // 候选路径（类路径变体 + 资源目录前缀）
+            String cp1 = normalized;
+            String cp2 = normalized.startsWith("/") ? normalized.substring(1) : "/" + normalized;
+            String cp3 = normalized.startsWith("resources/") ? normalized : ("resources/" + normalized);
+            String cp4 = cp3.startsWith("/") ? cp3.substring(1) : "/" + cp3;
+            
+            String[] candidates = new String[] { cp1, cp2, cp3, cp4 };
+            
+            // 从当前线程的 ClassLoader 与类的 ClassLoader 依次尝试
+            ClassLoader cl1 = Thread.currentThread().getContextClassLoader();
+            ClassLoader cl2 = getClass().getClassLoader();
+            for (String p : candidates) {
+                if (p == null || p.trim().isEmpty()) continue;
+                try {
+                    java.net.URL url = (cl1 != null ? cl1.getResource(p) : null);
+                    if (url == null && cl2 != null) url = cl2.getResource(p);
+                    if (url != null) {
+                        Image img = new ImageIcon(url).getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+                        return new ImageIcon(img);
+                    }
+                } catch (Exception ignored) { }
+            }
+            
+            // 文件系统（相对/绝对路径）
+            for (String p : new String[] { normalized, cp3 }) {
+                try {
+                    java.io.File file = new java.io.File(p);
+                    if (file.exists()) {
+                        Image img = new ImageIcon(file.getAbsolutePath()).getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+                        return new ImageIcon(img);
+                    }
+                } catch (Exception ignored) { }
+            }
+        } catch (Exception e) {
+            System.err.println("加载图标失败: " + normalized + " - " + e.getMessage());
+        }
+        return null;
     }
     
     private void createThreadListView() {
@@ -2386,10 +2421,44 @@ public class AdminForumModule implements IModuleView {
     }
 
     private Image loadResourceImage(String path) {
+        if (path == null || path.trim().isEmpty()) return null;
+        final String normalized = path.replace('\\', '/');
         try {
-            java.net.URL url = getClass().getClassLoader().getResource(path);
-            return url != null ? new ImageIcon(url).getImage() : null;
-        } catch (Exception ignored) { return null; }
+            // 候选路径（类路径变体 + 资源目录前缀 + 绝对/相对文件路径）
+            String cp1 = normalized;
+            String cp2 = normalized.startsWith("/") ? normalized.substring(1) : "/" + normalized; // 处理带/或不带/两种写法
+            String cp3 = normalized.startsWith("resources/") ? normalized : ("resources/" + normalized);
+            String cp4 = cp3.startsWith("/") ? cp3.substring(1) : "/" + cp3;
+
+            String[] candidates = new String[] { cp1, cp2, cp3, cp4 };
+
+            // 1) 从当前线程的 ClassLoader 与类的 ClassLoader 依次尝试
+            ClassLoader cl1 = Thread.currentThread().getContextClassLoader();
+            ClassLoader cl2 = getClass().getClassLoader();
+            for (String p : candidates) {
+                if (p == null || p.trim().isEmpty()) continue;
+                try {
+                    java.net.URL url = (cl1 != null ? cl1.getResource(p) : null);
+                    if (url == null && cl2 != null) url = cl2.getResource(p);
+                    if (url != null) {
+                        return new ImageIcon(url).getImage();
+                    }
+                } catch (Exception ignored) { }
+            }
+
+            // 2) 文件系统（相对/绝对路径）
+            for (String p : new String[] { normalized, cp3 }) {
+                try {
+                    java.io.File file = new java.io.File(p);
+                    if (file.exists()) {
+                        return new ImageIcon(file.getAbsolutePath()).getImage();
+                    }
+                } catch (Exception ignored) { }
+            }
+        } catch (Exception e) {
+            System.err.println("加载图片失败: " + normalized + " - " + e.getMessage());
+        }
+        return null;
     }
     
     /**

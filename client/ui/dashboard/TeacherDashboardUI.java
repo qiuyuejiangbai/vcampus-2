@@ -118,10 +118,7 @@ public class TeacherDashboardUI extends JFrame {
     }
 
     private void initModules() {
-        // 教师专属首页
-        client.ui.modules.TeacherHomeModule.registerTo(ModuleRegistry.class);
         ModuleRegistry.register(new client.ui.modules.TeacherForumModule());
-        ModuleRegistry.register(new client.ui.modules.TeacherResourceCenterModule());
 
         // 课程管理
         client.ui.modules.TeacherCourseModule.registerTo(ModuleRegistry.class);
@@ -139,9 +136,11 @@ public class TeacherDashboardUI extends JFrame {
             Icon icon = loadIcon(m.getIconPath());
             sideNav.addItem(m.getKey(), m.getDisplayName(), icon);
         }
-        contentHost.showPage(client.ui.integration.ModuleKeys.TEACHER_HOME);
-        sideNav.selectKey(client.ui.integration.ModuleKeys.TEACHER_HOME);
-        IModuleView home = ModuleRegistry.findByKey(client.ui.integration.ModuleKeys.TEACHER_HOME);
+        // 默认显示论坛模块
+        String defaultModuleKey = "teacher_forum";
+        contentHost.showPage(defaultModuleKey);
+        sideNav.selectKey(defaultModuleKey);
+        IModuleView home = ModuleRegistry.findByKey(defaultModuleKey);
         if (home != null) appBar.setModuleName(home.getDisplayName());
     }
 
