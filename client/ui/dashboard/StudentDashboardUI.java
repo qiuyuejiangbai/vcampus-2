@@ -133,6 +133,13 @@ public class StudentDashboardUI extends JFrame {
                 )
         );
 
+        // 注册商店模块
+        ModuleRegistry.register(
+                new client.ui.modules.StoreModule(
+                        ModuleKeys.STUDENT_STORE, "校园商店", null//"icons/module/store.png"
+                 )
+         );
+
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
             contentHost.addPage(m.getKey(), m.getComponent());

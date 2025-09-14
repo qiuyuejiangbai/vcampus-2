@@ -37,10 +37,10 @@ INSERT INTO admins (user_id, username, permissions) VALUES
 -- ========================================
 
 -- 插入教师详细信息
-INSERT INTO teachers (user_id, name, teacher_no, phone, email, department, research_area) VALUES 
-(2, '张三', 'T001', '13800000001', 'zhangsan@vcampus.edu.cn', '计算机学院', 'Java程序设计,软件工程'),
-(3, '李四', 'T002', '13800000002', 'lisi@vcampus.edu.cn', '计算机学院', '数据结构与算法,算法设计'),
-(4, '王五', 'T003', '13800000003', 'wangwu@vcampus.edu.cn', '计算机学院', '数据库系统,大数据技术');
+INSERT INTO teachers (user_id, name, teacher_no, phone, email, department, research_area,balance) VALUES 
+(2, '张三', 'T001', '13800000001', 'zhangsan@vcampus.edu.cn', '计算机学院', 'Java程序设计,软件工程',1000.00),
+(3, '李四', 'T002', '13800000002', 'lisi@vcampus.edu.cn', '计算机学院', '数据结构与算法,算法设计',1000.00),
+(4, '王五', 'T003', '13800000003', 'wangwu@vcampus.edu.cn', '计算机学院', '数据库系统,大数据技术',1000.00);
 
 -- ========================================
 -- 学生详细信息（students表）
@@ -168,17 +168,17 @@ VALUES
 -- ========================================
 
 -- 插入商品信息
-INSERT INTO products (product_name, description, price, stock, category, status) VALUES 
-('笔记本', '学生专用笔记本，A4大小，100页', 8.50, 200, '文具用品', 'available'),
-('圆珠笔', '蓝色圆珠笔，书写流畅', 2.00, 500, '文具用品', 'available'),
-('橡皮擦', '4B橡皮擦，擦除干净不留痕', 1.50, 300, '文具用品', 'available'),
-('计算器', '科学计算器，适合理工科学生', 45.00, 50, '电子产品', 'available'),
-('U盘', '32GB USB3.0 U盘', 35.00, 100, '电子产品', 'available'),
-('矿泉水', '550ml纯净水', 2.50, 1000, '饮品食品', 'available'),
-('面包', '全麦吐司面包', 6.00, 80, '饮品食品', 'available'),
-('咖啡', '速溶咖啡，提神醒脑', 15.00, 150, '饮品食品', 'available'),
-('苹果', '新鲜红富士苹果，1个装', 3.00, 200, '饮品食品', 'available'),
-('牛奶', '纯牛奶250ml', 4.50, 120, '饮品食品', 'available');
+INSERT INTO products (product_name, description, price, stock, category, image_url) VALUES 
+('笔记本', '学生专用笔记本，A4大小，100页', 8.50, 200, '文具用品', null),
+('圆珠笔', '蓝色圆珠笔，书写流畅', 2.00, 500, '文具用品', null),
+('橡皮擦', '4B橡皮擦，擦除干净不留痕', 1.50, 300, '文具用品', null),
+('计算器', '科学计算器，适合理工科学生', 45.00, 50, '电子产品', null),
+('U盘', '32GB USB3.0 U盘', 35.00, 100, '电子产品', null),
+('矿泉水', '550ml纯净水', 2.50, 1000, '饮品食品', null),
+('面包', '全麦吐司面包', 6.00, 80, '饮品食品', null),
+('咖啡', '速溶咖啡，提神醒脑', 15.00, 150, '饮品食品', null),
+('苹果', '新鲜红富士苹果，1个装', 3.00, 200, '饮品食品', null),
+('牛奶', '纯牛奶250ml', 4.50, 120, '饮品食品', null);
 
 -- ========================================
 -- 订单记录（orders表）

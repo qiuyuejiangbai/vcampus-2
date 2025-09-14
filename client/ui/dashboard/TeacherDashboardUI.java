@@ -130,6 +130,13 @@ public class TeacherDashboardUI extends JFrame {
                 )
         );
 
+        // 注册商店模块
+        ModuleRegistry.register(
+                new client.ui.modules.StoreModule(
+                        ModuleKeys.TEACHER_STORE, "校园商店", null//"icons/module/store.png"
+                )
+        );
+        
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
             contentHost.addPage(m.getKey(), m.getComponent());
