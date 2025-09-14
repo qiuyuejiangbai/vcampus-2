@@ -93,6 +93,12 @@ public class StudentForumModule implements IModuleView {
     private static final int REFRESH_CLICK_THROTTLE_MS = 500;
     private volatile long lastRefreshClickAtMs = 0L;
 
+    // 搜索相关状态
+    private boolean isSearchMode = false;        // 是否处于搜索模式
+    private String currentSearchKeyword = null;  // 当前搜索关键词
+    private List<ThreadVO> searchResults = new ArrayList<>(); // 搜索结果
+    private JTextField searchFieldRef = null;    // 搜索框引用，用于清空文本
+
     public StudentForumModule() { 
         // 先初始化数据容器，避免在构建UI过程中（如刷新下拉框）发生空指针
         threads = new ArrayList<>();
@@ -166,9 +172,26 @@ public class StudentForumModule implements IModuleView {
         java.awt.event.ActionListener categoryClick = new java.awt.event.ActionListener() {
             @Override public void actionPerformed(java.awt.event.ActionEvent e) {
                 JButton src = (JButton) e.getSource();
-                if (src == latestCategoryButton) currentSortMode = SortMode.LATEST;
-                else if (src == hotCategoryButton) currentSortMode = SortMode.HOT;
-                else if (src == essenceCategoryButton) currentSortMode = SortMode.ESSENCE;
+                if (src == latestCategoryButton) {
+                    currentSortMode = SortMode.LATEST;
+                    System.out.println("[DEBUG][精华功能] 切换到最新模式");
+                } else if (src == hotCategoryButton) {
+                    currentSortMode = SortMode.HOT;
+                    System.out.println("[DEBUG][精华功能] 切换到热门模式");
+                } else if (src == essenceCategoryButton) {
+                    currentSortMode = SortMode.ESSENCE;
+                    System.out.println("[DEBUG][精华功能] *** 用户点击精华按钮 *** 切换到精华模式，开始筛选精华帖子");
+                    System.out.println("[DEBUG][精华功能] 当前帖子总数: " + (threads != null ? threads.size() : 0));
+                    if (threads != null) {
+                        int essenceCount = 0;
+                        for (ThreadVO t : threads) {
+                            if (t.getIsEssence() != null && t.getIsEssence()) {
+                                essenceCount++;
+                            }
+                        }
+                        System.out.println("[DEBUG][精华功能] 可用精华帖子数量: " + essenceCount);
+                    }
+                }
                 updateCategorySelection(src);
                 refreshThreadList();
             }
@@ -229,6 +252,7 @@ public class StudentForumModule implements IModuleView {
 
         // 无边框输入框，带占位符"搜索内容..."
         JTextField searchField = new JTextField();
+        searchFieldRef = searchField; // 保存引用
         searchField.setFont(UIManager.getFont("TextField.font").deriveFont(Font.PLAIN, 14f));
         searchField.setBorder(new EmptyBorder(0, 0, 0, 0));
         searchField.setOpaque(false);
@@ -264,6 +288,30 @@ public class StudentForumModule implements IModuleView {
         searchBox.addMouseListener(hoverHandler);
         searchField.addMouseListener(hoverHandler);
         searchIcon.addMouseListener(hoverHandler);
+
+        // 添加搜索功能：回车键触发搜索
+        searchField.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
+                    String keyword = searchField.getText().trim();
+                    if (!keyword.isEmpty() && !placeholder.equals(keyword)) {
+                        performSearch(keyword);
+                    }
+                }
+            }
+        });
+        
+        // 搜索图标点击事件
+        searchIcon.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                String keyword = searchField.getText().trim();
+                if (!keyword.isEmpty() && !placeholder.equals(keyword)) {
+                    performSearch(keyword);
+                }
+            }
+        });
 
         searchBox.add(searchField, BorderLayout.CENTER);
 
@@ -315,6 +363,12 @@ public class StudentForumModule implements IModuleView {
             }
             lastRefreshClickAtMs = now;
             System.out.println("[Forum][Client] 点击刷新按钮");
+            
+            // 如果处于搜索模式，退出搜索模式
+            if (isSearchMode) {
+                exitSearchMode();
+            }
+            
             // 刷新时回到列表视图，清除分区筛选，确保可见变化
             try {
                 currentSectionIdFilter = null;
@@ -1504,6 +1558,18 @@ public class StudentForumModule implements IModuleView {
                 }
             }
             
+            // 精华模式筛选：只显示精华帖子
+            if (currentSortMode == SortMode.ESSENCE) {
+                boolean isEssence = thread.getIsEssence() != null && thread.getIsEssence();
+                System.out.println("[DEBUG][精华功能] 精华模式筛选检查: 帖子ID=" + thread.getThreadId() + 
+                                 ", 标题=" + thread.getTitle() + ", isEssence=" + isEssence);
+                if (!isEssence) {
+                    System.out.println("[DEBUG][精华功能] 非精华帖子被过滤掉，帖子ID=" + thread.getThreadId());
+                    continue;
+                }
+                System.out.println("[DEBUG][精华功能] 精华帖子通过筛选，帖子ID=" + thread.getThreadId());
+            }
+            
             System.out.println("[DEBUG] 准备创建帖子项 - ID=" + thread.getThreadId() + 
                              ", 标题=" + thread.getTitle() + 
                              ", 是否公告=" + thread.getIsAnnouncement());
@@ -1811,11 +1877,73 @@ public class StudentForumModule implements IModuleView {
 
         // 第一行右端添加分类标签，悬浮整卡片时也变墨绿色
         JLabel categoryTag = createRoundedAnimatedTag(getThreadSectionName(thread), 999, 180);
+        
+        // 检查是否为精华帖子，如果是则添加精华图标
+        JPanel rightSection = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        rightSection.setOpaque(false);
+        
+        boolean isEssencePost = thread.getIsEssence() != null && thread.getIsEssence();
+        System.out.println("[DEBUG][精华功能] 帖子ID=" + thread.getThreadId() + 
+                         ", 标题=" + thread.getTitle() + 
+                         ", getIsEssence()=" + thread.getIsEssence() + 
+                         ", isEssencePost=" + isEssencePost);
+        
+        if (isEssencePost) {
+            System.out.println("[DEBUG][精华功能] *** 精华帖子确认 *** 正在为精华帖子添加图标，帖子ID=" + thread.getThreadId());
+            
+            // 检查图标文件是否存在
+            java.io.File iconFile = new java.io.File("resources/icons/精华帖子.png");
+            System.out.println("[DEBUG][精华功能] 检查图标文件: " + iconFile.getAbsolutePath() + ", 存在=" + iconFile.exists());
+            
+            // 尝试多个可能的路径
+            String[] iconPaths = {
+                "icons/精华帖子.png",
+                "resources/icons/精华帖子.png",
+                "/icons/精华帖子.png",
+                "/resources/icons/精华帖子.png"
+            };
+            
+            ImageIcon essenceIcon = null;
+            String successPath = null;
+            
+            for (String path : iconPaths) {
+                System.out.println("[DEBUG][精华功能] 尝试加载图标路径: " + path);
+                essenceIcon = loadScaledIcon(path, 20, 20);
+                if (essenceIcon != null) {
+                    successPath = path;
+                    System.out.println("[DEBUG][精华功能] 图标加载成功，路径: " + path);
+                    break;
+                }
+            }
+            
+            if (essenceIcon != null) {
+                System.out.println("[DEBUG][精华功能] *** 精华图标加载成功 *** 使用路径: " + successPath + ", 添加到界面");
+                JLabel essenceLabel = new JLabel(essenceIcon);
+                essenceLabel.setToolTipText("精华帖子");
+                essenceLabel.setBorder(new EmptyBorder(0, 5, 0, 0)); // 添加一些间距
+                rightSection.add(essenceLabel, 0); // 添加到最前面
+                System.out.println("[DEBUG][精华功能] 精华图标已添加到 rightSection");
+            } else {
+                System.out.println("[ERROR][精华功能] *** 精华图标加载失败 *** 所有路径都尝试过了");
+                // 作为备用，使用文字标签
+                JLabel essenceTextLabel = new JLabel("★"); // 星星符号
+                essenceTextLabel.setForeground(new Color(255, 215, 0)); // 金色
+                essenceTextLabel.setFont(essenceTextLabel.getFont().deriveFont(Font.BOLD, 16f));
+                essenceTextLabel.setToolTipText("精华帖子");
+                essenceTextLabel.setBorder(new EmptyBorder(0, 5, 0, 0));
+                rightSection.add(essenceTextLabel, 0);
+                System.out.println("[DEBUG][精华功能] 使用文字★作为精华标识");
+            }
+        } else {
+            System.out.println("[DEBUG][精华功能] 非精华帖子，不添加图标 - 帖子ID=" + thread.getThreadId());
+        }
+        
+        rightSection.add(categoryTag);
 
         JPanel firstLine = new JPanel(new BorderLayout());
         firstLine.setOpaque(false);
         firstLine.add(nameTimeStack, BorderLayout.WEST);
-        firstLine.add(categoryTag, BorderLayout.EAST);
+        firstLine.add(rightSection, BorderLayout.EAST);
         firstLine.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 第二行：标题（不加粗但较大），与第一行左端对齐，顶部留出适当空隙
@@ -2102,6 +2230,23 @@ public class StudentForumModule implements IModuleView {
                 if (a == null) return 1;
                 if (b == null) return -1;
                 switch (currentSortMode) {
+                    case ESSENCE: {
+                        // 精华模式：优先显示精华帖子，然后按创建时间倒序
+                        boolean aIsEssence = a.getIsEssence() != null && a.getIsEssence();
+                        boolean bIsEssence = b.getIsEssence() != null && b.getIsEssence();
+                        
+                        // 精华帖子排在前面
+                        if (aIsEssence && !bIsEssence) return -1;
+                        if (!aIsEssence && bIsEssence) return 1;
+                        
+                        // 两个都是精华或都不是精华时，按创建时间倒序
+                        java.sql.Timestamp ca = a.getCreatedTime();
+                        java.sql.Timestamp cb = b.getCreatedTime();
+                        if (ca == null && cb == null) break;
+                        if (ca == null) return 1;
+                        if (cb == null) return -1;
+                        return Long.compare(cb.getTime(), ca.getTime());
+                    }
                     case HOT: {
                         int ra = a.getReplyCount() != null ? a.getReplyCount() : 0;
                         int rb = b.getReplyCount() != null ? b.getReplyCount() : 0;
@@ -3166,6 +3311,232 @@ public class StudentForumModule implements IModuleView {
         });
         timer.setRepeats(false);
         timer.start();
+    }
+    
+    /**
+     * 执行搜索操作
+     * @param keyword 搜索关键词
+     */
+    private void performSearch(String keyword) {
+        System.out.println("[Forum][UI] ========== 执行搜索操作 ==========");
+        if (keyword == null || keyword.trim().isEmpty()) {
+            System.out.println("[Forum][UI] 搜索关键词为空，取消搜索");
+            return;
+        }
+        
+        keyword = keyword.trim();
+        System.out.println("[Forum][UI] 开始搜索，关键词: '" + keyword + "'");
+        
+        // 进入搜索模式
+        isSearchMode = true;
+        currentSearchKeyword = keyword;
+        System.out.println("[Forum][UI] 已进入搜索模式，当前关键词: " + currentSearchKeyword);
+        
+        // 发送搜索请求到服务器
+        client.net.ServerConnection conn = this.connectionRef;
+        if (conn == null) {
+            System.out.println("[Forum][UI] 服务器连接为null");
+            showToastMessage("未连接到服务器", false);
+            return;
+        }
+        if (!conn.isConnected()) {
+            System.out.println("[Forum][UI] 服务器连接已断开");
+            showToastMessage("未连接到服务器", false);
+            return;
+        }
+        System.out.println("[Forum][UI] 服务器连接正常，准备发送搜索请求");
+        
+        // 设置搜索结果监听器
+        conn.setMessageListener(common.protocol.MessageType.SEARCH_THREADS_SUCCESS, new client.net.ServerConnection.MessageListener() {
+            @Override
+            public void onMessageReceived(common.protocol.Message message) {
+                SwingUtilities.invokeLater(() -> {
+                    handleSearchResults(message);
+                });
+                try {
+                    conn.removeMessageListener(common.protocol.MessageType.SEARCH_THREADS_SUCCESS);
+                } catch (Exception ignore) {}
+            }
+        });
+        
+        // 设置搜索失败监听器
+        conn.setMessageListener(common.protocol.MessageType.SEARCH_THREADS_FAIL, new client.net.ServerConnection.MessageListener() {
+            @Override
+            public void onMessageReceived(common.protocol.Message message) {
+                SwingUtilities.invokeLater(() -> {
+                    showToastMessage("搜索失败: " + message.getMessage(), false);
+                    isSearchMode = false;
+                    currentSearchKeyword = null;
+                });
+                try {
+                    conn.removeMessageListener(common.protocol.MessageType.SEARCH_THREADS_FAIL);
+                } catch (Exception ignore) {}
+            }
+        });
+        
+        // 发送搜索请求
+        System.out.println("[Forum][UI] 创建搜索请求消息，关键词: '" + keyword + "'");
+        common.protocol.Message searchRequest = new common.protocol.Message(
+            common.protocol.MessageType.SEARCH_THREADS_REQUEST, keyword);
+        System.out.println("[Forum][UI] 搜索请求消息创建完成，类型: " + searchRequest.getType() + ", 数据: " + searchRequest.getData());
+        
+        boolean sent = conn.sendMessage(searchRequest);
+        System.out.println("[Forum][UI] 搜索请求发送结果: " + sent);
+        
+        if (!sent) {
+            System.out.println("[Forum][UI] 发送搜索请求失败，退出搜索模式");
+            showToastMessage("发送搜索请求失败", false);
+            isSearchMode = false;
+            currentSearchKeyword = null;
+        } else {
+            System.out.println("[Forum][UI] 搜索请求发送成功，等待服务器响应");
+        }
+    }
+    
+    /**
+     * 处理搜索结果
+     * @param message 服务器返回的搜索结果消息
+     */
+    @SuppressWarnings("unchecked")
+    private void handleSearchResults(common.protocol.Message message) {
+        System.out.println("[Forum][UI] ========== 处理搜索结果 ==========");
+        try {
+            System.out.println("[Forum][UI] 收到搜索结果消息，类型: " + message.getType() + ", 状态码: " + message.getStatusCode());
+            System.out.println("[Forum][UI] 搜索结果消息内容: " + message.getMessage());
+            
+            searchResults = (List<ThreadVO>) message.getData();
+            if (searchResults == null) {
+                System.out.println("[Forum][UI] 搜索结果数据为null，创建空列表");
+                searchResults = new ArrayList<>();
+            }
+            
+            System.out.println("[Forum][UI] 收到搜索结果: " + searchResults.size() + " 个帖子");
+            
+            // 打印前几个搜索结果的详细信息
+            for (int i = 0; i < Math.min(3, searchResults.size()); i++) {
+                ThreadVO thread = searchResults.get(i);
+                System.out.println("[Forum][UI] 搜索结果[" + i + "]: ID=" + thread.getThreadId() + 
+                                 ", 标题=" + thread.getTitle() + ", 作者=" + thread.getAuthorName());
+            }
+            
+            // 更新帖子列表显示搜索结果
+            updateThreadListWithSearchResults();
+            
+            System.out.println("[Forum][UI] 搜索结果处理完成");
+            
+        } catch (Exception e) {
+            System.err.println("[Forum][UI] 处理搜索结果失败: " + e.getMessage());
+            e.printStackTrace();
+            showToastMessage("处理搜索结果失败", false);
+            isSearchMode = false;
+            currentSearchKeyword = null;
+        }
+    }
+    
+    /**
+     * 更新帖子列表显示搜索结果
+     */
+    private void updateThreadListWithSearchResults() {
+        if (threadScrollPane == null) {
+            return;
+        }
+        
+        // 获取帖子列表容器（滚动区域内的面板）
+        JPanel threadItemsPanel = (JPanel) threadScrollPane.getViewport().getView();
+        if (threadItemsPanel == null) {
+            return;
+        }
+        
+        // 清空当前帖子列表容器
+        threadItemsPanel.removeAll();
+        
+        if (searchResults.isEmpty()) {
+            // 显示无搜索结果的提示
+            JPanel noResultPanel = createNoResultPanel();
+            threadItemsPanel.add(noResultPanel);
+        } else {
+            // 显示搜索结果 - 使用与主列表相同的样式
+            System.out.println("[Forum][UI] 显示搜索结果，数量: " + searchResults.size());
+            for (ThreadVO thread : searchResults) {
+                JPanel threadCard = createThreadItem(thread); // 使用与主列表相同的创建方法
+                threadItemsPanel.add(threadCard);
+                threadItemsPanel.add(Box.createVerticalStrut(12)); // 添加间距
+            }
+        }
+        
+        // 刷新UI
+        threadItemsPanel.revalidate();
+        threadItemsPanel.repaint();
+        
+        // 同步搜索结果中每个子项的宽度，确保与主列表样式一致
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override 
+            public void run() { 
+                syncThreadItemsWidth(); 
+            }
+        });
+    }
+    
+    
+    /**
+     * 创建无搜索结果的提示面板
+     */
+    private JPanel createNoResultPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(248, 249, 250)); // 与帖子列表背景一致
+        panel.setBorder(BorderFactory.createEmptyBorder(40, 20, 40, 20));
+        
+        // 设置左对齐并限制最大宽度
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, panel.getPreferredSize().height));
+        
+        // 创建图标和文字
+        JLabel iconLabel = new JLabel("🔍");
+        iconLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 36)); // 稍微缩小图标
+        iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel titleLabel = new JLabel("没有搜索到结果");
+        titleLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 16f)); // 稍微缩小字体
+        titleLabel.setForeground(new Color(107, 114, 128));
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel messageLabel = new JLabel("试试其他关键词，或点击刷新查看所有帖子");
+        messageLabel.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 14f));
+        messageLabel.setForeground(new Color(156, 163, 175));
+        messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        messageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setOpaque(false);
+        contentPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        contentPanel.add(iconLabel);
+        contentPanel.add(Box.createVerticalStrut(12));
+        contentPanel.add(titleLabel);
+        contentPanel.add(Box.createVerticalStrut(6));
+        contentPanel.add(messageLabel);
+        
+        panel.add(contentPanel, BorderLayout.CENTER);
+        return panel;
+    }
+    
+    /**
+     * 退出搜索模式，恢复正常帖子列表
+     */
+    private void exitSearchMode() {
+        isSearchMode = false;
+        currentSearchKeyword = null;
+        searchResults.clear();
+        
+        // 清空搜索框文本
+        if (searchFieldRef != null) {
+            searchFieldRef.setText("搜索内容...");
+            searchFieldRef.setForeground(new Color(156, 163, 175)); // 恢复占位符颜色
+        }
+        
+        System.out.println("[Forum][UI] 退出搜索模式，重新加载所有帖子");
     }
     
     

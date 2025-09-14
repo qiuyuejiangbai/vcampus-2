@@ -35,6 +35,9 @@ public class ThreadVO implements Serializable {
     // 当前用户是否已点赞
     private Boolean isLiked; 
     
+    // 是否精华帖
+    private Boolean isEssence; 
+    
     public ThreadVO() {}
     
     public ThreadVO(String title, String content, Integer authorId) {
@@ -180,6 +183,14 @@ public class ThreadVO implements Serializable {
     
     public void setIsLiked(Boolean isLiked) {
         this.isLiked = isLiked;
+    }
+    
+    public Boolean getIsEssence() {
+        return isEssence;
+    }
+    
+    public void setIsEssence(Boolean isEssence) {
+        this.isEssence = isEssence;
     }
     
     /**

@@ -189,23 +189,38 @@ public class TeacherDAOImpl implements TeacherDAO {
     @Override
     public TeacherVO findByUserId(Integer userId) {
         String sql = "SELECT * FROM teachers WHERE user_id = ?";
+        System.out.println("[DEBUG][TeacherDAOImpl] 执行SQL查询：" + sql + ", userId=" + userId);
+        
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         
         try {
             conn = DatabaseUtil.getConnection();
+            System.out.println("[DEBUG][TeacherDAOImpl] 数据库连接获取成功");
+            
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, userId);
+            System.out.println("[DEBUG][TeacherDAOImpl] 准备执行查询，参数userId=" + userId);
             
             rs = pstmt.executeQuery();
+            System.out.println("[DEBUG][TeacherDAOImpl] 查询执行完成");
+            
             if (rs.next()) {
-                return mapResultSetToTeacherVO(rs);
+                System.out.println("[DEBUG][TeacherDAOImpl] 找到匹配记录，开始映射数据");
+                TeacherVO teacher = mapResultSetToTeacherVO(rs);
+                System.out.println("[DEBUG][TeacherDAOImpl] 数据映射完成，教师信息：" + 
+                    (teacher != null ? ("ID=" + teacher.getId() + ", 姓名=" + teacher.getName()) : "null"));
+                return teacher;
+            } else {
+                System.err.println("[DEBUG][TeacherDAOImpl] 未找到匹配的教师记录，userId=" + userId);
             }
         } catch (SQLException e) {
-            System.err.println("根据用户ID查询教师失败: " + e.getMessage());
+            System.err.println("[DEBUG][TeacherDAOImpl] 根据用户ID查询教师失败: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, rs);
+            System.out.println("[DEBUG][TeacherDAOImpl] 数据库资源已释放");
         }
         return null;
     }
@@ -265,8 +280,10 @@ public class TeacherDAOImpl implements TeacherDAO {
     
     @Override
     public List<TeacherVO> findByTitle(String title) {
-        String sql = "SELECT * FROM teachers WHERE title = ? ORDER BY teacher_id";
-        return findByStringField(sql, title);
+        // 注意：当前数据库表中没有title字段，此方法返回空列表
+        // 如果需要按职称查询，需要先在数据库中添加title字段
+        System.out.println("[DEBUG][TeacherDAOImpl] findByTitle: 当前数据库表中没有title字段，返回空列表");
+        return new java.util.ArrayList<>();
     }
     
     @Override
@@ -433,12 +450,17 @@ public class TeacherDAOImpl implements TeacherDAO {
         TeacherVO teacher = new TeacherVO();
         teacher.setId(rs.getInt("teacher_id"));
         teacher.setUserId(rs.getInt("user_id"));
+        teacher.setName(rs.getString("name"));
         teacher.setTeacherNo(rs.getString("teacher_no"));
-        teacher.setTitle(rs.getString("title"));
-        teacher.setOffice(rs.getString("office"));
+        teacher.setPhone(rs.getString("phone"));
+        teacher.setEmail(rs.getString("email"));
+        teacher.setDepartment(rs.getString("department"));
         teacher.setResearchArea(rs.getString("research_area"));
         teacher.setCreatedTime(rs.getTimestamp("created_time"));
         teacher.setUpdatedTime(rs.getTimestamp("updated_time"));
+        // title 和 office 字段在当前数据库表中不存在，设置为null
+        teacher.setTitle(null);
+        teacher.setOffice(null);
         return teacher;
     }
     

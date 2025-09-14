@@ -3,8 +3,10 @@ package client.ui.dashboard.layout;
 import client.ui.util.FontUtil;
 import client.ui.dashboard.components.CircularAvatar;
 import client.controller.StudentController;
+import client.controller.TeacherController;
 import common.vo.UserVO;
 import common.vo.StudentVO;
+import common.vo.TeacherVO;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import java.awt.*;
@@ -46,12 +48,14 @@ public class SideNav extends JPanel {
     private JLabel gradeLabel;
     private UserVO currentUser;
     private StudentController studentController;
+    private TeacherController teacherController;
 
     public SideNav() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(Color.WHITE); // 改为白色背景
         setPreferredSize(new Dimension(expandedWidth, getHeight()));
         this.studentController = new StudentController();
+        this.teacherController = new TeacherController();
 
         // 使用自定义 Border 在右侧绘制渐变阴影，并通过 Insets 预留空间避免被子组件覆盖
         setBorder(new AbstractBorder() {
@@ -101,16 +105,22 @@ public class SideNav extends JPanel {
     }
     
     public void setCurrentUser(UserVO user) {
+        System.out.println("[DEBUG][SideNav] 设置当前用户：" + (user != null ? 
+            ("loginId=" + user.getLoginId() + ", userId=" + user.getUserId() + ", role=" + user.getRoleName()) : "null"));
+        
         this.currentUser = user;
         initUserInfo();
+        
         // 如果是学生，获取详细信息
         if (user != null && user.isStudent()) {
+            System.out.println("[DEBUG][SideNav] 检测到学生用户，开始加载学生信息");
             loadStudentInfo();
         } else if (user != null && user.isTeacher()) {
-            // 教师端：第二行显示为“教师”占位，后续如需可扩展加载 TeacherVO
-            if (majorLabel != null) {
-                majorLabel.setText("教师");
-            }
+            // 教师端：加载教师详细信息
+            System.out.println("[DEBUG][SideNav] 检测到教师用户，开始加载教师信息");
+            loadTeacherInfo();
+        } else {
+            System.out.println("[DEBUG][SideNav] 其他类型用户或用户为null，跳过详细信息加载");
         }
     }
 
@@ -150,11 +160,97 @@ public class SideNav extends JPanel {
         if (nameLabel != null && student.getName() != null && !student.getName().trim().isEmpty()) {
             nameLabel.setText(student.getName());
         }
-        // 专业为空则显示“专业未知” [[memory:8117340]]
+        // 专业为空则显示"专业未知" [[memory:8117340]]
         if (majorLabel != null) {
             String major = student.getMajor();
             majorLabel.setText(major != null && !major.trim().isEmpty() ? major : "专业未知");
         }
+    }
+    
+    private void loadTeacherInfo() {
+        System.out.println("[DEBUG][SideNav] 开始加载教师信息");
+        
+        if (teacherController == null) {
+            System.err.println("[DEBUG][SideNav] teacherController为null，无法加载教师信息");
+            return;
+        }
+        
+        if (currentUser == null) {
+            System.err.println("[DEBUG][SideNav] currentUser为null，无法加载教师信息");
+            return;
+        }
+        
+        System.out.println("[DEBUG][SideNav] 调用teacherController.getTeacherInfo，userId=" + currentUser.getUserId());
+        
+        // 获取教师详细信息
+        teacherController.getTeacherInfo(currentUser.getUserId(), new TeacherController.GetTeacherInfoCallback() {
+            @Override
+            public void onSuccess(TeacherVO teacher) {
+                System.out.println("[DEBUG][SideNav] 教师信息获取成功，准备更新UI");
+                SwingUtilities.invokeLater(() -> {
+                    updateTeacherInfo(teacher);
+                });
+            }
+            
+            @Override
+            public void onFailure(String error) {
+                // 如果获取失败，使用默认信息
+                System.err.println("[DEBUG][SideNav] 获取教师信息失败: " + error);
+                SwingUtilities.invokeLater(() -> {
+                    if (majorLabel != null) {
+                        majorLabel.setText("教师");
+                        System.out.println("[DEBUG][SideNav] 设置默认显示文本：教师");
+                    }
+                });
+            }
+        });
+    }
+    
+    private void updateTeacherInfo(TeacherVO teacher) {
+        System.out.println("[DEBUG][SideNav] 开始更新教师信息到UI，teacher=" + (teacher != null ? "非null" : "null"));
+        
+        if (teacher == null) {
+            System.out.println("[DEBUG][SideNav] 教师信息为null，设置默认显示");
+            if (majorLabel != null) {
+                majorLabel.setText("教师");
+                System.out.println("[DEBUG][SideNav] 已设置majorLabel为：教师");
+            }
+            return;
+        }
+        
+        System.out.println("[DEBUG][SideNav] 教师信息详情：姓名=" + teacher.getName() + 
+            ", 学院=" + teacher.getDepartment() + ", 职称=" + teacher.getTitle());
+        
+        // 姓名以教师档案为准
+        if (nameLabel != null && teacher.getName() != null && !teacher.getName().trim().isEmpty()) {
+            nameLabel.setText(teacher.getName());
+            System.out.println("[DEBUG][SideNav] 已设置nameLabel为：" + teacher.getName());
+        }
+        
+        // 显示学院信息，如果没有学院信息则显示职称或"教师"
+        if (majorLabel != null) {
+            String department = teacher.getDepartment();
+            if (department != null && !department.trim().isEmpty()) {
+                majorLabel.setText(department);
+                System.out.println("[DEBUG][SideNav] 已设置majorLabel为学院：" + department);
+            } else {
+                String title = teacher.getTitle();
+                String displayText = title != null && !title.trim().isEmpty() ? title : "教师";
+                majorLabel.setText(displayText);
+                System.out.println("[DEBUG][SideNav] 已设置majorLabel为职称/默认：" + displayText);
+            }
+        }
+        
+        // 强制重新绘制
+        if (majorLabel != null) {
+            majorLabel.revalidate();
+            majorLabel.repaint();
+        }
+        if (nameLabel != null) {
+            nameLabel.revalidate();
+            nameLabel.repaint();
+        }
+        System.out.println("[DEBUG][SideNav] 教师信息UI更新完成");
     }
 
     private void initUserInfo() {
@@ -206,10 +302,10 @@ public class SideNav extends JPanel {
         nameLabel.setForeground(accentColor); // 改为可变强调色
         nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        // 第二行：学生为“正在获取专业…”，教师为“教师”
+        // 第二行：学生为"正在获取专业…"，教师为"正在获取学院…"
         String secondLine = "";
         if (currentUser != null && currentUser.isStudent()) secondLine = "正在获取专业…";
-        else if (currentUser != null && currentUser.isTeacher()) secondLine = "教师";
+        else if (currentUser != null && currentUser.isTeacher()) secondLine = "正在获取学院…";
         else if (currentUser != null && currentUser.isAdmin()) secondLine = "管理员";
         else secondLine = "";
         majorLabel = new JLabel(secondLine);

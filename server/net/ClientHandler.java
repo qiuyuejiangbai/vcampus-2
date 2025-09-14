@@ -135,6 +135,10 @@ public class ClientHandler implements Runnable {
                     handleGetStudentInfo(request);
                     break;
                     
+                case GET_TEACHER_INFO_REQUEST:
+                    handleGetTeacherInfo(request);
+                    break;
+                    
                 case HEARTBEAT:
                     handleHeartbeat(request);
                     break;
@@ -216,6 +220,18 @@ public class ClientHandler implements Runnable {
                 case TOGGLE_POST_LIKE_REQUEST:
                     System.out.println("[Forum][Server] 收到请求: TOGGLE_POST_LIKE_REQUEST");
                     handleTogglePostLike(request);
+                    break;
+                case SEARCH_THREADS_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: SEARCH_THREADS_REQUEST");
+                    handleSearchThreads(request);
+                    break;
+                case DELETE_THREAD_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: DELETE_THREAD_REQUEST");
+                    handleDeleteThread(request);
+                    break;
+                case SET_THREAD_ESSENCE_REQUEST:
+                    System.out.println("[Forum][Server] 收到请求: SET_THREAD_ESSENCE_REQUEST");
+                    handleSetThreadEssence(request);
                     break;
                 case CREATE_SUB_REPLY_REQUEST:
                     System.out.println("[Forum][Server] 收到请求: CREATE_SUB_REPLY_REQUEST");
@@ -567,6 +583,35 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private void handleSearchThreads(Message request) {
+        try {
+            String keyword = (String) request.getData();
+            System.out.println("[Forum][Server] 开始搜索帖子，关键词: " + keyword);
+            
+            if (keyword == null || keyword.trim().isEmpty()) {
+                Message response = new Message(MessageType.SEARCH_THREADS_SUCCESS, StatusCode.SUCCESS, new java.util.ArrayList<>(), "搜索关键词为空");
+                sendMessage(response);
+                return;
+            }
+            
+            ForumService forumService = new ForumService();
+            java.util.List<common.vo.ThreadVO> threads = forumService.searchThreads(keyword, currentUserId);
+            System.out.println("[Forum][Server] 搜索完成，返回结果数=" + (threads != null ? threads.size() : -1));
+            
+            String message = threads != null && threads.size() > 0 ? 
+                "搜索成功，找到 " + threads.size() + " 个结果" : "未找到匹配的帖子";
+            
+            Message response = new Message(MessageType.SEARCH_THREADS_SUCCESS, StatusCode.SUCCESS, threads, message);
+            sendMessage(response);
+            System.out.println("[Forum][Server] 已发送搜索响应: SEARCH_THREADS_SUCCESS");
+        } catch (Exception e) {
+            System.err.println("处理搜索帖子请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.SEARCH_THREADS_FAIL, StatusCode.INTERNAL_ERROR, null, "搜索失败: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+
     private void handleGetPosts(Message request) {
         try {
             Integer threadId = (Integer) request.getData();
@@ -781,6 +826,98 @@ public class ClientHandler implements Runnable {
     }
 
     /**
+     * 处理删除帖子请求
+     */
+    private void handleDeleteThread(Message request) {
+        try {
+            if (!isLoggedIn()) {
+                sendUnauthorizedMessage();
+                return;
+            }
+            
+            // 检查管理员权限
+            if (currentUser == null || currentUser.getRole() == null || currentUser.getRole() != 2) {
+                sendErrorMessage("权限不足，只有管理员可以删除帖子");
+                return;
+            }
+            
+            Integer threadId = (Integer) request.getData();
+            if (threadId == null) {
+                sendErrorMessage("缺少threadId");
+                return;
+            }
+            
+            System.out.println("[Forum][Server] 处理删除帖子: threadId=" + threadId + ", adminId=" + currentUserId);
+            ForumService forumService = new ForumService();
+            boolean result = forumService.deleteThread(threadId, currentUserId);
+            
+            if (result) {
+                Message response = new Message(MessageType.DELETE_THREAD_SUCCESS, StatusCode.SUCCESS, threadId, "删除帖子成功");
+                sendMessage(response);
+                System.out.println("[Forum][Server] 帖子删除成功: threadId=" + threadId);
+            } else {
+                Message response = new Message(MessageType.ERROR, StatusCode.INTERNAL_ERROR, null, "删除帖子失败");
+                sendMessage(response);
+                System.err.println("[Forum][Server] 帖子删除失败: threadId=" + threadId);
+            }
+        } catch (Exception e) {
+            System.err.println("处理删除帖子异常: " + e.getMessage());
+            sendErrorMessage("删除帖子异常: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 处理设置精华帖请求
+     */
+    private void handleSetThreadEssence(Message request) {
+        try {
+            if (!isLoggedIn()) {
+                sendUnauthorizedMessage();
+                return;
+            }
+            
+            // 检查管理员权限
+            if (currentUser == null || currentUser.getRole() == null || currentUser.getRole() != 2) {
+                sendErrorMessage("权限不足，只有管理员可以设置精华帖");
+                return;
+            }
+            
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> requestData = (java.util.Map<String, Object>) request.getData();
+            Integer threadId = (Integer) requestData.get("threadId");
+            Boolean isEssence = (Boolean) requestData.get("isEssence");
+            
+            if (threadId == null || isEssence == null) {
+                sendErrorMessage("缺少threadId或isEssence参数");
+                return;
+            }
+            
+            String action = isEssence ? "设为精华" : "取消精华";
+            System.out.println("[Forum][Server] 处理" + action + ": threadId=" + threadId + ", adminId=" + currentUserId);
+            
+            ForumService forumService = new ForumService();
+            boolean result = forumService.setThreadEssence(threadId, isEssence, currentUserId);
+            
+            if (result) {
+                java.util.Map<String, Object> responseData = new java.util.HashMap<>();
+                responseData.put("threadId", threadId);
+                responseData.put("isEssence", isEssence);
+                
+                Message response = new Message(MessageType.SET_THREAD_ESSENCE_SUCCESS, StatusCode.SUCCESS, responseData, action + "成功");
+                sendMessage(response);
+                System.out.println("[Forum][Server] " + action + "成功: threadId=" + threadId);
+            } else {
+                Message response = new Message(MessageType.ERROR, StatusCode.INTERNAL_ERROR, null, action + "失败");
+                sendMessage(response);
+                System.err.println("[Forum][Server] " + action + "失败: threadId=" + threadId);
+            }
+        } catch (Exception e) {
+            System.err.println("处理设置精华帖异常: " + e.getMessage());
+            sendErrorMessage("设置精华帖异常: " + e.getMessage());
+        }
+    }
+
+    /**
      * 处理登录请求
      */
     private void handleLogin(Message request) {
@@ -978,6 +1115,61 @@ public class ClientHandler implements Runnable {
             System.out.println("学生信息查询结果为空，userId=" + currentUserId);
             Message response = new Message(MessageType.GET_STUDENT_INFO_SUCCESS, StatusCode.NOT_FOUND, null, "学生信息不存在");
             sendMessage(response);
+        }
+    }
+    
+    private void handleGetTeacherInfo(Message request) {
+        System.out.println("[DEBUG][ClientHandler] 收到GET_TEACHER_INFO_REQUEST请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[DEBUG][ClientHandler] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        System.out.println("[DEBUG][ClientHandler] 用户已登录，当前用户：userId=" + currentUserId + 
+            ", loginId=" + currentUser.getLoginId() + ", role=" + currentUser.getRoleName());
+        
+        // 检查当前用户是否为教师
+        if (!currentUser.isTeacher()) {
+            System.err.println("[DEBUG][ClientHandler] 当前用户非教师角色：role=" + currentUser.getRole());
+            sendErrorMessage("只有教师用户才能获取教师信息");
+            return;
+        }
+        
+        System.out.println("[DEBUG][ClientHandler] 用户角色验证通过，开始查询教师信息");
+        
+        // 获取教师详细信息
+        System.out.println("[DEBUG][ClientHandler] 准备查询教师信息，userId=" + currentUserId + ", loginId=" + currentUser.getLoginId());
+        
+        try {
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            System.out.println("[DEBUG][ClientHandler] TeacherService创建成功，调用getTeacherByUserId");
+            
+            TeacherVO teacher = teacherService.getTeacherByUserId(currentUserId);
+            System.out.println("[DEBUG][ClientHandler] 数据库查询完成，结果：" + (teacher != null ? "找到教师信息" : "未找到教师信息"));
+            
+            if (teacher != null) {
+                // 设置用户信息
+                teacher.setUser(currentUser);
+                System.out.println("[DEBUG][ClientHandler] 教师信息查询成功：姓名=" + teacher.getName() + 
+                    ", 学院=" + teacher.getDepartment() + ", 职称=" + teacher.getTitle() + ", 工号=" + teacher.getTeacherNo());
+                
+                Message response = new Message(MessageType.GET_TEACHER_INFO_SUCCESS, StatusCode.SUCCESS, teacher, "获取教师信息成功");
+                System.out.println("[DEBUG][ClientHandler] 准备发送成功响应");
+                sendMessage(response);
+                System.out.println("[DEBUG][ClientHandler] 成功响应已发送");
+            } else {
+                System.err.println("[DEBUG][ClientHandler] 教师信息查询结果为空，userId=" + currentUserId);
+                Message response = new Message(MessageType.GET_TEACHER_INFO_FAIL, StatusCode.NOT_FOUND, null, "教师信息不存在");
+                System.out.println("[DEBUG][ClientHandler] 准备发送失败响应");
+                sendMessage(response);
+                System.out.println("[DEBUG][ClientHandler] 失败响应已发送");
+            }
+        } catch (Exception e) {
+            System.err.println("[DEBUG][ClientHandler] 处理教师信息请求时发生异常：" + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("服务器内部错误：" + e.getMessage());
         }
     }
     

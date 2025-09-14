@@ -25,7 +25,7 @@ public class CreateThreadDialog extends JDialog {
     private ThreadVO createdThread = null;
     
     public CreateThreadDialog(Frame parent, List<ForumSectionVO> sections) {
-        super(parent, "发布新帖子", true); // 模态对话框
+        super(parent, "发布公告", true); // 模态对话框
         
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setResizable(false);
@@ -50,7 +50,7 @@ public class CreateThreadDialog extends JDialog {
         getContentPane().setBackground(new Color(240, 255, 240));
         
         // 标题
-        JLabel titleLabel = new JLabel("发布新帖子");
+        JLabel titleLabel = new JLabel("发布公告");
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 18f));
         titleLabel.setForeground(Color.BLACK);
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
