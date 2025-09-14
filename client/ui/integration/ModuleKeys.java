@@ -35,6 +35,11 @@ public final class ModuleKeys {
     public static final String TEACHER_LIBRARY = "teacher_library";
     public static final String ADMIN_LIBRARY   = "admin_library";
 
+    // 课程管理模块
+    public static final String STUDENT_COURSE = "student_course";
+    public static final String TEACHER_COURSE = "teacher_course";
+    public static final String ADMIN_COURSE   = "admin_course";
+
 }
 
 

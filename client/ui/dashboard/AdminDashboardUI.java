@@ -123,6 +123,9 @@ public class AdminDashboardUI extends JFrame {
         client.ui.modules.AdminForumModule.registerTo(ModuleRegistry.class);
         client.ui.modules.AdminResourceCenterModule.registerTo(ModuleRegistry.class);
 
+        // 课程管理
+        client.ui.modules.AdminCourseModule.registerTo(ModuleRegistry.class);
+
         // 注册管理员图书馆模块
         ModuleRegistry.register(
                 new LibraryModule(

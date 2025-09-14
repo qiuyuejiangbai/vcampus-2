@@ -126,6 +126,9 @@ public class StudentDashboardUI extends JFrame {
         ModuleRegistry.register(new client.ui.modules.StudentForumModule());
         ModuleRegistry.register(new client.ui.modules.StudentResourceCenterModule());
 
+        // 课程管理
+        client.ui.modules.StudentCourseModule.registerTo(ModuleRegistry.class);
+
         // 图书馆
         ModuleRegistry.register(
                 new LibraryModule(

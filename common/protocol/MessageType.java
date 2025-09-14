@@ -61,6 +61,12 @@ public enum MessageType {
     UPDATE_GRADE_SUCCESS,       // 更新成绩成功
     GET_MY_COURSES_REQUEST,     // 获取我的课程请求
     GET_MY_COURSES_SUCCESS,     // 获取我的课程成功
+    GET_ALL_ENROLLMENTS_REQUEST, // 获取所有选课记录请求
+    GET_ALL_ENROLLMENTS_SUCCESS, // 获取所有选课记录成功
+    GET_STUDENT_ENROLLMENTS_REQUEST, // 获取学生选课记录请求
+    GET_STUDENT_ENROLLMENTS_SUCCESS, // 获取学生选课记录成功
+    GET_ENROLLMENTS_BY_COURSE_REQUEST, // 获取指定课程的选课记录请求
+    GET_ENROLLMENTS_BY_COURSE_SUCCESS, // 获取指定课程的选课记录成功
 
     // ================= 图书馆模块 =================
 
