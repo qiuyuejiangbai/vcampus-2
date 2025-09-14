@@ -1,14 +1,14 @@
-package client.ui.modules.store;
+package client.ui.modules;
 
 import client.controller.StoreController;
+import client.ui.modules.store.*;
 import common.vo.UserVO;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.util.Arrays;
-import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class StoreMainFrameModule extends JFrame {
     private CardLayout cardLayout;
@@ -23,6 +23,9 @@ public class StoreMainFrameModule extends JFrame {
     private StoreOrderHistoryModule storeOrderHistoryModule;
     private StoreProductManageModule storeProductManageModule;
     private StoreOrderManageModule storeOrderManageModule;
+    private StoreProductEditDialogModule storeProductEditDialogModule;
+    private StoreProductAddModule storeProductAddModule;
+    private CheckoutPanel checkoutPanel;
 
     public StoreMainFrameModule(UserVO currentUser) {
         this.currentUser = currentUser;
@@ -44,7 +47,7 @@ public class StoreMainFrameModule extends JFrame {
 
     private void initUI(UserVO user) {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1200, 800);
+        setSize(1000, 600);
         setLocationRelativeTo(null);
 
         // 内容区
@@ -57,39 +60,54 @@ public class StoreMainFrameModule extends JFrame {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                GradientPaint gp = new GradientPaint(0, 0, new Color(45, 45, 45), 0, getHeight(), new Color(25, 25, 25));
-                g2d.setPaint(gp);
-                g2d.fillRect(0, 0, getWidth(), getHeight());
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(0, 0,
+                        new Color(0x0B, 0x3D, 0x2E),   // 深绿色
+                        getWidth(), getHeight(),
+                        new Color(0x14, 0x66, 0x4E)); // 稍浅绿色
+                g2.setPaint(gp);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
             }
         };
+        topBar.setPreferredSize(new Dimension(getWidth(), 56));
+        topBar.setBorder(BorderFactory.createMatteBorder(0, 0, 4, 0, new Color(0, 0, 0, 30)));
 
-        // 标题区域
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.setOpaque(false);
-        titlePanel.setBorder(new EmptyBorder(15, 20, 0, 20));
-        JLabel titleLabel = new JLabel("商店管理系统", JLabel.LEFT);
+        // 左侧标题
+        JLabel titleLabel = new JLabel("商店");
         titleLabel.setForeground(Color.WHITE);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        titlePanel.add(titleLabel, BorderLayout.WEST);
-        
-        // 用户信息
-        JLabel userLabel = new JLabel("欢迎, " + user.getUsername() + " (ID:" + user.getUserId() + ")");
-        userLabel.setForeground(Color.WHITE);
-        userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        titlePanel.add(userLabel, BorderLayout.EAST);
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 0));
+        topBar.add(titleLabel, BorderLayout.WEST);
 
-        // 导航区域
-        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        // 右侧导航按钮容器
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
         navPanel.setOpaque(false);
-        
+        topBar.add(navPanel, BorderLayout.EAST);
+
         ButtonGroup navGroup = new ButtonGroup();
-        JToggleButton selectedBtn = null;
-        
-        // 创建导航按钮的工具方法
-        java.util.function.Function<String, JToggleButton> createNavButton = text -> {
-            JToggleButton btn = new JToggleButton(text);
+
+        // 工具方法：创建带圆角背景效果的按钮
+        Function<String, JToggleButton> createNavButton = (text) -> {
+            JToggleButton btn = new JToggleButton(text) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                    if (isSelected()) {
+                        g2.setColor(new Color(0x0B, 0x3D, 0x2E)); // 深绿背景
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                    } else if (getModel().isRollover()) {
+                        g2.setColor(new Color(20, 100, 80, 120)); // 浅绿透明
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                    }
+                    super.paintComponent(g2);
+                    g2.dispose();
+                }
+            };
+
             btn.setFocusPainted(false);
             btn.setContentAreaFilled(false);
             btn.setOpaque(false);
@@ -97,17 +115,15 @@ public class StoreMainFrameModule extends JFrame {
             btn.setFont(btn.getFont().deriveFont(Font.BOLD, 14f));
             btn.setBorder(new EmptyBorder(8, 18, 8, 18));
             btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
             navGroup.add(btn);
             navPanel.add(btn);
             return btn;
         };
 
-        topBar.setLayout(new BorderLayout());
-        topBar.add(titlePanel, BorderLayout.NORTH);
-        topBar.add(navPanel, BorderLayout.CENTER);
-
         // === 学生 / 普通用户 ===
-        if (user.getRole() == 0 || user.getRole() == 1) {
+       // ---------- 右侧：导航按钮（商品搜索、购物车、订单历史） ----------
+ if (user.getRole() == 0 || user.getRole() == 1) {
             storeProductSearchModule = new StoreProductSearchModule(controller, currentUser);
             storeShoppingCartModule = new StoreShoppingCartModule(controller, currentUser);
             storeOrderHistoryModule = new StoreOrderHistoryModule(controller, currentUser);
@@ -120,23 +136,26 @@ public class StoreMainFrameModule extends JFrame {
             JToggleButton btnCart = createNavButton.apply("购物车");
             JToggleButton btnOrders = createNavButton.apply("订单历史");
 
-            // 平衡管理面板
-            JPanel balancePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+           // 余额管理面板
+           /*  JPanel balancePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
             balancePanel.setOpaque(false);
             balancePanel.add(new JLabel("用户余额:"));
-            
+            balancePanel.setForeground(Color.WHITE);
+
             double balance = controller.getUserBalance();
-            balancePanel.add(new JLabel(String.format("%.2f", balance)));
-            
+            JLabel balanceValueLabel = new JLabel(String.format("%.2f", balance));
+            balancePanel.add(balanceValueLabel);
+
             JButton rechargeBtn = new JButton("充值");
-            rechargeBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            //rechargeBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
             rechargeBtn.addActionListener(e -> {
                 try {
-                    double amount = Double.parseDouble(JOptionPane.showInputDialog(this, "请输入充值金额:"));
+                    String input = JOptionPane.showInputDialog(this, "请输入充值金额:");
+                    if (input == null) return;
+                    double amount = Double.parseDouble(input);
                     if (amount > 0 && controller.rechargeBalance(amount)) {
                         JOptionPane.showMessageDialog(this, "充值成功!");
-                        balancePanel.remove(1);
-                        balancePanel.add(new JLabel(String.format("%.2f", controller.getUserBalance())));
+                        balanceValueLabel.setText(String.format("%.2f", controller.getUserBalance()));
                         balancePanel.revalidate();
                         balancePanel.repaint();
                     } else {
@@ -147,28 +166,25 @@ public class StoreMainFrameModule extends JFrame {
                 }
             });
             balancePanel.add(rechargeBtn);
-            
-            topBar.add(balancePanel, BorderLayout.SOUTH);
+
+            topBar.add(balancePanel, BorderLayout.SOUTH);*/
 
             btnSearch.addActionListener(e -> {
                 storeProductSearchModule.refreshTable();
                 cardLayout.show(contentPanel, "search");
                 titleLabel.setText("商品搜索");
-                btnSearch.setSelected(true);
             });
 
             btnCart.addActionListener(e -> {
                 storeShoppingCartModule.refreshTable();
                 cardLayout.show(contentPanel, "cart");
                 titleLabel.setText("购物车");
-                btnCart.setSelected(true);
             });
 
             btnOrders.addActionListener(e -> {
                 storeOrderHistoryModule.refreshTable();
                 cardLayout.show(contentPanel, "orders");
                 titleLabel.setText("订单历史");
-                btnOrders.setSelected(true);
             });
 
             btnSearch.setSelected(true);
@@ -190,14 +206,12 @@ public class StoreMainFrameModule extends JFrame {
                 storeProductManageModule.refreshTable();
                 cardLayout.show(contentPanel, "manage");
                 titleLabel.setText("商品管理");
-                btnManage.setSelected(true);
             });
 
             btnOrders.addActionListener(e -> {
                 storeOrderManageModule.refreshTable();
                 cardLayout.show(contentPanel, "orders");
                 titleLabel.setText("订单管理");
-                btnOrders.setSelected(true);
             });
 
             btnManage.setSelected(true);
@@ -209,13 +223,4 @@ public class StoreMainFrameModule extends JFrame {
         getContentPane().add(topBar, BorderLayout.NORTH);
         getContentPane().add(contentPanel, BorderLayout.CENTER);
 
-        // 加载初始数据
-        SwingUtilities.invokeLater(() -> {
-            if (user.getRole() == 0 || user.getRole() == 1) {
-                storeProductSearchModule.refreshTable();
-            } else {
-                storeProductManageModule.refreshTable();
-            }
-        });
-    }
-}
+}}

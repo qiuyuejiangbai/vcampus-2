@@ -16,7 +16,7 @@ public class OrderItemVO implements Serializable {
     private Integer quantity;       // 数量
     private Double unitPrice;       // 单价
     private Double subtotal;        // 小计
-    private Integer status;         // 状态：1-已完成，0-已取消
+    private String status;         // 状态：1-已完成，0-已取消
     private Timestamp createdTime;  // 创建时间
     
     // 关联信息（用于显示）
@@ -31,7 +31,7 @@ public class OrderItemVO implements Serializable {
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.subtotal = quantity * unitPrice;
-        this.status = 1; // 默认已完成
+        this.status = "已完成"; // 默认已完成
     }
     
     public OrderItemVO(Integer orderId, Integer productId, Integer quantity, Double unitPrice) {
@@ -120,11 +120,11 @@ public class OrderItemVO implements Serializable {
         this.category = category;
     }
     
-    public Integer getStatus() {
+    public String getStatus() {
         return status;
     }
     
-    public void setStatus(Integer status) {
+    public void setStatus(String status) {
         this.status = status;
     }
     

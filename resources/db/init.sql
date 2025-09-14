@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     email VARCHAR(100) COMMENT '邮箱',
     department VARCHAR(100) COMMENT '所属院系',
     research_area TEXT COMMENT '研究方向',
+    balance DECIMAL(10,2) DEFAULT 0.00 COMMENT '账户余额',
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     
@@ -352,8 +353,7 @@ CREATE TABLE IF NOT EXISTS products (
     stock INT DEFAULT 0 COMMENT '库存',
     category VARCHAR(100) COMMENT '分类',
     brand VARCHAR(100) COMMENT '品牌',
-    images JSON COMMENT '商品图片',
-    status VARCHAR(20) DEFAULT 'available' COMMENT '状态: available-可售, unavailable-下架, discontinued-停产',
+    image_url JSON COMMENT '商品图片',
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) COMMENT='商品表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -375,7 +375,7 @@ CREATE TABLE IF NOT EXISTS orders (
 
 -- 订单明细表（根据OrderItemVO类设计）
 CREATE TABLE IF NOT EXISTS order_items (
-    item_id INT PRIMARY KEY AUTO_INCREMENT,
+    item_id INT NOT NULL,
     order_id INT NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL COMMENT '数量',
@@ -385,6 +385,21 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 ) COMMENT='订单明细表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 购物车表（根据ShoppingCartVO类设计）
+CREATE TABLE IF NOT EXISTS shopping_cart (
+     user_id INT NOT NULL,
+  id INT PRIMARY KEY AUTO_INCREMENT ,
+  product_id INT NOT NULL ,
+  quantity INT NOT NULL DEFAULT 1 COMMENT '商品数量',
+  price DECIMAL(10,2) NOT NULL COMMENT '商品单价',
+  subtotal DECIMAL(10,2) NOT NULL COMMENT '小计',
+  `add_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '添加时间',
+  -- 确保一个用户不会重复添加同一商品
+  UNIQUE INDEX `user_product_unique` (`user_id`, `product_id`),
+  -- 外键关联（如果存在用户表和商品表）
+  FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products (product_id) ON DELETE CASCADE
+) COMMENT='用户购物车表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- ========================================
 -- 论坛系统表
 -- ========================================

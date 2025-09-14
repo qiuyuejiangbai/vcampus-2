@@ -1,4 +1,4 @@
-package client.ui.modules.store;
+package client.ui.modules;
 
 import client.ui.api.IModuleView;
 import client.ui.integration.ModuleKeys;
@@ -21,6 +21,7 @@ public class StoreModule implements IModuleView {
     private JPanel root;
     private UserVO currentUser;
     private ServerConnection connection;
+    private StoreMainFrameModule frame; 
 
     /**
      * 构造函数（可以在不同 Dashboard 使用不同的 key/name/icon）
@@ -51,26 +52,41 @@ public class StoreModule implements IModuleView {
         return root;
     }
 
-    @Override
-    public void initContext(UserVO user, ServerConnection conn) {
-        this.currentUser = user;
-        this.connection = conn;
+   @Override
+public void initContext(UserVO user, ServerConnection conn) {
+    this.currentUser = user;
+    this.connection = conn;
 
-        // 创建商店主框架模块
-        StoreMainFrameModule frame = new StoreMainFrameModule(user);
-        frame.setVisible(false); // 隐藏单独窗口
+    // ⚡ 用现有的 StoreMainFrameModule 构建实际 UI
+        frame = new StoreMainFrameModule(user);
+        frame.setVisible(false); // 不要作为单独窗口显示
 
-        // 将 JFrame 的内容面板嵌入 Dashboard
+        // ⚡ 把 JFrame 的内容面板嵌入 Dashboard
         root = new JPanel(new BorderLayout());
         root.add(frame.getContentPane(), BorderLayout.CENTER);
+}
+
+/**
+     * 生命周期结束时释放资源
+     */
+    public void dispose() {
+        if (connection != null) {
+            connection.disconnect();
+            connection = null;
+        }
+        if (frame != null) {
+            frame.dispose(); // ✅ 自动释放 StoreController
+            frame = null;
+        }
     }
+
 
     /**
      * 提供快捷注册方法 - 学生端
      */
     public static void registerToStudent() {
         ModuleRegistry.register(
-            new StoreModule(ModuleKeys.STUDENT_STORE, "商店", "icons/store.png")
+            new StoreModule(ModuleKeys.STUDENT_STORE, "校园商店", "icons/store.png")
         );
     }
 
@@ -79,7 +95,7 @@ public class StoreModule implements IModuleView {
      */
     public static void registerToTeacher() {
         ModuleRegistry.register(
-            new StoreModule(ModuleKeys.TEACHER_STORE, "商店", "icons/store.png")
+            new StoreModule(ModuleKeys.TEACHER_STORE, "校园商店", "icons/store.png")
         );
     }
 
@@ -88,7 +104,7 @@ public class StoreModule implements IModuleView {
      */
     public static void registerToAdmin() {
         ModuleRegistry.register(
-            new StoreModule(ModuleKeys.ADMIN_STORE, "商店管理", "icons/store_admin.png")
+            new StoreModule(ModuleKeys.ADMIN_STORE, "校园商店管理", "icons/store_admin.png")
         );
     }
 
@@ -99,21 +115,5 @@ public class StoreModule implements IModuleView {
         ModuleRegistry.register(
             new StoreModule(key, displayName, iconPath)
         );
-    }
-
-    // 生命周期管理（可选）
-    public void refresh() {
-        if (root != null) {
-            // 触发商店模块内部刷新逻辑
-            StoreMainFrameModule frame = (StoreMainFrameModule)((JPanel)getComponent()).getComponent(0);
-            frame.refreshAllPanels();
-        }
-    }
-
-    public void navigateToCategory(String category) {
-        if (root != null) {
-            StoreMainFrameModule frame = (StoreMainFrameModule)((JPanel)getComponent()).getComponent(0);
-            frame.showProductCategory(category);
-        }
     }
 }

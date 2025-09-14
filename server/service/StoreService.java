@@ -14,9 +14,6 @@ import common.vo.ShoppingCartItemVO;
 public interface StoreService {
     
     // ===== 商品管理 =====
-    /** 获取所有商品 */
-    List<ProductVO> getAllProducts();
-    
     /** 按关键字搜索商品 */
     List<ProductVO> searchProducts(String keyword);
     

@@ -1,14 +1,17 @@
 package client.ui.modules.store;
 
 import client.controller.StoreController;
+import common.vo.OrderItemVO;
 import common.vo.OrderVO;
 import common.vo.UserVO;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
+
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.util.List;
 
 public class StoreOrderManageModule extends JPanel {
@@ -56,7 +59,7 @@ public class StoreOrderManageModule extends JPanel {
     }
 
     public void refreshTable() {
-        List<OrderVO> orders = controller.getAllOrders();
+        List<OrderVO> orders = controller.getAllUserOrders();
         tableModel.setOrders(orders);
     }
 
@@ -70,6 +73,11 @@ public class StoreOrderManageModule extends JPanel {
         public void setOrders(List<OrderVO> orders) {
             this.orders = orders;
             fireTableDataChanged();
+        }
+
+        public OrderVO getOrderAt(int row) {
+            if (orders == null || row < 0 || row >= orders.size()) return null;
+            return orders.get(row);
         }
 
         @Override
@@ -90,13 +98,13 @@ public class StoreOrderManageModule extends JPanel {
         @Override
         public Object getValueAt(int row, int col) {
             if (orders == null || row < 0 || row >= orders.size()) return null;
-            
+
             OrderVO order = orders.get(row);
             switch (col) {
-                case 0: return order.getOrderId();
+                case 0: return order.getOrderOn();
                 case 1: return order.getUserId();
                 case 2: return order.getUserName();
-                case 3: return order.getOrderDate();
+                case 3: return order.getCreatedTime();
                 case 4: return "¥" + order.getTotalAmount().toString();
                 case 5: return order.getStatus();
                 case 6: return "管理订单";
@@ -106,7 +114,7 @@ public class StoreOrderManageModule extends JPanel {
 
         @Override
         public Class<?> getColumnClass(int columnIndex) {
-            return columnIndex == 4 ? String.class : String.class; // 总金额作为字符串显示
+            return String.class;
         }
 
         @Override
@@ -127,18 +135,18 @@ public class StoreOrderManageModule extends JPanel {
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
             setText(value != null ? value.toString() : "");
-            
+
             // 设置按钮样式
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setForeground(Color.WHITE);
-            
+
             // 根据状态设置背景色
             if (isSelected) {
                 setBackground(new Color(76, 124, 204));
             } else {
                 setBackground(new Color(102, 153, 102));
             }
-            
+
             return this;
         }
     }
@@ -150,8 +158,9 @@ public class StoreOrderManageModule extends JPanel {
         private boolean isPushed;
         private final StoreController controller;
         private final StoreOrderManageModule panel;
+        private int editingRow = -1;
 
-        public OrderButtonEditor(JCheckBox checkBox, StoreController controller, 
+        public OrderButtonEditor(JCheckBox checkBox, StoreController controller,
                                StoreOrderManageModule panel) {
             super(checkBox);
             this.controller = controller;
@@ -167,130 +176,129 @@ public class StoreOrderManageModule extends JPanel {
                 boolean isSelected, int row, int column) {
             label = (value == null) ? "" : value.toString();
             button.setText(label);
-            
+
             // 设置按钮样式
             button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             button.setForeground(Color.WHITE);
-            
+
             if (isSelected) {
                 button.setBackground(new Color(76, 124, 204));
             } else {
                 button.setBackground(new Color(102, 153, 102));
             }
-            
+
             button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
             isPushed = true;
+            editingRow = row;
             return button;
         }
 
         @Override
-        public Object getTableCellEditorValue() {
-            if (isPushed) {
-                // 获取当前行对应的订单
-                OrderVO order = panel.tableModel.orders.get((Integer) this.getComponent().getClientProperty("row"));
-                
+        public Object getCellEditorValue() {
+            if (isPushed && editingRow >= 0) {
+                OrderVO order = panel.tableModel.getOrderAt(editingRow);
                 if (order != null) {
                     showOrderManagementDialog(order);
                 }
             }
             isPushed = false;
+            editingRow = -1;
             return label;
         }
 
         private void showOrderManagementDialog(OrderVO order) {
-            JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), 
-                                      "订单管理 - 订单ID: " + order.getOrderId(), true);
+            Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(panel);
+            JDialog dialog = new JDialog(parentFrame,
+                                      "订单管理 - 订单ON.: " + order.getOrderOn(), true);
             dialog.setSize(600, 500);
-            dialog.setLocationRelativeTo(this);
-            
+            dialog.setLocationRelativeTo(panel);
+
             // 创建主面板
             JPanel mainPanel = new JPanel(new BorderLayout());
             mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-            
+
             // 订单信息面板
             JPanel orderInfoPanel = new JPanel(new GridLayout(6, 2, 10, 10));
             orderInfoPanel.setBorder(BorderFactory.createTitledBorder("订单信息"));
-            orderInfoPanel.add(new JLabel("订单ID:"));
-            orderInfoPanel.add(new JLabel(String.valueOf(order.getOrderId())));
+            orderInfoPanel.add(new JLabel("订单ON:"));
+            orderInfoPanel.add(new JLabel(String.valueOf(order.getOrderOn())));
             orderInfoPanel.add(new JLabel("客户ID:"));
             orderInfoPanel.add(new JLabel(String.valueOf(order.getUserId())));
             orderInfoPanel.add(new JLabel("客户名称:"));
             orderInfoPanel.add(new JLabel(order.getUserName()));
             orderInfoPanel.add(new JLabel("订单日期:"));
-            orderInfoPanel.add(new JLabel(order.getOrderDate()));
+            orderInfoPanel.add(new JLabel(order.getCreatedTime() != null ? order.getCreatedTime().toString() : ""));
             orderInfoPanel.add(new JLabel("总金额:"));
             orderInfoPanel.add(new JLabel("¥" + order.getTotalAmount().toString()));
             orderInfoPanel.add(new JLabel("当前状态:"));
-            orderInfoPanel.add(new JLabel(order.getStatus()));
-            
+            orderInfoPanel.add(new JLabel(String.valueOf(order.getStatus())));
+
             // 商品列表
             JPanel itemsPanel = new JPanel(new BorderLayout());
             itemsPanel.setBorder(BorderFactory.createTitledBorder("商品列表"));
-            
+
             // 创建商品表格
             String[] itemColumns = {"商品ID", "商品名称", "数量", "单价"};
             DefaultTableModel itemModel = new DefaultTableModel(itemColumns, 0);
-            
+
             // 添加商品数据
-            for (OrderItemVO item : order.getItems()) {
-                itemModel.addRow(new Object[]{
-                    item.getProductId(),
-                    item.getProductName(),
-                    item.getQuantity(),
-                    "¥" + item.getPrice().toString()
-                });
+            if (order.getItems() != null) {
+                for (OrderItemVO item : order.getItems()) {
+                    itemModel.addRow(new Object[]{
+                        item.getProductId(),
+                        item.getProductName(),
+                        item.getQuantity(),
+                        "¥" + item.getUnitPrice().toString()
+                    });
+                }
             }
-            
+
             JTable itemTable = new JTable(itemModel);
             itemsPanel.add(new JScrollPane(itemTable), BorderLayout.CENTER);
-            
+
             // 按钮面板
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             buttonPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
-            
+
             // 添加状态更新按钮
-            JButton markShippedBtn = new GradientButton("标记为已发货");
+            JButton markShippedBtn = new JButton("标记为已发货");
             markShippedBtn.addActionListener(e -> updateOrderStatus(order, "已发货", dialog));
-            
-            JButton markDeliveredBtn = new GradientButton("标记为已送达");
+
+            JButton markDeliveredBtn = new JButton("标记为已送达");
             markDeliveredBtn.addActionListener(e -> updateOrderStatus(order, "已送达", dialog));
-            
-            JButton cancelOrderBtn = new GradientButton("取消订单");
+
+            JButton cancelOrderBtn = new JButton("取消订单");
             cancelOrderBtn.addActionListener(e -> updateOrderStatus(order, "已取消", dialog));
-            
-            JButton viewDetailsBtn = new GradientButton("查看详情");
-            viewDetailsBtn.addActionListener(e -> showOrderDetails(order));
-            
+
             buttonPanel.add(markShippedBtn);
             buttonPanel.add(markDeliveredBtn);
             buttonPanel.add(cancelOrderBtn);
-            buttonPanel.add(viewDetailsBtn);
-            
+
             // 关闭按钮
-            JButton closeBtn = new GradientButton("关闭");
+            JButton closeBtn = new JButton("关闭");
             closeBtn.addActionListener(e -> dialog.dispose());
             buttonPanel.add(closeBtn);
-            
+
             // 组装面板
             mainPanel.add(orderInfoPanel, BorderLayout.NORTH);
             mainPanel.add(itemsPanel, BorderLayout.CENTER);
             mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-            
+
             dialog.add(mainPanel);
             dialog.setVisible(true);
         }
-        
+
         private void updateOrderStatus(OrderVO order, String newStatus, JDialog dialog) {
             int confirm = JOptionPane.showConfirmDialog(
                 dialog,
-                "确定要将订单 " + order.getOrderId() + " 状态更新为: " + newStatus + " 吗？",
+                "确定要将订单 " + order.getOrderOn() + " 状态更新为: " + newStatus + " 吗？",
                 "确认状态更新",
                 JOptionPane.YES_NO_OPTION
             );
-            
+
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
-                    boolean success = controller.updateOrderStatus(order.getOrderId(), newStatus);
+                    boolean success = controller.updateOrderStatus(order.getOrderOn(), newStatus);
                     if (success) {
                         JOptionPane.showMessageDialog(
                             dialog,
@@ -317,73 +325,6 @@ public class StoreOrderManageModule extends JPanel {
                     );
                 }
             }
-        }
-        
-        private void showOrderDetails(OrderVO order) {
-            JDialog detailDialog = new JDialog(SwingUtilities.getWindowAncestor(this), 
-                                            "订单详情 - 订单ID: " + order.getOrderId(), true);
-            detailDialog.setSize(700, 500);
-            detailDialog.setLocationRelativeTo(this);
-            
-            // 创建详情面板
-            JPanel detailPanel = new JPanel(new BorderLayout());
-            detailPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-            
-            // 订单信息
-            JPanel infoPanel = new JPanel(new GridLayout(8, 2, 15, 10));
-            infoPanel.setBorder(BorderFactory.createTitledBorder("订单详细信息"));
-            
-            infoPanel.add(new JLabel("订单ID:"));
-            infoPanel.add(new JLabel(String.valueOf(order.getOrderId())));
-            infoPanel.add(new JLabel("客户ID:"));
-            infoPanel.add(new JLabel(String.valueOf(order.getUserId())));
-            infoPanel.add(new JLabel("客户名称:"));
-            infoPanel.add(new JLabel(order.getUserName()));
-            infoPanel.add(new JLabel("订单日期:"));
-            infoPanel.add(new JLabel(order.getOrderDate()));
-            infoPanel.add(new JLabel("订单状态:"));
-            infoPanel.add(new JLabel(order.getStatus()));
-            infoPanel.add(new JLabel("总金额:"));
-            infoPanel.add(new JLabel("¥" + order.getTotalAmount().toString()));
-            infoPanel.add(new JLabel("收货地址:"));
-            infoPanel.add(new JLabel(order.getShippingAddress()));
-            
-            // 商品列表
-            JPanel itemsPanel = new JPanel(new BorderLayout());
-            itemsPanel.setBorder(BorderFactory.createTitledBorder("订单商品列表"));
-            
-            String[] itemColumns = {"商品ID", "商品名称", "数量", "单价", "小计"};
-            DefaultTableModel itemModel = new DefaultTableModel(itemColumns, 0);
-            
-            double total = 0;
-            for (OrderItemVO item : order.getItems()) {
-                double subtotal = item.getPrice() * item.getQuantity();
-                total += subtotal;
-                itemModel.addRow(new Object[]{
-                    item.getProductId(),
-                    item.getProductName(),
-                    item.getQuantity(),
-                    "¥" + item.getPrice().toString(),
-                    "¥" + String.format("%.2f", subtotal)
-                });
-            }
-            
-            JTable itemTable = new JTable(itemModel);
-            itemsPanel.add(new JScrollPane(itemTable), BorderLayout.CENTER);
-            
-            // 关闭按钮
-            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-            JButton closeBtn = new GradientButton("关闭");
-            closeBtn.addActionListener(e -> detailDialog.dispose());
-            buttonPanel.add(closeBtn);
-            
-            // 组装面板
-            detailPanel.add(infoPanel, BorderLayout.NORTH);
-            detailPanel.add(itemsPanel, BorderLayout.CENTER);
-            detailPanel.add(buttonPanel, BorderLayout.SOUTH);
-            
-            detailDialog.add(detailPanel);
-            detailDialog.setVisible(true);
         }
     }
 }

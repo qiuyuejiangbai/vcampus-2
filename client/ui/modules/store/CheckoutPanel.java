@@ -5,6 +5,8 @@ import common.vo.ShoppingCartItemVO;
 import common.vo.UserVO;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -83,7 +85,7 @@ public class CheckoutPanel extends JDialog {
         
         for (ShoppingCartItemVO item : items) {
             model.addRow(new Object[]{
-                item.getName(),
+                item.getProductName(),
                 String.format("¥%.2f", item.getPrice()),
                 item.getQuantity(),
                 String.format("¥%.2f", item.getPrice() * item.getQuantity())
@@ -207,14 +209,17 @@ public class CheckoutPanel extends JDialog {
         
         // 提交订单
         try {
-            int orderId = controller.createOrder(
-                currentUser.getUserId(), 
-                items, 
-                address, 
-                paymentMethod.getSelectedIndex()
-            );
+            // Adjust the arguments to match StoreController's createOrder(List<Integer>, List<Integer>)
+            // Example: assuming you want to pass productIds and quantities from items
+            java.util.List<Integer> productIds = new java.util.ArrayList<>();
+            java.util.List<Integer> quantities = new java.util.ArrayList<>();
+            for (ShoppingCartItemVO item : items) {
+                productIds.add(item.getProductId());
+                quantities.add(item.getQuantity());
+            }
+            common.vo.OrderVO order = controller.createOrder(productIds, quantities);
             
-            if (orderId > 0) {
+            if (order != null) {
                 confirmed = true;
                 dispose();
             } else {

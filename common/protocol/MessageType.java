@@ -114,8 +114,6 @@ public enum MessageType {
     GET_BORROW_RECORDS_SUCCESS,   // 获取借阅记录成功
     GET_BORROW_RECORDS_FAIL,     // 获取借阅记录失败
 
- // ================= 商店模块 =================
-
     // 文献检索
     SEARCH_DOCUMENTS_REQUEST,
     SEARCH_DOCUMENTS_RESPONSE,
@@ -135,11 +133,8 @@ public enum MessageType {
     DELETE_DOCUMENT_REQUEST,
     DELETE_DOCUMENT_RESPONSE,
 
-    // 购物车管理
-    CLEAR_CART_REQUEST,         // 清空购物车请求
-    CLEAR_CART_SUCCESS,         // 清空购物车成功
-    CLEAR_CART_FAIL,            // 清空购物车失败
-    
+     // ================= 商店模块 =================
+
     // 订单管理
     CREATE_ORDER_REQUEST,       // 创建订单请求
     CREATE_ORDER_SUCCESS,       // 创建订单成功
@@ -150,11 +145,7 @@ public enum MessageType {
     GET_ADMIN_ORDER_DETAIL_SUCCESS,  // 获取管理员订单详情成功
     GET_ADMIN_ORDER_DETAIL_FAIL,     // 获取管理员订单详情失败
     
-    // 用户订单管理
-    GET_ALL_USER_ORDERS_REQUEST,     // 获取所有用户订单请求
-    GET_ALL_USER_ORDERS_SUCCESS,     // 获取所有用户订单成功
-    GET_ALL_USER_ORDERS_FAIL,        // 获取所有用户订单失败
-    
+     // 用户订单管理
     GET_USER_ORDER_HISTORY_REQUEST,   // 获取用户订单历史请求
     GET_USER_ORDER_HISTORY_SUCCESS,   // 获取用户订单历史成功
     GET_USER_ORDER_HISTORY_FAIL,      // 获取用户订单历史失败
@@ -162,6 +153,11 @@ public enum MessageType {
     GET_ORDER_ITEMS_REQUEST,          // 获取订单商品列表请求
     GET_ORDER_ITEMS_SUCCESS,          // 获取订单商品列表成功
     GET_ORDER_ITEMS_FAIL,             // 获取订单商品列表失败
+
+    GET_ALL_USER_ORDERS_REQUEST,          // 获取所有订单请求
+    GET_ALL_USER_ORDERS_SUCCESS,          // 获取所有订单成功
+    GET_ALL_USER_ORDERS_FAIL,             // 获取所有订单失败
+    
     
     // 订单操作
     CANCEL_ORDER_REQUEST,              // 取消订单请求
@@ -191,10 +187,6 @@ public enum MessageType {
     
     // 商品管理
     
-    GET_STORE_ITEMS_REQUEST,           // 获取商品列表请求
-    GET_STORE_ITEMS_SUCCESS,           // 获取商品列表成功
-    GET_STORE_ITEMS_FAIL,              // 获取商品列表失败
-    
     ADD_PRODUCT_REQUEST,               // 添加商品请求
     ADD_PRODUCT_SUCCESS,               // 添加商品成功
     ADD_PRODUCT_FAIL,                  // 添加商品失败
@@ -207,10 +199,6 @@ public enum MessageType {
     DELETE_PRODUCT_SUCCESS,            // 删除商品成功
     DELETE_PRODUCT_FAIL,               // 删除商品失败
     
-    GET_ALL_PRODUCTS_REQUEST,          // 获取所有商品请求
-    GET_ALL_PRODUCTS_SUCCESS,          // 获取所有商品成功
-    GET_ALL_PRODUCTS_FAIL,             // 获取所有商品失败
-    
     SEARCH_PRODUCTS_REQUEST,           // 搜索商品请求
     SEARCH_PRODUCTS_SUCCESS,           // 搜索商品成功
     SEARCH_PRODUCTS_FAIL,              // 搜索商品失败
@@ -219,10 +207,10 @@ public enum MessageType {
     GET_PRODUCT_BY_ID_SUCCESS,        // 按ID获取商品成功
     GET_PRODUCT_BY_ID_FAIL,           // 按ID获取商品失败
     
-    // 购买流程
+   /*  // 购买流程
     PURCHASE_REQUEST,                  // 购买请求
     PURCHASE_SUCCESS,                  // 购买成功
-    PURCHASE_FAIL,                     // 购买失败
+    PURCHASE_FAIL,                     // 购买失败*/
     
     // 购物车管理
     GET_SHOPPING_CART_REQUEST,         // 获取购物车请求
@@ -240,6 +228,10 @@ public enum MessageType {
     UPDATE_CART_ITEM_REQUEST,          // 更新购物车商品请求
     UPDATE_CART_ITEM_SUCCESS,          // 更新购物车商品成功
     UPDATE_CART_ITEM_FAIL,             // 更新购物车商品失败
+
+    CLEAR_CART_REQUEST,         // 清空购物车请求
+    CLEAR_CART_SUCCESS,         // 清空购物车成功
+    CLEAR_CART_FAIL,            // 清空购物车失败
     
     // 库存管理
     ADJUST_STOCK_REQUEST,              // 调整库存请求

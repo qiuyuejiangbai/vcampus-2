@@ -50,25 +50,14 @@ public class StoreController {
     }
 
     // ===== 商品管理 =====
-    /**
-     * 获取所有商品
-     */
-    public List<ProductVO> getAllProducts() {
-        Message request = new Message(MessageType.GET_ALL_PRODUCTS_REQUEST, StatusCode.SUCCESS, null);
-        Message response = sendRequest(request);
-        if (response.getStatusCode() == StatusCode.SUCCESS) {
-            return (List<ProductVO>) response.getData();
-        }
-        return Collections.emptyList();
-    }
-
+   
     /**
      * 搜索商品
      */
     public List<ProductVO> searchProducts(String keyword) {
         Message request = new Message(MessageType.SEARCH_PRODUCTS_REQUEST, StatusCode.SUCCESS, keyword);
         Message response = sendRequest(request);
-        if (response.getStatusCode() == StatusCode.SUCCESS) {
+       if (response.getStatusCode() == StatusCode.SUCCESS) {
             return (List<ProductVO>) response.getData();
         }
         return Collections.emptyList();
@@ -201,6 +190,13 @@ public class StoreController {
         return null;
     }
 
+     // 添加订单状态更新方法
+    public boolean updateOrderStatus(String orderId, String newStatus) {
+        // TODO: 实现订单状态更新逻辑，返回true表示成功，false表示失败
+        // 例如：调用后端服务或数据库更新订单状态
+        return false;
+    }
+    
     /**
      * 管理员获取所有用户消费记录
      */
@@ -318,4 +314,5 @@ public class StoreController {
             e.printStackTrace();
         }
     }
+
 }

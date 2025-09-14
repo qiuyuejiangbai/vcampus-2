@@ -3,15 +3,14 @@ package common.vo;
 import java.io.Serializable;
 import common.vo.ProductVO;
 import java.util.List;
+import java.sql.Timestamp;
 
 /**
  * 购物车商品项
  * 表示用户购物车中的一项商品
  */
 public class ShoppingCartItemVO implements Serializable {
-
     private static final long serialVersionUID = 1L;
-
     /** 商品ID */
     private Integer productId;
     
@@ -30,18 +29,20 @@ public class ShoppingCartItemVO implements Serializable {
     /** 商品图片URL */
     private String imageUrl;
     
-    /** 商品描述 */
-    private String description;
-    
     /** 商品库存状态 */
     private boolean inStock;
+
+    private Integer id;
+
+    private String description;
+
+    private String category;
     
     // 构造方法
     public ShoppingCartItemVO() {}
     
-    public ShoppingCartItemVO(Integer productId, String productName, double price, int quantity) {
+    public ShoppingCartItemVO(Integer productId, double price, int quantity) {
         this.productId = productId;
-        this.productName = productName;
         this.price = price;
         this.quantity = quantity;
         this.subtotal = price * quantity;
@@ -114,6 +115,22 @@ public class ShoppingCartItemVO implements Serializable {
     public void setInStock(boolean inStock) {
         this.inStock = inStock;
     }
+
+    public Integer getId() {
+        return id;
+    }   
+
+    public void setId(Integer id) {
+        this.id = id;
+    }   
+
+    public String getCategory() {
+        return category;
+    }       
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
     
     // 业务方法
     /**
@@ -146,6 +163,7 @@ public class ShoppingCartItemVO implements Serializable {
     @Override
     public String toString() {
         return "ShoppingCartItemVO{" +
+               "id=" + id +
                "productId=" + productId +
                ", productName='" + productName + '\'' +
                ", price=" + price +
