@@ -5,11 +5,14 @@ import common.protocol.MessageType;
 import common.protocol.StatusCode;
 import common.vo.BookVO;
 import common.vo.BorrowRecordVO;
+import common.vo.DocumentVO;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 客户端图书馆模块控制器
@@ -154,6 +157,65 @@ public class LibraryController {
         return null;
     }
 
+    // 文献检索
+    public List<DocumentVO> searchDocuments(String keyword, String subject, String category, Integer startYear, Integer endYear) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("keyword", keyword);
+        params.put("subject", subject);
+        params.put("category", category);
+        params.put("startYear", startYear);
+        params.put("endYear", endYear);
 
+        Message req = new Message(MessageType.SEARCH_DOCUMENTS_REQUEST, StatusCode.SUCCESS, params);
+        Message resp = sendRequest(req);
+        if (resp != null && resp.getStatusCode() == StatusCode.SUCCESS) {
+            return (List<DocumentVO>) resp.getData();
+        }
+        return Collections.emptyList();
+    }
+
+    // 获取文献详情
+    public DocumentVO getDocumentById(int docId) {
+        Message req = new Message(MessageType.GET_DOCUMENT_REQUEST, StatusCode.SUCCESS, docId);
+        Message resp = sendRequest(req);
+        if (resp != null && resp.getStatusCode() == StatusCode.SUCCESS) {
+            return (DocumentVO) resp.getData();
+        }
+        return null;
+    }
+
+    // 下载文献（返回文件字节流）
+    public byte[] downloadDocument(int docId) {
+        Message req = new Message(MessageType.DOWNLOAD_DOCUMENT_REQUEST, StatusCode.SUCCESS, docId);
+        Message resp = sendRequest(req);
+        if (resp != null && resp.getStatusCode() == StatusCode.SUCCESS) {
+            return (byte[]) resp.getData();
+        }
+        return null;
+    }
+
+    // 上传文献（管理员）
+    public boolean uploadDocument(DocumentVO doc, byte[] fileBytes) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("doc", doc);
+        data.put("file", fileBytes);
+        Message req = new Message(MessageType.UPLOAD_DOCUMENT_REQUEST, StatusCode.SUCCESS, data);
+        Message resp = sendRequest(req);
+        return resp != null && resp.getStatusCode() == StatusCode.SUCCESS;
+    }
+
+    // 更新文献（管理员）
+    public boolean updateDocument(DocumentVO doc) {
+        Message req = new Message(MessageType.UPDATE_DOCUMENT_REQUEST, StatusCode.SUCCESS, doc);
+        Message resp = sendRequest(req);
+        return resp != null && resp.getStatusCode() == StatusCode.SUCCESS;
+    }
+
+    // 删除文献（管理员）
+    public boolean deleteDocument(int docId) {
+        Message req = new Message(MessageType.DELETE_DOCUMENT_REQUEST, StatusCode.SUCCESS, docId);
+        Message resp = sendRequest(req);
+        return resp != null && resp.getStatusCode() == StatusCode.SUCCESS;
+    }
 
 }

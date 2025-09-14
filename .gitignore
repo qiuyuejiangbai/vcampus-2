@@ -78,3 +78,29 @@ personal/
 # 缓存文件
 .cache/
 *.cache
+
+# 默认忽略的文件
+/shelf/
+/workspace.xml
+/bin/
+/config.properties
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# 操作系统生成的文件
+.DS_Store
+Thumbs.db
+
+# Java 构建产物
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+compile_and_run.sh
+
+resources/config.properties

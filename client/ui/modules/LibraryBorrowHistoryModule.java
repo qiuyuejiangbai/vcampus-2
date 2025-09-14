@@ -91,11 +91,14 @@ public class LibraryBorrowHistoryModule extends JPanel {
                 case 3: return record.getDueTime();
                 case 4: return record.getReturnTime();
                 case 5: return record.getStatus();
-                case 6: return "归还";
-                case 7: return "续借";
+                case 6:
+                    return (record.getStatus() == 2 || record.getStatus() == 4) ? "不可归还" : "归还";
+                case 7:
+                    return (record.getStatus() == 2 || record.getStatus() == 4) ? "不可续借" : "续借";
                 default: return "";
             }
         }
+
 
         @Override
         public boolean isCellEditable(int row, int col) {

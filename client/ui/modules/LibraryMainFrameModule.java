@@ -21,8 +21,10 @@ public class LibraryMainFrameModule extends JFrame {
     private LibraryBookAddModule libraryBookAddModule;
 
     // 新增的文献模块
-   // private LibraryDocumentSearchModule libraryDocumentSearchModule;
-   // private LibraryDocumentManageModule libraryDocumentManageModule;
+
+    private LibraryDocumentSearchModule libraryDocumentSearchModule;
+    private LibraryDocumentManageModule libraryDocumentManageModule;
+
 
     public LibraryMainFrameModule(UserVO currentUser) {
         this.currentUser = currentUser;
@@ -122,11 +124,12 @@ public class LibraryMainFrameModule extends JFrame {
         if (user.getRole() == 0 || user.getRole() == 1) {
             libraryBookSearchModule = new LibraryBookSearchModule(controller, currentUser);
             libraryBorrowHistoryModule = new LibraryBorrowHistoryModule(user.getUserId());
-            //libraryDocumentSearchModule = new LibraryDocumentSearchModule(controller);
+            libraryDocumentSearchModule = new LibraryDocumentSearchModule(controller);
 
             contentPanel.add(libraryBookSearchModule, "search");
             contentPanel.add(libraryBorrowHistoryModule, "history");
-            //contentPanel.add(libraryDocumentSearchModule, "docSearch");
+            contentPanel.add(libraryDocumentSearchModule, "docSearch");
+
 
             JToggleButton btnSearch = createNavButton.apply("图书检索");
             JToggleButton btnHistory = createNavButton.apply("借阅记录");
@@ -157,11 +160,12 @@ public class LibraryMainFrameModule extends JFrame {
         if (user.getRole() == 2) {
             libraryBookManageModule = new LibraryBookManageModule(controller);
             libraryBookAddModule = new LibraryBookAddModule(controller);
-          //  libraryDocumentManageModule = new LibraryDocumentManageModule(controller);
+            libraryDocumentManageModule = new LibraryDocumentManageModule(controller);
 
             contentPanel.add(libraryBookManageModule, "manage");
             contentPanel.add(libraryBookAddModule, "add");
-           // contentPanel.add(libraryDocumentManageModule, "docManage");
+            contentPanel.add(libraryDocumentManageModule, "docManage");
+
 
             JToggleButton btnManage = createNavButton.apply("图书管理");
             JToggleButton btnAdd = createNavButton.apply("新增书籍");
@@ -179,7 +183,7 @@ public class LibraryMainFrameModule extends JFrame {
             });
 
             btnDocManage.addActionListener(e -> {
-             //   libraryDocumentManageModule.refreshTable();
+                libraryDocumentManageModule.refreshTable();
                 cardLayout.show(contentPanel, "docManage");
                 titleLabel.setText("文献管理");
             });

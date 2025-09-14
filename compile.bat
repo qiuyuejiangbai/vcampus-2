@@ -49,6 +49,9 @@ if %errorlevel% == 0 (
     echo.
     echo 复制配置文件到classpath...
     copy resources\config.properties bin\ >nul 2>&1
+    if exist "resources\config.local.properties" (
+        copy resources\config.local.properties bin\ >nul 2>&1
+    )
     echo 复制静态资源到classpath...
     if not exist "bin\icons" mkdir bin\icons
     xcopy /E /I /Y resources\icons bin\icons >nul 2>&1
