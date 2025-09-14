@@ -1,4 +1,4 @@
-package client.ui.modules;
+package client.ui.modules.Library;
 
 import client.controller.LibraryController;
 import common.vo.BorrowRecordVO;

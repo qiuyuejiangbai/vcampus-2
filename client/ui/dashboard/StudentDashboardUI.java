@@ -7,6 +7,7 @@ import client.ui.dashboard.layout.SideNav;
 import client.ui.dashboard.titlebar.AppTitleBar;
 import client.ui.integration.ModuleKeys;
 import client.ui.integration.ModuleRegistry;
+import client.ui.modules.Library.LibraryModule;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 
@@ -125,10 +126,13 @@ public class StudentDashboardUI extends JFrame {
         ModuleRegistry.register(new client.ui.modules.StudentForumModule());
         ModuleRegistry.register(new client.ui.modules.StudentResourceCenterModule());
 
+        // 课程管理
+        client.ui.modules.StudentCourseModule.registerTo(ModuleRegistry.class);
+
         // 图书馆
         ModuleRegistry.register(
-                new client.ui.modules.LibraryModule(
-                        ModuleKeys.STUDENT_LIBRARY, "图书馆", null
+                new LibraryModule(
+                        ModuleKeys.STUDENT_LIBRARY, "图书馆", "resources/icons/LibraryIcon.png"
                 )
         );
 

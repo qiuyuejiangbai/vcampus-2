@@ -1,4 +1,4 @@
-package client.ui.modules;
+package client.ui.modules.Library;
 
 import client.controller.LibraryController;
 import common.vo.DocumentVO;
@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,7 +20,7 @@ import java.util.function.BiConsumer;
 public class LibraryDocumentSearchModule extends JPanel {
     private JTextField keywordField;
     private JButton searchButton, clearButton;
-    private JButton viewButton, downloadButton;
+    private JButton viewButton, downloadButton,previewButton;
     private JTable resultTable;
     private DefaultTableModel tableModel;
 
@@ -218,8 +219,10 @@ public class LibraryDocumentSearchModule extends JPanel {
         // --- 底部按钮 ---
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         viewButton = createModernButton("查看", themeColor, hoverColor);
+        previewButton = createModernButton("预览PDF", themeColor, hoverColor); // 新增预览按钮
         downloadButton = createModernButton("下载", themeColor, hoverColor);
         bottomPanel.add(viewButton);
+        bottomPanel.add(previewButton); // 添加预览按钮
         bottomPanel.add(downloadButton);
         add(bottomPanel, BorderLayout.SOUTH);
 
@@ -256,6 +259,54 @@ public class LibraryDocumentSearchModule extends JPanel {
             int docId = (int) tableModel.getValueAt(row, 0);
             doDownload(docId);
         });
+
+        // 预览按钮事件
+        previewButton.addActionListener(e -> {
+            int row = resultTable.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "请先选择一条文献！");
+                return;
+            }
+            int docId = (int) tableModel.getValueAt(row, 0);
+            previewPDF(docId);
+        });
+    }
+
+    // ================= PDF预览功能 =================
+    private void previewPDF(int docId) {
+        byte[] pdfData = controller.downloadDocument(docId);
+        if (pdfData == null) {
+            JOptionPane.showMessageDialog(this, "获取PDF失败");
+            return;
+        }
+
+        try {
+            // 创建临时PDF文件
+            File tempFile = File.createTempFile("preview", ".pdf");
+            tempFile.deleteOnExit();
+
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                fos.write(pdfData);
+            }
+
+            // 使用系统默认程序打开PDF
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(tempFile);
+            } else {
+                JOptionPane.showMessageDialog(this, "当前环境不支持直接预览PDF");
+                // 如果无法预览，提供下载选项
+                int option = JOptionPane.showConfirmDialog(this,
+                        "无法直接预览，是否下载PDF文件？",
+                        "预览失败",
+                        JOptionPane.YES_NO_OPTION);
+
+                if (option == JOptionPane.YES_OPTION) {
+                    doDownload(docId);
+                }
+            }
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "预览PDF失败: " + ex.getMessage());
+        }
     }
 
     private void doSearch() {
