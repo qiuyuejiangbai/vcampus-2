@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-echo 正在编译vCampus虚拟校园系统...
+echo Compiling vCampus Virtual Campus System...
 
 REM 检查Java版本
 java -version
@@ -24,25 +24,25 @@ if not exist "libs\flatlaf-3.4.1.jar" (
 )
 
 REM 编译Java源文件（分步编译以便定位错误）
-echo 编译通用模块...
+echo Compiling common modules...
 javac -cp "libs/*;." -d bin -encoding UTF-8 common/protocol/*.java common/vo/*.java
 
 if %errorlevel% neq 0 (
-    echo 通用模块编译失败！
+    echo Common modules compilation failed!
     pause
     exit /b 1
 )
 
-echo 编译服务器端...
+echo Compiling server...
 javac -cp "libs/*;bin;." -d bin -encoding UTF-8 server/util/*.java server/dao/*.java server/dao/impl/*.java server/service/*.java server/net/*.java
 
 if %errorlevel% neq 0 (
-    echo 服务器端编译失败！
+    echo Server compilation failed!
     pause
     exit /b 1
 )
 
-echo 编译客户端...
+echo Compiling client...
 javac -cp "libs/*;bin;." -d bin -encoding UTF-8 ^
   client/net/*.java ^
   client/controller/*.java ^
@@ -55,22 +55,22 @@ javac -cp "libs/*;bin;." -d bin -encoding UTF-8 ^
 
 if %errorlevel% == 0 (
     echo.
-    echo 复制配置文件到classpath...
+    echo Copying config files to classpath...
     copy resources\config.properties bin\ >nul 2>&1
     echo.
     echo ================================
-    echo 编译成功！
+    echo Compilation successful!
     echo ================================
-    echo 编译输出目录: bin/
+    echo Output directory: bin/
     echo.
-    echo 下一步：
-    echo 1. 确保MySQL数据库已配置
-    echo 2. 运行服务器: start_server.bat
-    echo 3. 运行客户端: start_client.bat
+    echo Next steps:
+    echo 1. Ensure MySQL database is configured
+    echo 2. Run server: start_server.bat
+    echo 3. Run client: start_client.bat
     echo.
     pause
 ) else (
-    echo 客户端编译失败！请检查错误信息。
+    echo Client compilation failed! Please check error messages.
     pause
 )
 

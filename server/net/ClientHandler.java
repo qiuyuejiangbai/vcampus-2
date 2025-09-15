@@ -11,6 +11,12 @@ import common.vo.BorrowRecordVO;
 import server.service.UserService;
 import server.dao.impl.LibraryServiceImpl;
 import server.service.ForumService;
+import server.dao.impl.StoreServiceImpl;
+import common.vo.ProductVO;
+import common.vo.ShoppingCartItemVO;
+import common.vo.OrderVO;
+import common.vo.OrderItemVO;
+import java.util.Map;
 
 import java.util.List;
 
@@ -284,8 +290,79 @@ public class ClientHandler implements Runnable {
                     break;
 
 
+                      // ================== 商店模块 ==================
 
-
+                      // ===== 商品管理 =====
+                case SEARCH_PRODUCTS_REQUEST:
+                    handleSearchProducts(request);
+                    break;
+                case ADD_PRODUCT_REQUEST:
+                    handleAddProduct(request);
+                    break;
+                case UPDATE_PRODUCT_REQUEST:
+                    handleUpdateProduct(request);
+                    break;
+                case DELETE_PRODUCT_REQUEST:
+                    handleDeleteProduct(request);
+                    break;
+                case GET_PRODUCT_BY_ID_REQUEST:
+                    handleGetProductById(request);
+                    break;
+                    // ===== 购物车管理 =====
+                case GET_SHOPPING_CART_REQUEST:
+                    handleGetShoppingCart(request);
+                    break;
+                case ADD_TO_CART_REQUEST:
+                    handleAddToCart(request);
+                    break;
+                case UPDATE_CART_ITEM_REQUEST:
+                    handleUpdateCartItem(request);
+                    break;
+                case REMOVE_FROM_CART_REQUEST:
+                    handleRemoveFromCart(request);
+                    break;
+                case CLEAR_CART_REQUEST:
+                    handleClearCart(request);
+                    break;
+// ===== 订单管理 =====
+                case CREATE_ORDER_REQUEST:
+                    handlePlaceOrder(request);
+                    break;
+                case GET_USER_ORDER_HISTORY_REQUEST:
+                    handleGetOrdersByUser(request);
+                    break;
+case GET_ADMIN_ORDER_DETAIL_REQUEST:
+    handleGetAdminOrderDetail(request);
+    break;
+case CANCEL_ORDER_REQUEST:
+    handleCancelOrder(request);
+    break;
+case GET_ORDER_ITEMS_REQUEST:
+    handleGetOrderItems(request);
+    break;
+case PAY_ORDER_REQUEST:
+    handlePayOrder(request);
+    break;
+case SHIP_ORDER_REQUEST:
+    handleShipOrder(request);
+    break;
+    case GET_ALL_USER_ORDERS_REQUEST:
+    handleGetAllUserOrders(request);
+    break;
+//库存管理
+case ADJUST_STOCK_REQUEST:
+    handleAdjustStock(request);
+    break;
+    // ===== 余额管理 =====
+case GET_USER_BALANCE_REQUEST:
+    handleGetUserBalance(request);
+    break;
+case RECHARGE_BALANCE_REQUEST:
+    handleRechargeBalance(request);
+    break;
+case PAY_WITH_BALANCE_REQUEST:
+    handlePayWithBalance(request);
+    break;
 
                 default:
                     handleUnsupportedRequest(request);
@@ -302,13 +379,23 @@ public class ClientHandler implements Runnable {
 
     private void handleSearchBooks(Message request) {
         try {
+            System.out.println("[DEBUG] ClientHandler.handleSearchBooks() 开始执行");
             String keyword = (String) request.getData();
+            System.out.println("[DEBUG] 收到搜索关键词: '" + keyword + "'");
+            
             server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            System.out.println("[DEBUG] 创建LibraryService实例成功");
+            
             List<BookVO> books = libraryService.searchBooks(keyword);
+            System.out.println("[DEBUG] LibraryService.searchBooks() 返回 " + (books != null ? books.size() : "null") + " 本书");
 
             Message response = new Message(MessageType.SEARCH_BOOK_SUCCESS, StatusCode.SUCCESS, books, "搜索成功");
+            System.out.println("[DEBUG] 准备发送响应给客户端");
             sendMessage(response);
+            System.out.println("[DEBUG] 响应已发送");
         } catch (Exception e) {
+            System.out.println("[DEBUG] 搜索书籍异常: " + e.getMessage());
+            e.printStackTrace();
             sendErrorMessage("搜索书籍失败: " + e.getMessage());
         }
     }
@@ -591,6 +678,391 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private void handleSearchProducts(Message request) {
+    try {
+        String keyword = (String) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        List<ProductVO> products = storeService.searchProducts(keyword);
+        Message response = new Message(MessageType.SEARCH_PRODUCTS_SUCCESS, StatusCode.SUCCESS, products, "搜索成功");
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("搜索商品失败: " + e.getMessage());
+    }
+}
+
+private void handleAddProduct(Message request) {
+    try {
+        ProductVO product = (ProductVO) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.addProduct(product);
+        Message response = new Message(
+                success ? MessageType.ADD_PRODUCT_SUCCESS : MessageType.ADD_PRODUCT_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "新增商品成功" : "新增商品失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("新增商品失败: " + e.getMessage());
+    }
+}
+
+private void handleUpdateProduct(Message request) {
+    try {
+        ProductVO product = (ProductVO) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.updateProduct(product);
+        Message response = new Message(
+                success ? MessageType.UPDATE_PRODUCT_SUCCESS : MessageType.UPDATE_PRODUCT_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "更新商品成功" : "更新商品失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("更新商品失败: " + e.getMessage());
+    }
+}
+
+private void handleDeleteProduct(Message request) {
+    try {
+        Integer productId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.deleteProduct(productId);
+        Message response = new Message(
+                success ? MessageType.DELETE_PRODUCT_SUCCESS : MessageType.DELETE_PRODUCT_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "删除商品成功" : "删除商品失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("删除商品失败: " + e.getMessage());
+    }
+}
+
+private void handleGetShoppingCart(Message request) {
+    try {
+        Integer userId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        List<ShoppingCartItemVO> cart = storeService.getShoppingCart(userId);
+        Message response = new Message(MessageType.GET_SHOPPING_CART_SUCCESS, StatusCode.SUCCESS, cart, "获取购物车成功");
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("获取购物车失败: " + e.getMessage());
+    }
+}
+
+private void handleAddToCart(Message request) {
+    try {
+        Object[] params = (Object[]) request.getData();
+        Integer userId = (Integer) params[0];
+        Integer productId = (Integer) params[1];
+        int quantity = (int) params[2];
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.addToCart(userId, productId, quantity);
+        Message response = new Message(
+                success ? MessageType.ADD_TO_CART_SUCCESS : MessageType.ADD_TO_CART_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "加入购物车成功" : "加入购物车失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("加入购物车失败: " + e.getMessage());
+    }
+}
+
+private void handleUpdateCartItem(Message request) {
+    try {
+        Object[] params = (Object[]) request.getData();
+        Integer userId = (Integer) params[0];
+        Integer productId = (Integer) params[1];
+        int newQuantity = (int) params[2];
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.updateCartItem(userId, productId, newQuantity);
+        Message response = new Message(
+                success ? MessageType.UPDATE_CART_ITEM_SUCCESS : MessageType.UPDATE_CART_ITEM_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "更新购物车成功" : "更新购物车失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("更新购物车失败: " + e.getMessage());
+    }
+}
+
+private void handleRemoveFromCart(Message request) {
+    try {
+        Object[] params = (Object[]) request.getData();
+        Integer userId = (Integer) params[0];
+        Integer productId = (Integer) params[1];
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.removeFromCart(userId, productId);
+        Message response = new Message(
+                success ? MessageType.REMOVE_FROM_CART_SUCCESS : MessageType.REMOVE_FROM_CART_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "移除购物车商品成功" : "移除失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("移除购物车商品失败: " + e.getMessage());
+    }
+}
+
+private void handleClearCart(Message request) {
+    try {
+        Integer userId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.clearCart(userId);
+        Message response = new Message(
+                success ? MessageType.CLEAR_CART_SUCCESS : MessageType.CLEAR_CART_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "清空购物车成功" : "清空购物车失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("清空购物车失败: " + e.getMessage());
+    }
+}
+
+private void handlePlaceOrder(Message request) {
+    try {
+        Map<String, Object> params = (Map<String, Object>) request.getData();
+        Integer userId = (Integer) params.get("userId");
+        @SuppressWarnings("unchecked")
+        List<Integer> productIds = (List<Integer>) params.get("productIds");
+        @SuppressWarnings("unchecked")
+        List<Integer> quantities = (List<Integer>) params.get("quantities");
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        OrderVO order = storeService.createOrder(userId, productIds, quantities);
+        boolean success = order != null;
+        Message response = new Message(
+                success ? MessageType.CREATE_ORDER_SUCCESS : MessageType.CREATE_ORDER_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                order,
+                success ? "下单成功" : "下单失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("下单失败: " + e.getMessage());
+    }
+}
+
+private void handleGetOrdersByUser(Message request) {
+    try {
+        Integer userId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        List<OrderItemVO> orders = storeService.getUserOrderHistory(userId);
+        Message response = new Message(MessageType.GET_USER_ORDER_HISTORY_SUCCESS, StatusCode.SUCCESS, orders, "获取订单历史成功");
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("获取订单历史失败: " + e.getMessage());
+    }
+}
+
+private void handleGetAllOrders(Message request) {
+    try {
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        List<OrderVO> orders = storeService.getAllUserOrders();
+        Message response = new Message(MessageType.GET_ALL_USER_ORDERS_SUCCESS, StatusCode.SUCCESS, orders, "获取全部订单成功");
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("获取全部订单失败: " + e.getMessage());
+    }
+}
+
+private void handleCancelOrder(Message request) {
+    try {
+        Integer orderId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.cancelOrder(orderId, currentUserId);
+        Message response = new Message(
+                success ? MessageType.CANCEL_ORDER_SUCCESS : MessageType.CANCEL_ORDER_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "订单已取消" : "取消订单失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("取消订单失败: " + e.getMessage());
+    }
+}
+
+private void handleGetUserBalance(Message request) {
+    try {
+        Integer userId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        Double balance = storeService.getUserBalance(userId);
+        Message response = new Message(
+                MessageType.GET_USER_BALANCE_SUCCESS,
+                StatusCode.SUCCESS,
+                balance,
+                "获取余额成功"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("获取余额失败: " + e.getMessage());
+    }
+}
+
+private void handleRechargeBalance(Message request) {
+    try {
+        Object[] params = (Object[]) request.getData();
+        Integer userId = (Integer) params[0];
+        Double amount = (Double) params[1];
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.rechargeBalance(userId, amount);
+        Message response = new Message(
+                success ? MessageType.RECHARGE_BALANCE_SUCCESS : MessageType.RECHARGE_BALANCE_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "充值成功" : "充值失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("充值失败: " + e.getMessage());
+    }
+}
+
+private void handlePayWithBalance(Message request) {
+    try {
+        Object[] params = (Object[]) request.getData();
+        Integer userId = (Integer) params[0];
+        Double amount = (Double) params[1];
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.payWithBalance(userId, amount.intValue());
+        Message response = new Message(
+                success ? MessageType.PAY_WITH_BALANCE_SUCCESS : MessageType.PAY_WITH_BALANCE_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "支付成功" : "支付失败，余额不足"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("支付失败: " + e.getMessage());
+    }
+}
+
+private void handleGetProductById(Message request) {
+    try {
+        Integer productId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        ProductVO product = storeService.getProductById(productId);
+        Message response;
+        if (product != null) {
+            response = new Message(MessageType.GET_PRODUCT_BY_ID_SUCCESS, StatusCode.SUCCESS, product, "查询成功");
+        } else {
+            response = new Message(MessageType.GET_PRODUCT_BY_ID_FAIL, StatusCode.NOT_FOUND, null, "未找到商品");
+        }
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("查询商品失败: " + e.getMessage());
+    }
+}
+
+private void handleAdjustStock(Message request) {
+    try {
+        Object[] params = (Object[]) request.getData();
+        Integer productId = (Integer) params[0];
+        int quantityDelta = (int) params[1];
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.adjustStock(productId, quantityDelta);
+        Message response = new Message(
+                success ? MessageType.ADJUST_STOCK_SUCCESS : MessageType.ADJUST_STOCK_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "库存调整成功" : "库存调整失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("库存调整失败: " + e.getMessage());
+    }
+}
+
+private void handleGetOrderItems(Message request) {
+    try {
+        Object[] params = (Object[]) request.getData();
+        Integer orderId = (Integer) params[0];
+        Integer userId = (Integer) params[1];
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        List<OrderItemVO> items = storeService.getOrderItems(orderId, userId);
+        Message response = new Message(MessageType.GET_ORDER_ITEMS_SUCCESS, StatusCode.SUCCESS, items, "获取订单项成功");
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("获取订单项失败: " + e.getMessage());
+    }
+}
+
+private void handleGetAdminOrderDetail(Message request) {
+    try {
+        Integer orderId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        OrderVO order = storeService.getAdminOrderDetail(orderId);
+        Message response;
+        if (order != null) {
+            response = new Message(MessageType.GET_ADMIN_ORDER_DETAIL_SUCCESS, StatusCode.SUCCESS, order, "获取订单详情成功");
+        } else {
+            response = new Message(MessageType.GET_ADMIN_ORDER_DETAIL_FAIL, StatusCode.NOT_FOUND, null, "订单不存在");
+        }
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("获取订单详情失败: " + e.getMessage());
+    }
+}
+
+private void handlePayOrder(Message request) {
+    try {
+        Integer orderId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.payOrder(orderId);
+        Message response = new Message(
+                success ? MessageType.PAY_ORDER_SUCCESS : MessageType.PAY_ORDER_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "支付成功" : "支付失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("支付失败: " + e.getMessage());
+    }
+}
+
+private void handleGetAllUserOrders(Message request) {
+    try {
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        List<OrderVO> orders = storeService.getAllUserOrders();
+        Message response = new Message(
+                MessageType.GET_ALL_USER_ORDERS_SUCCESS,
+                StatusCode.SUCCESS,
+                orders,
+                "获取所有用户订单成功"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("获取所有用户订单失败: " + e.getMessage());
+    }
+}
+
+private void handleShipOrder(Message request) {
+    try {
+        Integer orderId = (Integer) request.getData();
+        server.service.StoreService storeService = new server.dao.impl.StoreServiceImpl();
+        boolean success = storeService.shipOrder(orderId);
+        Message response = new Message(
+                success ? MessageType.SHIP_ORDER_SUCCESS : MessageType.SHIP_ORDER_FAIL,
+                success ? StatusCode.SUCCESS : StatusCode.BAD_REQUEST,
+                null,
+                success ? "发货成功" : "发货失败"
+        );
+        sendMessage(response);
+    } catch (Exception e) {
+        sendErrorMessage("发货失败: " + e.getMessage());
+    }
+}
 
     //==========================================================================================
 

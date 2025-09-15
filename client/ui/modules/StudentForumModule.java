@@ -1557,27 +1557,8 @@ public class StudentForumModule implements IModuleView {
     private void refreshThreadList() {
         JPanel threadItemsPanel = (JPanel) threadScrollPane.getViewport().getView();
         if (threadItemsPanel == null) {
-            System.out.println("[Forum][Client] 刷新列表时发现视图为空(view==null)");
             return;
         }
-        System.out.println("[Forum][Client] 清空帖子列表并准备渲染，当前数据条数=" + (threads != null ? threads.size() : 0));
-        System.out.println("[DEBUG] ========== 客户端开始刷新帖子列表 ==========");
-        
-        // 调试输出：检查接收到的所有帖子数据
-        if (threads != null) {
-            System.out.println("[DEBUG] 接收到的帖子总数: " + threads.size());
-            for (ThreadVO thread : threads) {
-                if (thread != null) {
-                    System.out.println("[DEBUG] 帖子数据 - ID=" + thread.getThreadId() + 
-                                     ", 标题=" + thread.getTitle() + 
-                                     ", 作者=" + thread.getAuthorName() + 
-                                     ", 是否公告=" + thread.getIsAnnouncement() + 
-                                      ", 回复数=" + thread.getReplyCount() + 
-                                      ", 分区ID=" + thread.getSectionId());
-                }
-            }
-        }
-        
         threadItemsPanel.removeAll();
         // 每次刷新先按当前模式排序
         sortThreads();
@@ -1588,7 +1569,6 @@ public class StudentForumModule implements IModuleView {
             if (currentSectionIdFilter != null) {
                 Integer sid = thread != null ? thread.getSectionId() : null;
                 if (sid == null || !currentSectionIdFilter.equals(sid)) {
-                    System.out.println("[DEBUG] 帖子ID=" + (thread != null ? thread.getThreadId() : "null") + " 被分区筛选过滤掉");
                     continue;
                 }
             }
@@ -1596,18 +1576,11 @@ public class StudentForumModule implements IModuleView {
             // 精华模式筛选：只显示精华帖子
             if (currentSortMode == SortMode.ESSENCE) {
                 boolean isEssence = thread.getIsEssence() != null && thread.getIsEssence();
-                System.out.println("[DEBUG][精华功能] 精华模式筛选检查: 帖子ID=" + thread.getThreadId() + 
-                                 ", 标题=" + thread.getTitle() + ", isEssence=" + isEssence);
                 if (!isEssence) {
-                    System.out.println("[DEBUG][精华功能] 非精华帖子被过滤掉，帖子ID=" + thread.getThreadId());
                     continue;
                 }
-                System.out.println("[DEBUG][精华功能] 精华帖子通过筛选，帖子ID=" + thread.getThreadId());
             }
             
-            System.out.println("[DEBUG] 准备创建帖子项 - ID=" + thread.getThreadId() + 
-                             ", 标题=" + thread.getTitle() + 
-                             ", 是否公告=" + thread.getIsAnnouncement());
             
             JPanel threadItem = createThreadItem(thread);
             threadItemsPanel.add(threadItem);
@@ -1617,7 +1590,6 @@ public class StudentForumModule implements IModuleView {
         // 立即刷新布局，避免等待后延迟渲染
         threadItemsPanel.revalidate();
         threadItemsPanel.repaint();
-        System.out.println("[Forum][Client] 列表渲染完成，显示条数=" + shownCount);
         
         // 同步每个子项宽度为可用区域宽度，避免任何情况下右侧出现空白
         SwingUtilities.invokeLater(new Runnable() {
@@ -1726,29 +1698,44 @@ public class StudentForumModule implements IModuleView {
                     java.util.List<common.vo.ThreadVO> list = (java.util.List<common.vo.ThreadVO>) message.getData();
                     System.out.println("[Forum][Client] 收到成功响应: GET_ALL_THREADS_SUCCESS, 条数=" + (list != null ? list.size() : -1));
                     System.out.println("[DEBUG] ========== 客户端接收到服务器数据 ==========");
+                    System.out.println("[DEBUG] 消息状态码: " + message.getStatusCode());
+                    System.out.println("[DEBUG] 消息内容: " + message.getMessage());
                     
                     // 详细调试输出接收到的数据
                     if (list != null) {
                         System.out.println("[DEBUG] 接收到的ThreadVO列表大小: " + list.size());
-                        for (ThreadVO vo : list) {
-                            System.out.println("[DEBUG] 接收数据 - ID=" + vo.getThreadId() + 
-                                             ", 标题=" + vo.getTitle() + 
-                                             ", 作者=" + vo.getAuthorName() + 
+                        if (list.size() == 0) {
+                            System.out.println("[DEBUG] 警告：服务器返回的帖子列表为空！");
+                        }
+                        for (int i = 0; i < list.size(); i++) {
+                            ThreadVO vo = list.get(i);
+                            System.out.println("[DEBUG] 帖子[" + i + "] - ID=" + vo.getThreadId() + 
+                                             ", 标题=" + (vo.getTitle() != null ? vo.getTitle() : "null") + 
+                                             ", 作者=" + (vo.getAuthorName() != null ? vo.getAuthorName() : "null") + 
                                              ", 是否公告=" + vo.getIsAnnouncement() + 
                                              ", 回复数=" + vo.getReplyCount() + 
-                                             ", 分区ID=" + vo.getSectionId());
+                                             ", 分区ID=" + vo.getSectionId() +
+                                             ", 状态=" + vo.getStatus() +
+                                             ", 创建时间=" + vo.getCreatedTime());
                         }
                     } else {
-                        System.out.println("[DEBUG] 接收到的数据为null");
+                        System.out.println("[DEBUG] 错误：接收到的数据为null！");
                     }
                     
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override public void run() {
                             try { if (timeoutTimer.isRunning()) timeoutTimer.stop(); } catch (Exception ignore) {}
                             isFetchingThreads = false;
+                            System.out.println("[DEBUG] 开始处理接收到的数据...");
                             threads.clear();
-                            if (list != null) threads.addAll(list);
-                            System.out.println("[DEBUG] 数据已添加到本地threads列表，当前大小: " + threads.size());
+                            System.out.println("[DEBUG] 已清空本地threads列表");
+                            if (list != null) {
+                                threads.addAll(list);
+                                System.out.println("[DEBUG] 数据已添加到本地threads列表，当前大小: " + threads.size());
+                            } else {
+                                System.out.println("[DEBUG] 警告：list为null，无法添加到本地列表");
+                            }
+                            System.out.println("[DEBUG] 开始调用refreshThreadList()...");
                             refreshThreadList();
                             // 同步刷新热门板块
                             try { refreshHotSections(); } catch (Exception ignore) {}

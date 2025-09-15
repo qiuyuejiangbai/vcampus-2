@@ -21,8 +21,10 @@ public class LibraryMainFrameModule extends JFrame {
     private LibraryMainPageModule libraryMainPageModule;
 
     // 新增的文献模块
+
     private LibraryDocumentSearchModule libraryDocumentSearchModule;
     private LibraryDocumentManageModule libraryDocumentManageModule;
+
 
     public LibraryMainFrameModule(UserVO currentUser) {
         this.currentUser = currentUser;
@@ -169,6 +171,7 @@ public class LibraryMainFrameModule extends JFrame {
 
             contentPanel.add(libraryBookManageModule, "manage");
             contentPanel.add(libraryDocumentManageModule, "docManage");
+
 
             JToggleButton btnManage = createNavButton.apply("图书管理");
             JToggleButton btnDocManage = createNavButton.apply("文献管理");
