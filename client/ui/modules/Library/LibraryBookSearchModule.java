@@ -291,6 +291,7 @@ public class LibraryBookSearchModule extends JPanel {
                         b.getPublisher(),
                         b.getCategory(),
                         b.getAvailableStock()
+                        //
                 });
             }
         }
