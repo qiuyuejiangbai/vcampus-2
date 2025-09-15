@@ -252,7 +252,6 @@ public class LibraryBookSearchModule extends JPanel {
 
     /** 统一的搜索方法（关键词 + 分类，模糊匹配） */
     private void doSearch() {
-        System.out.println("[DEBUG] LibraryBookSearchModule.doSearch() 开始执行");
         String keyword = searchField.getText().trim();
         if (keyword.equals("请输入关键词（书名/作者/ISBN/分类）")) {
             keyword = "";
@@ -268,7 +267,6 @@ public class LibraryBookSearchModule extends JPanel {
 
         // 调用后端搜索，只用关键字
         List<BookVO> books = Controller.searchBooks(keyword);
-        System.out.println("[DEBUG] Controller.searchBooks() 返回结果数量: " + (books != null ? books.size() : "null"));
 
         // 更新表格
         DefaultTableModel model = (DefaultTableModel) table.getModel();
@@ -282,6 +280,7 @@ public class LibraryBookSearchModule extends JPanel {
                     categoryMatch = true;
                     break;
                 }
+            }
 
             if (categoryMatch) {
                 model.addRow(new Object[]{
@@ -294,20 +293,14 @@ public class LibraryBookSearchModule extends JPanel {
                         b.getAvailableStock()
                 });
             }
-        } else {
-            System.out.println("[DEBUG] 警告: books列表为null");
         }
-        System.out.println("[DEBUG] 表格更新完成，当前行数: " + model.getRowCount());
     }
 
 
     public void refreshTable() {
-        System.out.println("[DEBUG] LibraryBookSearchModule.refreshTable() 开始执行");
         searchField.setText("请输入关键词（书名/作者/ISBN/分类）");
         searchField.setForeground(Color.GRAY);
         for (JCheckBox cb : categoryChecks) cb.setSelected(false);
-        System.out.println("[DEBUG] 准备调用doSearch()方法");
         doSearch(); // 默认查询全部
-        System.out.println("[DEBUG] LibraryBookSearchModule.refreshTable() 执行完成");
     }
 }
