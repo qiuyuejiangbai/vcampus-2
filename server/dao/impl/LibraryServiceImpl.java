@@ -54,7 +54,9 @@ public class LibraryServiceImpl implements LibraryService {
     @Override
     public List<BookVO> searchBooks(String keyword) {
         List<BookVO> list = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ?";
+        String sql = "SELECT * FROM books " +
+                "WHERE (title LIKE ? OR author LIKE ? OR isbn LIKE ?)";
+
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             String like = "%" + keyword + "%";
@@ -575,6 +577,5 @@ public class LibraryServiceImpl implements LibraryService {
         }
         return list;
     }
-
 
 }

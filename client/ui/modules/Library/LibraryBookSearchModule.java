@@ -265,11 +265,15 @@ public class LibraryBookSearchModule extends JPanel {
             }
         }
 
+        // 调用后端搜索，只用关键字
         List<BookVO> books = Controller.searchBooks(keyword);
 
+        // 更新表格
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         model.setRowCount(0);
+
         for (BookVO b : books) {
+            // 前端只过滤分类
             boolean categoryMatch = selectedCategories.isEmpty();
             for (String cat : selectedCategories) {
                 if (b.getCategory() != null && b.getCategory().contains(cat)) {
@@ -278,10 +282,7 @@ public class LibraryBookSearchModule extends JPanel {
                 }
             }
 
-            boolean keywordMatch = keyword.isEmpty()
-                    || (b.getCategory() != null && b.getCategory().contains(keyword));
-
-            if (categoryMatch && keywordMatch) {
+            if (categoryMatch) {
                 model.addRow(new Object[]{
                         b.getBookId(),
                         b.getTitle(),
@@ -294,6 +295,7 @@ public class LibraryBookSearchModule extends JPanel {
             }
         }
     }
+
 
     public void refreshTable() {
         searchField.setText("请输入关键词（书名/作者/ISBN/分类）");
