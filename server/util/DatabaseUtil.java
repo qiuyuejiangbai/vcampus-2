@@ -106,7 +106,12 @@ public class DatabaseUtil {
      * @throws SQLException SQL异常
      */
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(url, username, password);
+        System.out.println("[DEBUG] 尝试获取数据库连接...");
+        System.out.println("[DEBUG] 连接URL: " + url);
+        System.out.println("[DEBUG] 用户名: " + username);
+        Connection conn = DriverManager.getConnection(url, username, password);
+        System.out.println("[DEBUG] 数据库连接成功: " + (conn != null));
+        return conn;
     }
     
     /**

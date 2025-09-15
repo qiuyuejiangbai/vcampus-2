@@ -252,10 +252,12 @@ public class LibraryBookSearchModule extends JPanel {
 
     /** 统一的搜索方法（关键词 + 分类，模糊匹配） */
     private void doSearch() {
+        System.out.println("[DEBUG] LibraryBookSearchModule.doSearch() 开始执行");
         String keyword = searchField.getText().trim();
         if (keyword.equals("请输入关键词（书名/作者/ISBN/分类）")) {
             keyword = "";
         }
+        System.out.println("[DEBUG] 搜索关键词: '" + keyword + "'");
 
         // 收集选中的分类
         Set<String> selectedCategories = new HashSet<>();
@@ -264,41 +266,55 @@ public class LibraryBookSearchModule extends JPanel {
                 selectedCategories.add(cb.getText());
             }
         }
+        System.out.println("[DEBUG] 选中的分类: " + selectedCategories);
 
+        System.out.println("[DEBUG] 准备调用Controller.searchBooks()");
         List<BookVO> books = Controller.searchBooks(keyword);
+        System.out.println("[DEBUG] Controller.searchBooks() 返回结果数量: " + (books != null ? books.size() : "null"));
 
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         model.setRowCount(0);
-        for (BookVO b : books) {
-            boolean categoryMatch = selectedCategories.isEmpty();
-            for (String cat : selectedCategories) {
-                if (b.getCategory() != null && b.getCategory().contains(cat)) {
-                    categoryMatch = true;
-                    break;
+        System.out.println("[DEBUG] 开始处理搜索结果，共 " + (books != null ? books.size() : 0) + " 本书");
+        
+        if (books != null) {
+            for (BookVO b : books) {
+                boolean categoryMatch = selectedCategories.isEmpty();
+                for (String cat : selectedCategories) {
+                    if (b.getCategory() != null && b.getCategory().contains(cat)) {
+                        categoryMatch = true;
+                        break;
+                    }
+                }
+
+                boolean keywordMatch = keyword.isEmpty()
+                        || (b.getCategory() != null && b.getCategory().contains(keyword));
+
+                if (categoryMatch && keywordMatch) {
+                    System.out.println("[DEBUG] 添加图书到表格: " + b.getTitle() + " (ID: " + b.getBookId() + ")");
+                    model.addRow(new Object[]{
+                            b.getBookId(),
+                            b.getTitle(),
+                            b.getAuthor(),
+                            b.getIsbn(),
+                            b.getPublisher(),
+                            b.getCategory(),
+                            b.getAvailableStock()
+                    });
                 }
             }
-
-            boolean keywordMatch = keyword.isEmpty()
-                    || (b.getCategory() != null && b.getCategory().contains(keyword));
-
-            if (categoryMatch && keywordMatch) {
-                model.addRow(new Object[]{
-                        b.getBookId(),
-                        b.getTitle(),
-                        b.getAuthor(),
-                        b.getIsbn(),
-                        b.getPublisher(),
-                        b.getCategory(),
-                        b.getAvailableStock()
-                });
-            }
+        } else {
+            System.out.println("[DEBUG] 警告: books列表为null");
         }
+        System.out.println("[DEBUG] 表格更新完成，当前行数: " + model.getRowCount());
     }
 
     public void refreshTable() {
+        System.out.println("[DEBUG] LibraryBookSearchModule.refreshTable() 开始执行");
         searchField.setText("请输入关键词（书名/作者/ISBN/分类）");
         searchField.setForeground(Color.GRAY);
         for (JCheckBox cb : categoryChecks) cb.setSelected(false);
+        System.out.println("[DEBUG] 准备调用doSearch()方法");
         doSearch(); // 默认查询全部
+        System.out.println("[DEBUG] LibraryBookSearchModule.refreshTable() 执行完成");
     }
 }

@@ -379,13 +379,23 @@ case PAY_WITH_BALANCE_REQUEST:
 
     private void handleSearchBooks(Message request) {
         try {
+            System.out.println("[DEBUG] ClientHandler.handleSearchBooks() 开始执行");
             String keyword = (String) request.getData();
+            System.out.println("[DEBUG] 收到搜索关键词: '" + keyword + "'");
+            
             server.service.LibraryService libraryService = new server.dao.impl.LibraryServiceImpl();
+            System.out.println("[DEBUG] 创建LibraryService实例成功");
+            
             List<BookVO> books = libraryService.searchBooks(keyword);
+            System.out.println("[DEBUG] LibraryService.searchBooks() 返回 " + (books != null ? books.size() : "null") + " 本书");
 
             Message response = new Message(MessageType.SEARCH_BOOK_SUCCESS, StatusCode.SUCCESS, books, "搜索成功");
+            System.out.println("[DEBUG] 准备发送响应给客户端");
             sendMessage(response);
+            System.out.println("[DEBUG] 响应已发送");
         } catch (Exception e) {
+            System.out.println("[DEBUG] 搜索书籍异常: " + e.getMessage());
+            e.printStackTrace();
             sendErrorMessage("搜索书籍失败: " + e.getMessage());
         }
     }
