@@ -257,7 +257,6 @@ public class LibraryBookSearchModule extends JPanel {
         if (keyword.equals("请输入关键词（书名/作者/ISBN/分类）")) {
             keyword = "";
         }
-        System.out.println("[DEBUG] 搜索关键词: '" + keyword + "'");
 
         // 收集选中的分类
         Set<String> selectedCategories = new HashSet<>();
@@ -266,47 +265,41 @@ public class LibraryBookSearchModule extends JPanel {
                 selectedCategories.add(cb.getText());
             }
         }
-        System.out.println("[DEBUG] 选中的分类: " + selectedCategories);
 
-        System.out.println("[DEBUG] 准备调用Controller.searchBooks()");
+        // 调用后端搜索，只用关键字
         List<BookVO> books = Controller.searchBooks(keyword);
         System.out.println("[DEBUG] Controller.searchBooks() 返回结果数量: " + (books != null ? books.size() : "null"));
 
+        // 更新表格
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         model.setRowCount(0);
-        System.out.println("[DEBUG] 开始处理搜索结果，共 " + (books != null ? books.size() : 0) + " 本书");
-        
-        if (books != null) {
-            for (BookVO b : books) {
-                boolean categoryMatch = selectedCategories.isEmpty();
-                for (String cat : selectedCategories) {
-                    if (b.getCategory() != null && b.getCategory().contains(cat)) {
-                        categoryMatch = true;
-                        break;
-                    }
+
+        for (BookVO b : books) {
+            // 前端只过滤分类
+            boolean categoryMatch = selectedCategories.isEmpty();
+            for (String cat : selectedCategories) {
+                if (b.getCategory() != null && b.getCategory().contains(cat)) {
+                    categoryMatch = true;
+                    break;
                 }
 
-                boolean keywordMatch = keyword.isEmpty()
-                        || (b.getCategory() != null && b.getCategory().contains(keyword));
-
-                if (categoryMatch && keywordMatch) {
-                    System.out.println("[DEBUG] 添加图书到表格: " + b.getTitle() + " (ID: " + b.getBookId() + ")");
-                    model.addRow(new Object[]{
-                            b.getBookId(),
-                            b.getTitle(),
-                            b.getAuthor(),
-                            b.getIsbn(),
-                            b.getPublisher(),
-                            b.getCategory(),
-                            b.getAvailableStock()
-                    });
-                }
+            if (categoryMatch) {
+                model.addRow(new Object[]{
+                        b.getBookId(),
+                        b.getTitle(),
+                        b.getAuthor(),
+                        b.getIsbn(),
+                        b.getPublisher(),
+                        b.getCategory(),
+                        b.getAvailableStock()
+                });
             }
         } else {
             System.out.println("[DEBUG] 警告: books列表为null");
         }
         System.out.println("[DEBUG] 表格更新完成，当前行数: " + model.getRowCount());
     }
+
 
     public void refreshTable() {
         System.out.println("[DEBUG] LibraryBookSearchModule.refreshTable() 开始执行");
