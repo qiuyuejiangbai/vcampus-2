@@ -32,9 +32,8 @@ public class LibraryServiceImpl implements LibraryService {
     public List<BookVO> searchBooks(String keyword) {
         System.out.println("[DEBUG] LibraryServiceImpl.searchBooks() 开始执行，关键词: '" + keyword + "'");
         List<BookVO> list = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ?";
-        System.out.println("[DEBUG] SQL查询语句: " + sql);
-        
+        String sql = "SELECT * FROM books " +
+                "WHERE (title LIKE ? OR author LIKE ? OR isbn LIKE ?)";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             System.out.println("[DEBUG] 数据库连接成功，准备执行查询");
@@ -566,6 +565,5 @@ public class LibraryServiceImpl implements LibraryService {
         }
         return list;
     }
-
 
 }
