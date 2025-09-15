@@ -1726,29 +1726,20 @@ public class TeacherForumModule implements IModuleView {
                     java.util.List<common.vo.ThreadVO> list = (java.util.List<common.vo.ThreadVO>) message.getData();
                     System.out.println("[Forum][Client] 收到成功响应: GET_ALL_THREADS_SUCCESS, 条数=" + (list != null ? list.size() : -1));
                     System.out.println("[DEBUG] ========== 客户端接收到服务器数据 ==========");
-                    
-                    // 详细调试输出接收到的数据
-                    if (list != null) {
-                        System.out.println("[DEBUG] 接收到的ThreadVO列表大小: " + list.size());
-                        for (ThreadVO vo : list) {
-                            System.out.println("[DEBUG] 接收数据 - ID=" + vo.getThreadId() + 
-                                             ", 标题=" + vo.getTitle() + 
-                                             ", 作者=" + vo.getAuthorName() + 
-                                             ", 是否公告=" + vo.getIsAnnouncement() + 
-                                             ", 回复数=" + vo.getReplyCount() + 
-                                             ", 分区ID=" + vo.getSectionId());
-                        }
-                    } else {
-                        System.out.println("[DEBUG] 接收到的数据为null");
-                    }
+                    System.out.println("[DEBUG] 消息状态码: " + message.getStatusCode());
                     
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override public void run() {
                             try { if (timeoutTimer.isRunning()) timeoutTimer.stop(); } catch (Exception ignore) {}
                             isFetchingThreads = false;
                             threads.clear();
-                            if (list != null) threads.addAll(list);
-                            System.out.println("[DEBUG] 数据已添加到本地threads列表，当前大小: " + threads.size());
+                            if (list != null) {
+                                threads.addAll(list);
+                                System.out.println("[DEBUG] 数据已添加到本地threads列表，当前大小: " + threads.size());
+                            } else {
+                                System.out.println("[DEBUG] 警告：list为null，无法添加到本地列表");
+                            }
+                            System.out.println("[DEBUG] 开始调用refreshThreadList()...");
                             refreshThreadList();
                             // 同步刷新热门板块
                             try { refreshHotSections(); } catch (Exception ignore) {}

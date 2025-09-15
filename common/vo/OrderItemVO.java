@@ -1,6 +1,7 @@
 package common.vo;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 /**
  * 订单明细值对象
@@ -15,6 +16,8 @@ public class OrderItemVO implements Serializable {
     private Integer quantity;       // 数量
     private Double unitPrice;       // 单价
     private Double subtotal;        // 小计
+    private String status;         // 状态：1-已完成，0-已取消
+    private Timestamp createdTime;  // 创建时间
     
     // 关联信息（用于显示）
     private String productName;     // 商品名称
@@ -28,6 +31,7 @@ public class OrderItemVO implements Serializable {
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.subtotal = quantity * unitPrice;
+        this.status = "已完成"; // 默认已完成
     }
     
     public OrderItemVO(Integer orderId, Integer productId, Integer quantity, Double unitPrice) {
@@ -114,6 +118,22 @@ public class OrderItemVO implements Serializable {
     
     public void setCategory(String category) {
         this.category = category;
+    }
+    
+    public String getStatus() {
+        return status;
+    }
+    
+    public void setStatus(String status) {
+        this.status = status;
+    }
+    
+    public Timestamp getCreatedTime() {
+        return createdTime;
+    }
+    
+    public void setCreatedTime(Timestamp createdTime) {
+        this.createdTime = createdTime;
     }
     
     /**

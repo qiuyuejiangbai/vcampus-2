@@ -10,36 +10,13 @@ import java.io.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 public class LibraryServiceImpl implements LibraryService {
 
-    private static String URL;
-    private static String USER;
-    private static String PASSWORD;
-    private static String DRIVER;
-
     static {
-        Properties props = new Properties();
-        try {
-            // 从 resources/config.properties 加载
-            String configPath = System.getProperty("user.dir") + File.separator
-                    + "resources" + File.separator + "config.properties";
-            try (InputStream in = new FileInputStream(configPath)) {
-                props.load(in);
-            }
-
-            URL = props.getProperty("db.url");
-            USER = props.getProperty("db.username");
-            PASSWORD = props.getProperty("db.password");
-            DRIVER = props.getProperty("db.driver");
-
-            // 加载数据库驱动
-            Class.forName(DRIVER);
-
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException("加载数据库配置失败", e);
-        }
+        // LibraryServiceImpl 不需要重复加载配置，直接使用 DatabaseUtil 的配置
+        // 移除静态初始化块，避免配置文件路径问题
+        System.out.println("[DEBUG] LibraryServiceImpl 静态初始化完成");
     }
 
     // ✅ 项目根目录下的 resources 文件夹
@@ -53,18 +30,25 @@ public class LibraryServiceImpl implements LibraryService {
     /** 按关键字搜索图书 */
     @Override
     public List<BookVO> searchBooks(String keyword) {
+        System.out.println("[DEBUG] LibraryServiceImpl.searchBooks() 开始执行，关键词: '" + keyword + "'");
         List<BookVO> list = new ArrayList<>();
         String sql = "SELECT * FROM books " +
                 "WHERE (title LIKE ? OR author LIKE ? OR isbn LIKE ?)";
-
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
+            System.out.println("[DEBUG] 数据库连接成功，准备执行查询");
             String like = "%" + keyword + "%";
+            System.out.println("[DEBUG] 查询参数: '" + like + "'");
             ps.setString(1, like);
             ps.setString(2, like);
             ps.setString(3, like);
+            
+            System.out.println("[DEBUG] 执行SQL查询...");
             ResultSet rs = ps.executeQuery();
+            
+            int count = 0;
             while (rs.next()) {
+                count++;
                 BookVO book = new BookVO();
                 book.setBookId(rs.getInt("book_id"));
                 book.setTitle(rs.getString("title"));
@@ -78,10 +62,14 @@ public class LibraryServiceImpl implements LibraryService {
                 book.setPublicationDate(rs.getDate("publication_date"));
                 book.setStatus(rs.getString("status"));
                 list.add(book);
+                System.out.println("[DEBUG] 找到图书 " + count + ": " + book.getTitle() + " (ID: " + book.getBookId() + ")");
             }
+            System.out.println("[DEBUG] 查询完成，共找到 " + count + " 本书");
         } catch (SQLException e) {
+            System.out.println("[DEBUG] 数据库查询异常: " + e.getMessage());
             e.printStackTrace();
         }
+        System.out.println("[DEBUG] LibraryServiceImpl.searchBooks() 执行完成，返回 " + list.size() + " 本书");
         return list;
     }
 

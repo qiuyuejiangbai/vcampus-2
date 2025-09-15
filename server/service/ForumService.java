@@ -26,6 +26,7 @@ public class ForumService {
     public List<ThreadVO> getAllThreads(Integer currentUserId) {
         System.out.println("[Forum][Server][DAO] 准备执行SQL: 查询所有主题");
         System.out.println("[DEBUG] ========== 开始查询所有论坛主题 ==========");
+        System.out.println("[DEBUG] 当前用户ID: " + currentUserId);
         List<ThreadVO> list = new ArrayList<ThreadVO>();
         String sql = "SELECT t.thread_id, t.title, t.content, t.author_id, t.reply_count, t.view_count, t.like_count, t.favorite_count, t.created_time, t.updated_time, t.status, " +
                 "t.section_id, t.is_essence, fs.name AS section_name, " +
@@ -47,9 +48,11 @@ public class ForumService {
             ps = conn.prepareStatement(sql);
             System.out.println("[Forum][Server][DAO] 预编译完成，开始执行查询");
             rs = ps.executeQuery();
+            System.out.println("[DEBUG] 查询执行成功，开始处理结果集");
             
             int count = 0;
             while (rs.next()) {
+                System.out.println("[DEBUG] 处理第" + (count + 1) + "条记录");
                 ThreadVO vo = new ThreadVO();
                 vo.setThreadId(rs.getInt("thread_id"));
                 vo.setTitle(rs.getString("title"));
@@ -112,12 +115,14 @@ public class ForumService {
                 
                 list.add(vo);
                 count++;
+                System.out.println("[DEBUG] 帖子[" + count + "]已添加到列表: ID=" + vo.getThreadId() + ", 标题=" + vo.getTitle());
                 
                 if (count <= 3) {
                     System.out.println("[Forum][Server][DAO] 示例数据: id=" + vo.getThreadId() + ", title=" + vo.getTitle());
                 }
             }
             System.out.println("[Forum][Server][DAO] 查询结束，总数=" + count);
+            System.out.println("[DEBUG] 最终返回的ThreadVO列表大小: " + list.size());
             System.out.println("[DEBUG] ========== 查询完成，返回数据列表 ==========");
             System.out.println("[DEBUG] 返回的ThreadVO列表大小: " + list.size());
             for (ThreadVO vo : list) {

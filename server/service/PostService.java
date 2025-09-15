@@ -33,7 +33,27 @@ public class PostService {
      */
     public List<PostVO> getPostsByThreadId(Integer threadId, Integer currentUserId) {
         System.out.println("[PostService] 获取主题回复: threadId=" + threadId + ", currentUserId=" + currentUserId);
-        return postDAO.findByThreadIdWithUserInfo(threadId, currentUserId);
+        System.out.println("[DEBUG] ========== 开始查询帖子回复 ==========");
+        try {
+            List<PostVO> posts = postDAO.findByThreadIdWithUserInfo(threadId, currentUserId);
+            System.out.println("[DEBUG] 查询完成，返回回复数量: " + (posts != null ? posts.size() : -1));
+            if (posts != null && posts.size() > 0) {
+                for (int i = 0; i < posts.size(); i++) {
+                    PostVO post = posts.get(i);
+                    System.out.println("[DEBUG] 回复[" + i + "] - ID=" + post.getPostId() + 
+                                     ", 内容=" + (post.getContent() != null ? post.getContent().substring(0, Math.min(50, post.getContent().length())) : "null") + 
+                                     ", 作者=" + post.getAuthorName());
+                }
+            } else {
+                System.out.println("[DEBUG] 警告：该主题没有回复或查询失败");
+            }
+            System.out.println("[DEBUG] ========== 查询帖子回复完成 ==========");
+            return posts;
+        } catch (Exception e) {
+            System.err.println("[DEBUG] 查询回复时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
     
     /**

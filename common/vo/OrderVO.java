@@ -11,7 +11,7 @@ import java.util.List;
 public class OrderVO implements Serializable {
     private static final long serialVersionUID = 1L;
     
-    private Integer orderId;        // 订单ID
+    private String orderOn;        // 订单ID
     private Integer userId;         // 用户ID
     private Double totalAmount;     // 订单总额
     private Integer status;         // 状态：1-已完成，0-已取消
@@ -31,12 +31,12 @@ public class OrderVO implements Serializable {
     }
     
     // Getters and Setters
-    public Integer getOrderId() {
-        return orderId;
+    public String getOrderOn() {
+        return orderOn;
     }
     
-    public void setOrderId(Integer orderId) {
-        this.orderId = orderId;
+    public void setOrderOn(String orderOn) {
+        this.orderOn = orderOn;
     }
     
     public Integer getUserId() {
@@ -144,7 +144,7 @@ public class OrderVO implements Serializable {
     @Override
     public String toString() {
         return "OrderVO{" +
-                "orderId=" + orderId +
+                "orderOn=" + orderOn +
                 ", userId=" + userId +
                 ", totalAmount=" + totalAmount +
                 ", status=" + status +
@@ -160,11 +160,11 @@ public class OrderVO implements Serializable {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         OrderVO orderVO = (OrderVO) obj;
-        return orderId != null && orderId.equals(orderVO.orderId);
+        return orderOn != null && orderOn.equals(orderVO.orderOn);
     }
     
     @Override
     public int hashCode() {
-        return orderId != null ? orderId.hashCode() : 0;
+        return orderOn != null ? orderOn.hashCode() : 0;
     }
 }
