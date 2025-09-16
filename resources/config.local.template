@@ -1,8 +1,10 @@
 # vCampus 本地开发配置模板
 # 复制此文件为 config.local.properties 并修改为你的本地配置
-# 注意：config.local.properties 不会被提交到Git
+# 注意：config.local.properties 不会被提交到Git（已在.gitignore中忽略）
 
+# ===========================================
 # 数据库配置 (请修改为你的本地MySQL配置)
+# ===========================================
 db.url=jdbc:mysql://localhost:3306/vcampus_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
 db.username=root
 db.password=你的MySQL密码
@@ -15,9 +17,25 @@ db.pool.maxIdle=10
 db.pool.minIdle=5
 db.pool.maxWait=60000
 
-# 服务器配置 (可以修改端口避免冲突)
+# ===========================================
+# 服务器配置 (客户端连接服务器时使用)
+# ===========================================
+# 重要：这些配置决定了客户端连接到哪个服务器
+# 修改这些值后，所有客户端都会连接到新的服务器地址
+
+# 服务器端口 (服务器监听的端口)
 server.port=8888
+
+# 服务器地址 (客户端连接的服务器地址)
+# 本地开发: localhost 或 127.0.0.1
+# 局域网部署: 192.168.x.x 或 10.x.x.x
+# 远程服务器: 服务器IP地址或域名
 server.host=localhost
+
+# 配置示例：
+# server.host=192.168.1.100    # 局域网服务器
+# server.host=server.company.com  # 远程服务器
+# server.port=9999             # 自定义端口
 
 # 文件上传配置 (使用本地路径)
 file.upload.path=uploads/

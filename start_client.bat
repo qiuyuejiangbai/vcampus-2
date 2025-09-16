@@ -22,7 +22,7 @@ if not exist "bin" (
 )
 
 echo 正在启动客户端...
-echo 默认服务器: localhost:8888
+echo 正在读取服务器配置...
 echo.
 
 REM 启动客户端（正常显示）

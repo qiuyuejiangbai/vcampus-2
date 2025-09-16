@@ -7,6 +7,7 @@ import common.vo.ProductVO;
 import common.vo.OrderVO;
 import common.vo.OrderItemVO;
 import common.vo.ShoppingCartItemVO;
+import client.util.ConfigUtil;
 
 import java.io.*;
 import java.net.Socket;
@@ -27,7 +28,7 @@ public class StoreController {
         this.currentUserId = userId;
         try {
             // 连接服务器
-            this.socket = new Socket("127.0.0.1", 8888);
+            this.socket = new Socket(ConfigUtil.getServerHost(), ConfigUtil.getServerPort());
             this.out = new ObjectOutputStream(socket.getOutputStream());
             this.in = new ObjectInputStream(socket.getInputStream());
         } catch (IOException e) {

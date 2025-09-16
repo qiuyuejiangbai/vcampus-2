@@ -26,6 +26,7 @@ logs/
 *.log
 
 # 本地配置文件（重要：避免数据库密码泄露）
+# 这些文件包含敏感信息，不应提交到版本控制
 resources/config.local.properties
 config.local.properties
 

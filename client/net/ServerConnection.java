@@ -2,6 +2,7 @@ package client.net;
 
 import common.protocol.Message;
 import common.protocol.MessageType;
+import client.util.ConfigUtil;
 
 import java.io.*;
 import java.net.Socket;
@@ -15,9 +16,6 @@ import java.util.concurrent.Executors;
  * 负责客户端与服务器的网络通信
  */
 public class ServerConnection {
-    private static final String DEFAULT_HOST = "localhost";
-    private static final int DEFAULT_PORT = 8888;
-    
     private String serverHost;
     private int serverPort;
     private Socket socket;
@@ -34,13 +32,25 @@ public class ServerConnection {
     private static ServerConnection instance;
     
     private ServerConnection() {
-        this(DEFAULT_HOST, DEFAULT_PORT);
+        this.serverHost = ConfigUtil.getServerHost();
+        this.serverPort = ConfigUtil.getServerPort();
+        this.executor = Executors.newSingleThreadExecutor();
     }
     
     private ServerConnection(String host, int port) {
         this.serverHost = host;
         this.serverPort = port;
         this.executor = Executors.newSingleThreadExecutor();
+    }
+    
+    /**
+     * 重新加载服务器配置（用于动态更新）
+     */
+    public void reloadServerConfig() {
+        ConfigUtil.reloadServerConfig();
+        this.serverHost = ConfigUtil.getServerHost();
+        this.serverPort = ConfigUtil.getServerPort();
+        System.out.println("服务器配置已重新加载: " + this.serverHost + ":" + this.serverPort);
     }
     
     /**

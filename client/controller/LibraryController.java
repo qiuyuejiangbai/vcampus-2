@@ -6,6 +6,7 @@ import common.protocol.StatusCode;
 import common.vo.BookVO;
 import common.vo.BorrowRecordVO;
 import common.vo.DocumentVO;
+import client.util.ConfigUtil;
 
 import java.io.*;
 import java.net.Socket;
@@ -28,7 +29,7 @@ public class LibraryController {
         this.currentUserId = userId;
         try {
             // 连接服务器
-            this.socket = new Socket("127.0.0.1", 8888);
+            this.socket = new Socket(ConfigUtil.getServerHost(), ConfigUtil.getServerPort());
             this.out = new ObjectOutputStream(socket.getOutputStream());
             this.in = new ObjectInputStream(socket.getInputStream());
         } catch (IOException e) {
@@ -48,7 +49,7 @@ public class LibraryController {
             
             if (socket == null || out == null || in == null) {
                 System.out.println("[DEBUG] 连接未初始化，尝试重新连接");
-                this.socket = new Socket("127.0.0.1", 8888);
+                this.socket = new Socket(ConfigUtil.getServerHost(), ConfigUtil.getServerPort());
                 this.out = new ObjectOutputStream(socket.getOutputStream());
                 this.in = new ObjectInputStream(socket.getInputStream());
                 System.out.println("[DEBUG] 重新连接成功");
