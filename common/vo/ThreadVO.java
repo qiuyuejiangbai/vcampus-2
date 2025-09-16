@@ -28,6 +28,7 @@ public class ThreadVO implements Serializable {
     // 关联信息（用于显示）
     private String authorName;      // 作者姓名
     private String authorLoginId;   // 作者登录ID
+    private String authorAvatarPath; // 作者头像路径
 
     // 是否公告（管理员发布的帖子视为公告）
     private Boolean isAnnouncement;
@@ -167,6 +168,14 @@ public class ThreadVO implements Serializable {
     
     public void setAuthorLoginId(String authorLoginId) {
         this.authorLoginId = authorLoginId;
+    }
+    
+    public String getAuthorAvatarPath() {
+        return authorAvatarPath;
+    }
+    
+    public void setAuthorAvatarPath(String authorAvatarPath) {
+        this.authorAvatarPath = authorAvatarPath;
     }
 
     public Boolean getIsAnnouncement() {

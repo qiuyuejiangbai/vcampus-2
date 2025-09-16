@@ -7,22 +7,22 @@ USE vcampus;
 -- ========================================
 
 -- 插入管理员用户认证信息 (密码: admin123)
-INSERT INTO users (login_id, password, role) VALUES 
-('admin', '0192023a7bbd73250516f069df18b500', 2);
+INSERT INTO users (login_id, password, role, avatar_path) VALUES 
+('admin', '0192023a7bbd73250516f069df18b500', 2, 'avatars/p (1).jpg');
 
 -- 插入教师用户认证信息 (密码: teacher123)
-INSERT INTO users (login_id, password, role) VALUES 
-('T001', 'a426dcf72ba25d046591f81a5495eab7', 1),
-('T002', 'a426dcf72ba25d046591f81a5495eab7', 1),
-('T003', 'a426dcf72ba25d046591f81a5495eab7', 1);
+INSERT INTO users (login_id, password, role, avatar_path) VALUES 
+('T001', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (2).jpg'),
+('T002', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (3).jpg'),
+('T003', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (4).jpg');
 
 -- 插入学生用户认证信息 (密码: student123)
-INSERT INTO users (login_id, password, role) VALUES 
-('2021001', 'ad6a280417a0f533d8b670c61667e1a0', 0),
-('2021002', 'ad6a280417a0f533d8b670c61667e1a0', 0),
-('2021003', 'ad6a280417a0f533d8b670c61667e1a0', 0),
-('2021004', 'ad6a280417a0f533d8b670c61667e1a0', 0),
-('2021005', 'ad6a280417a0f533d8b670c61667e1a0', 0);
+INSERT INTO users (login_id, password, role, avatar_path) VALUES 
+('2021001', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (5).jpg'),
+('2021002', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (6).jpg'),
+('2021003', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (7).jpg'),
+('2021004', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (8).jpg'),
+('2021005', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (9).jpg');
 
 -- ========================================
 -- 管理员详细信息（admins表）

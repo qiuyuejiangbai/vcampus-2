@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     login_id VARCHAR(50) UNIQUE NOT NULL COMMENT '登录ID(学号/工号/管理员ID)',
     password VARCHAR(255) NOT NULL COMMENT '密码哈希值(MD5)',
     role INT NOT NULL DEFAULT 0 COMMENT '角色: 0-学生, 1-教师, 2-管理员',
+    avatar_path VARCHAR(500) COMMENT '头像文件路径',
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     

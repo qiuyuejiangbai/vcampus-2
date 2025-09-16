@@ -69,7 +69,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public boolean update(UserVO user) {
-        String sql = "UPDATE users SET login_id = ?, password = ?, role = ?, updated_time = CURRENT_TIMESTAMP WHERE user_id = ?";
+        String sql = "UPDATE users SET login_id = ?, password = ?, role = ?, avatar_path = ?, updated_time = CURRENT_TIMESTAMP WHERE user_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         
@@ -80,7 +80,8 @@ public class UserDAOImpl implements UserDAO {
             pstmt.setString(1, user.getId());
             pstmt.setString(2, user.getPassword());
             pstmt.setInt(3, user.getRole() != null ? user.getRole() : 0);
-            pstmt.setInt(4, user.getUserId()); // 使用userId作为更新条件
+            pstmt.setString(4, user.getAvatarPath());
+            pstmt.setInt(5, user.getUserId()); // 使用userId作为更新条件
             
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
@@ -95,7 +96,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public UserVO findById(Integer userId) {
-        String sql = "SELECT user_id, login_id, password, role FROM users WHERE user_id = ?";
+        String sql = "SELECT user_id, login_id, password, role, avatar_path FROM users WHERE user_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -119,7 +120,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public List<UserVO> findAll() {
-        String sql = "SELECT user_id, login_id, password, role FROM users ORDER BY user_id";
+        String sql = "SELECT user_id, login_id, password, role, avatar_path FROM users ORDER BY user_id";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -188,7 +189,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public UserVO findByLoginId(String loginId) {
-        String sql = "SELECT user_id, login_id, password, role FROM users WHERE login_id = ?";
+        String sql = "SELECT user_id, login_id, password, role, avatar_path FROM users WHERE login_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -212,7 +213,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public UserVO authenticate(String loginId, String password) {
-        String sql = "SELECT user_id, login_id, password, role FROM users WHERE login_id = ? AND password = ?";
+        String sql = "SELECT user_id, login_id, password, role, avatar_path FROM users WHERE login_id = ? AND password = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -259,7 +260,7 @@ public class UserDAOImpl implements UserDAO {
     
     @Override
     public List<UserVO> findByRole(Integer role) {
-        String sql = "SELECT user_id, login_id, password, role FROM users WHERE role = ? ORDER BY user_id";
+        String sql = "SELECT user_id, login_id, password, role, avatar_path FROM users WHERE role = ? ORDER BY user_id";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -352,7 +353,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public List<UserVO> findByNameLike(String name) {
         // 由于users表没有name字段，这里根据login_id进行模糊查询
-        String sql = "SELECT user_id, login_id, password, role FROM users WHERE login_id LIKE ? ORDER BY user_id";
+        String sql = "SELECT user_id, login_id, password, role, avatar_path FROM users WHERE login_id LIKE ? ORDER BY user_id";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -402,6 +403,29 @@ public class UserDAOImpl implements UserDAO {
         return null;
     }
     
+    @Override
+    public boolean updateAvatarPath(Integer userId, String avatarPath) {
+        String sql = "UPDATE users SET avatar_path = ?, updated_time = CURRENT_TIMESTAMP WHERE user_id = ?";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
+        try {
+            conn = DatabaseUtil.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, avatarPath);
+            pstmt.setInt(2, userId);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            System.err.println("更新用户头像路径失败: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } finally {
+            DatabaseUtil.closeAll(conn, pstmt, null);
+        }
+    }
+    
     /**
      * 将ResultSet映射为UserVO对象
      * @param rs ResultSet对象
@@ -414,6 +438,7 @@ public class UserDAOImpl implements UserDAO {
         user.setId(rs.getString("login_id")); // 设置登录ID
         user.setPassword(rs.getString("password"));
         user.setRole(rs.getInt("role"));
+        user.setAvatarPath(rs.getString("avatar_path")); // 设置头像路径
         return user;
     }
 }

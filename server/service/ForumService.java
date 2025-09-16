@@ -30,7 +30,7 @@ public class ForumService {
         List<ThreadVO> list = new ArrayList<ThreadVO>();
         String sql = "SELECT t.thread_id, t.title, t.content, t.author_id, t.reply_count, t.view_count, t.like_count, t.favorite_count, t.created_time, t.updated_time, t.status, " +
                 "t.section_id, t.is_essence, fs.name AS section_name, " +
-                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.role AS author_role " +
+                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.avatar_path AS author_avatar_path, u.role AS author_role " +
                 "FROM forum_threads t " +
                 "LEFT JOIN forum_sections fs ON t.section_id = fs.section_id " +
                 "LEFT JOIN users u ON t.author_id = u.user_id " +
@@ -67,6 +67,7 @@ public class ForumService {
                 vo.setStatus((Integer) rs.getObject("status"));
                 vo.setAuthorName(rs.getString("author_name"));
                 vo.setAuthorLoginId(rs.getString("author_login_id"));
+                vo.setAuthorAvatarPath(rs.getString("author_avatar_path"));
                 
                 // 分区
                 try {
@@ -335,7 +336,7 @@ public class ForumService {
                 "t.like_count, t.favorite_count, t.created_time, t.updated_time, t.status, " +
                 "t.section_id, fs.name AS section_name, " +
                 "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, " +
-                "u.login_id AS author_login_id, u.role AS author_role, " +
+                "u.login_id AS author_login_id, u.avatar_path AS author_avatar_path, u.role AS author_role, " +
                 "(MATCH(t.title, t.content) AGAINST(? IN NATURAL LANGUAGE MODE)) AS thread_score, " +
                 "(MATCH(p.content) AGAINST(? IN NATURAL LANGUAGE MODE)) AS post_score " +
                 "FROM forum_threads t " +
@@ -392,7 +393,7 @@ public class ForumService {
         String sql = "SELECT DISTINCT t.thread_id, t.title, t.content, t.author_id, t.reply_count, t.view_count, t.like_count, t.favorite_count, " +
                 "t.created_time, t.updated_time, t.status, t.is_pinned, t.last_post_time, t.is_essence, " +
                 "t.section_id, fs.name AS section_name, " +
-                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.role AS author_role " +
+                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.avatar_path AS author_avatar_path, u.role AS author_role " +
                 "FROM forum_threads t " +
                 "LEFT JOIN forum_sections fs ON t.section_id = fs.section_id " +
                 "LEFT JOIN users u ON t.author_id = u.user_id " +
@@ -454,6 +455,7 @@ public class ForumService {
         vo.setStatus((Integer) rs.getObject("status"));
         vo.setAuthorName(rs.getString("author_name"));
         vo.setAuthorLoginId(rs.getString("author_login_id"));
+        vo.setAuthorAvatarPath(rs.getString("author_avatar_path"));
         
         // 分区信息
         try {
@@ -652,7 +654,7 @@ public class ForumService {
         String sql = "SELECT DISTINCT t.thread_id, t.title, t.content, t.author_id, t.reply_count, t.view_count, t.like_count, t.favorite_count, " +
                 "t.created_time, t.updated_time, t.status, t.is_pinned, t.last_post_time, t.is_essence, " +
                 "t.section_id, fs.name AS section_name, " +
-                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.role AS author_role " +
+                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.avatar_path AS author_avatar_path, u.role AS author_role " +
                 "FROM forum_threads t " +
                 "LEFT JOIN forum_sections fs ON t.section_id = fs.section_id " +
                 "LEFT JOIN users u ON t.author_id = u.user_id " +
@@ -697,6 +699,7 @@ public class ForumService {
                 vo.setStatus((Integer) rs.getObject("status"));
                 vo.setAuthorName(rs.getString("author_name"));
                 vo.setAuthorLoginId(rs.getString("author_login_id"));
+                vo.setAuthorAvatarPath(rs.getString("author_avatar_path"));
                 
                 // 分区
                 try {

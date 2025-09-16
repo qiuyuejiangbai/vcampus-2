@@ -3,8 +3,9 @@ package client.controller;
 import client.net.ServerConnection;
 import common.protocol.Message;
 import common.protocol.MessageType;
-import common.protocol.StatusCode;
 import common.vo.UserVO;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 用户控制器
@@ -54,11 +55,29 @@ public class UserController {
                 currentRegisterCallback = null;
             }
         });
+        
+        // 头像上传响应监听器
+        serverConnection.setMessageListener(MessageType.UPLOAD_AVATAR_SUCCESS, message -> {
+            if (currentAvatarUploadCallback != null) {
+                String avatarPath = (String) message.getData();
+                currentAvatarUploadCallback.onSuccess(avatarPath);
+                currentAvatarUploadCallback = null;
+            }
+        });
+        
+        serverConnection.setMessageListener(MessageType.UPLOAD_AVATAR_FAIL, message -> {
+            if (currentAvatarUploadCallback != null) {
+                String errorMsg = message.getMessage() != null ? message.getMessage() : "头像上传失败";
+                currentAvatarUploadCallback.onFailure(errorMsg);
+                currentAvatarUploadCallback = null;
+            }
+        });
     }
     
     // 回调接口
     private LoginCallback currentLoginCallback;
     private RegisterCallback currentRegisterCallback;
+    private AvatarUploadCallback currentAvatarUploadCallback;
     
     /**
      * 用户登录
@@ -349,6 +368,50 @@ public class UserController {
      */
     public interface UpdateUserCallback {
         void onSuccess(String message);
+        void onFailure(String errorMessage);
+    }
+    
+    /**
+     * 上传头像
+     * @param fileData 文件数据
+     * @param fileName 文件名
+     * @param callback 上传回调
+     */
+    public void uploadAvatar(byte[] fileData, String fileName, AvatarUploadCallback callback) {
+        if (!serverConnection.isConnected()) {
+            callback.onFailure("未连接到服务器");
+            return;
+        }
+        
+        if (fileData == null || fileName == null) {
+            callback.onFailure("头像数据不能为空");
+            return;
+        }
+        
+        // 创建上传数据
+        Map<String, Object> uploadData = new HashMap<>();
+        uploadData.put("fileData", fileData);
+        uploadData.put("fileName", fileName);
+        
+        // 创建上传请求消息
+        Message request = new Message(MessageType.UPLOAD_AVATAR_REQUEST, uploadData);
+        
+        // 设置回调
+        this.currentAvatarUploadCallback = callback;
+        
+        // 发送上传请求
+        boolean sent = serverConnection.sendMessage(request);
+        if (!sent) {
+            this.currentAvatarUploadCallback = null;
+            callback.onFailure("发送头像上传请求失败");
+        }
+    }
+    
+    /**
+     * 头像上传回调接口
+     */
+    public interface AvatarUploadCallback {
+        void onSuccess(String avatarPath);
         void onFailure(String errorMessage);
     }
 }

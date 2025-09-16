@@ -55,6 +55,7 @@ public class TeacherForumModule implements IModuleView {
     private JButton replyButton;
     private JButton backToListButton;
     private JLabel commentSectionTitle; // 评论区标题标签
+    private CircularAvatar postAvatar; // 帖子详情页面的发帖人头像
     
     
     // 公告区域引用：用于动态刷新
@@ -924,9 +925,10 @@ public class TeacherForumModule implements IModuleView {
         authorInfoPanel.setOpaque(false);
         
         // 左侧头像
-        CircularAvatar postAvatar = new CircularAvatar(50);
-        Image postAvatarImg = loadResourceImage("icons/默认头像.png");
-        if (postAvatarImg != null) postAvatar.setAvatarImage(postAvatarImg);
+        postAvatar = new CircularAvatar(50);
+        // 头像将在showThreadDetail方法中设置，这里先设置为默认头像
+        Image defaultAvatar = loadUserAvatar(null);
+        if (defaultAvatar != null) postAvatar.setAvatarImage(defaultAvatar);
         postAvatar.setBorderWidth(0f);
         JPanel avatarContainer = new JPanel(new BorderLayout());
         avatarContainer.setOpaque(false);
@@ -1875,7 +1877,7 @@ public class TeacherForumModule implements IModuleView {
 
         // 左上角头像
         CircularAvatar avatar = new CircularAvatar(48);
-        Image img = loadResourceImage("icons/默认头像.png");
+        Image img = loadUserAvatar(thread.getAuthorAvatarPath());
         if (img != null) avatar.setAvatarImage(img);
         avatar.setBorderWidth(0f);
         JPanel westWrap = new JPanel(new BorderLayout());
@@ -2415,6 +2417,14 @@ public class TeacherForumModule implements IModuleView {
         // 设置发表时间（不显示"时间:"前缀）
         threadTimeLabel.setText(formatTime(thread.getCreatedTime()));
         
+        // 更新发帖人头像
+        if (postAvatar != null) {
+            Image avatarImg = loadUserAvatar(thread.getAuthorAvatarPath());
+            if (avatarImg != null) {
+                postAvatar.setAvatarImage(avatarImg);
+            }
+        }
+        
         // 更新点赞和评论数量显示
         updateStatsDisplay(thread);
         
@@ -2674,12 +2684,12 @@ public class TeacherForumModule implements IModuleView {
         itemPanel.setPreferredSize(new Dimension(Integer.MAX_VALUE, 140));
         itemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));
 
-        // 左侧头像：默认头像
+        // 左侧头像：用户头像或默认头像
         JPanel avatarWrap = new JPanel(new BorderLayout());
         avatarWrap.setOpaque(false);
         avatarWrap.setBorder(new EmptyBorder(0, 0, 0, 12)); // 只保留右侧间距
         CircularAvatar avatar = new CircularAvatar(36);
-        Image aimg = loadResourceImage("icons/默认头像.png");
+        Image aimg = loadUserAvatar(reply.getAuthorAvatarPath());
         if (aimg != null) avatar.setAvatarImage(aimg);
         avatar.setBorderWidth(0f);
         avatarWrap.add(avatar, BorderLayout.NORTH);
@@ -3599,6 +3609,48 @@ public class TeacherForumModule implements IModuleView {
         System.out.println("[Forum][UI] 退出搜索模式，重新加载所有帖子");
     }
     
-    
+    /**
+     * 加载用户头像，优先使用用户头像，没有则使用默认头像
+     * @param avatarPath 用户头像路径
+     * @return 头像图片
+     */
+    private Image loadUserAvatar(String avatarPath) {
+        System.out.println("[Forum][UI] 尝试加载用户头像: " + avatarPath);
+        
+        // 如果有用户头像路径且不为空，尝试加载用户头像
+        if (avatarPath != null && !avatarPath.trim().isEmpty()) {
+            try {
+                String fullPath;
+                // 处理不同的头像路径格式
+                if (avatarPath.startsWith("resources/avatars/")) {
+                    // 如果路径包含resources/avatars/前缀，直接使用
+                    fullPath = avatarPath;
+                } else if (avatarPath.startsWith("avatars/")) {
+                    // 如果路径已经包含avatars/前缀，直接使用
+                    fullPath = avatarPath;
+                } else {
+                    // 否则添加avatars/前缀
+                    fullPath = "avatars/" + avatarPath;
+                }
+                
+                System.out.println("[Forum][UI] 完整头像路径: " + fullPath);
+                Image userAvatar = loadResourceImage(fullPath);
+                if (userAvatar != null) {
+                    System.out.println("[Forum][UI] 成功加载用户头像: " + fullPath);
+                    return userAvatar;
+                } else {
+                    System.out.println("[Forum][UI] 头像文件不存在或无法加载: " + fullPath);
+                }
+            } catch (Exception e) {
+                System.out.println("[Forum][UI] 加载用户头像失败: " + avatarPath + ", 错误: " + e.getMessage());
+            }
+        } else {
+            System.out.println("[Forum][UI] 头像路径为空，使用默认头像");
+        }
+        
+        // 没有用户头像或加载失败，使用默认头像
+        System.out.println("[Forum][UI] 使用默认头像");
+        return loadResourceImage("icons/默认头像.png");
+    }
     
 }

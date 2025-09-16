@@ -19,6 +19,9 @@ public enum MessageType {
     UPDATE_USER_FAIL,           // 更新用户信息失败
     GET_USER_INFO_REQUEST,      // 获取用户信息请求
     GET_USER_INFO_SUCCESS,      // 获取用户信息成功
+    UPLOAD_AVATAR_REQUEST,      // 上传头像请求
+    UPLOAD_AVATAR_SUCCESS,      // 上传头像成功
+    UPLOAD_AVATAR_FAIL,         // 上传头像失败
     ADD_USER_REQUEST,           // 添加用户请求
     ADD_USER_SUCCESS,           // 添加用户成功
     DELETE_USER_REQUEST,        // 删除用户请求

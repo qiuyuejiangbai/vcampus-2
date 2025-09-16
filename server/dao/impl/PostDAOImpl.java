@@ -48,7 +48,7 @@ public class PostDAOImpl implements PostDAO {
     @Override
     public PostVO findById(Integer id) {
         String sql = "SELECT p.*, " +
-                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id " +
+                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.avatar_path AS author_avatar_path " +
                 "FROM forum_posts p " +
                 "LEFT JOIN users u ON p.author_id = u.user_id " +
                 "LEFT JOIN students s ON s.user_id = u.user_id " +
@@ -122,7 +122,7 @@ public class PostDAOImpl implements PostDAO {
         List<PostVO> list = new ArrayList<>();
         
         String sql = "SELECT p.*, " +
-                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, " +
+                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.avatar_path AS author_avatar_path, " +
                 "COALESCE(ps.name, pte.name, pa.username, pu.login_id) AS parent_author_name, " +
                 "pq.content AS quoted_content, " +
                 "COALESCE(qs.name, qte.name, qa.username, qu.login_id) AS quoted_author_name " +
@@ -194,7 +194,7 @@ public class PostDAOImpl implements PostDAO {
         List<PostVO> list = new ArrayList<>();
         
         String sql = "SELECT p.*, " +
-                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id " +
+                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.avatar_path AS author_avatar_path " +
                 "FROM forum_posts p " +
                 "LEFT JOIN users u ON p.author_id = u.user_id " +
                 "LEFT JOIN students s ON s.user_id = u.user_id " +
@@ -239,7 +239,7 @@ public class PostDAOImpl implements PostDAO {
         List<PostVO> list = new ArrayList<>();
         
         String sql = "SELECT p.*, " +
-                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id " +
+                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.avatar_path AS author_avatar_path " +
                 "FROM forum_posts p " +
                 "LEFT JOIN users u ON p.author_id = u.user_id " +
                 "LEFT JOIN students s ON s.user_id = u.user_id " +
@@ -275,7 +275,7 @@ public class PostDAOImpl implements PostDAO {
         List<PostVO> list = new ArrayList<>();
         
         String sql = "SELECT p.*, " +
-                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id " +
+                "COALESCE(s.name, te.name, a.username, u.login_id) AS author_name, u.login_id AS author_login_id, u.avatar_path AS author_avatar_path " +
                 "FROM forum_posts p " +
                 "LEFT JOIN users u ON p.author_id = u.user_id " +
                 "LEFT JOIN students s ON s.user_id = u.user_id " +
@@ -701,6 +701,15 @@ public class PostDAOImpl implements PostDAO {
         
         post.setAuthorName(rs.getString("author_name"));
         post.setAuthorLoginId(rs.getString("author_login_id"));
+        String avatarPath = rs.getString("author_avatar_path");
+        post.setAuthorAvatarPath(avatarPath);
+        
+        // 添加调试信息
+        System.out.println("[PostDAO] 映射回复数据 - 回复ID: " + post.getPostId() + 
+                         ", 作者ID: " + post.getAuthorId() + 
+                         ", 作者姓名: " + post.getAuthorName() + 
+                         ", 头像路径: " + avatarPath);
+        
         return post;
     }
 }

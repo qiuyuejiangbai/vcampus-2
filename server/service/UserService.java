@@ -21,11 +21,13 @@ public class UserService {
     private final UserDAO userDAO;
     private final StudentDAO studentDAO;
     private final TeacherDAO teacherDAO;
+    private final AvatarService avatarService;
     
     public UserService() {
         this.userDAO = new UserDAOImpl();
         this.studentDAO = new StudentDAOImpl();
         this.teacherDAO = new TeacherDAOImpl();
+        this.avatarService = new AvatarService();
     }
     
     /**
@@ -396,5 +398,43 @@ public class UserService {
         
         // 检查角色等级
         return user.getRole() >= requiredRole;
+    }
+    
+    /**
+     * 上传用户头像
+     * @param userId 用户ID
+     * @param fileData 文件数据
+     * @param fileName 文件名
+     * @return 上传成功返回头像路径，失败返回null
+     */
+    public String uploadAvatar(Integer userId, byte[] fileData, String fileName) {
+        return avatarService.uploadAvatar(userId, fileData, fileName);
+    }
+    
+    /**
+     * 获取用户头像路径
+     * @param userId 用户ID
+     * @return 头像路径
+     */
+    public String getUserAvatarPath(Integer userId) {
+        return avatarService.getUserAvatarPath(userId);
+    }
+    
+    /**
+     * 删除用户头像
+     * @param userId 用户ID
+     * @return 删除成功返回true，失败返回false
+     */
+    public boolean deleteUserAvatar(Integer userId) {
+        return avatarService.deleteUserAvatar(userId);
+    }
+    
+    /**
+     * 获取头像文件数据
+     * @param avatarPath 头像路径
+     * @return 文件数据
+     */
+    public byte[] getAvatarData(String avatarPath) {
+        return avatarService.getAvatarData(avatarPath);
     }
 }

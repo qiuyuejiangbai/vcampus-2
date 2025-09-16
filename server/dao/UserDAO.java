@@ -88,4 +88,12 @@ public interface UserDAO extends BaseDAO<UserVO, Integer> {
      * @return 用户余额，用户不存在返回null
      */
     Double getBalance(Integer userId);
+    
+    /**
+     * 更新用户头像路径
+     * @param userId 用户ID
+     * @param avatarPath 头像文件路径
+     * @return 更新成功返回true，失败返回false
+     */
+    boolean updateAvatarPath(Integer userId, String avatarPath);
 }

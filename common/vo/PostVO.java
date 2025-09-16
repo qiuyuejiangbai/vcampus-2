@@ -27,6 +27,7 @@ public class PostVO implements Serializable {
     // 关联信息（用于显示）
     private String authorName;      // 作者姓名
     private String authorLoginId;   // 作者登录ID
+    private String authorAvatarPath; // 作者头像路径
     private String threadTitle;     // 主题标题
     
     // 回复相关显示信息
@@ -130,6 +131,14 @@ public class PostVO implements Serializable {
     
     public void setAuthorLoginId(String authorLoginId) {
         this.authorLoginId = authorLoginId;
+    }
+    
+    public String getAuthorAvatarPath() {
+        return authorAvatarPath;
+    }
+    
+    public void setAuthorAvatarPath(String authorAvatarPath) {
+        this.authorAvatarPath = authorAvatarPath;
     }
     
     public String getThreadTitle() {

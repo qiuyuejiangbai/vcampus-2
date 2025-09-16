@@ -279,6 +279,21 @@ public class SideNav extends JPanel {
         // 头像 - 左侧
         avatarLabel = new CircularAvatar(56);
         avatarLabel.setBorderWidth(0f);
+        // 启用点击上传功能
+        avatarLabel.setClickable(true);
+        avatarLabel.setUploadCallback(new CircularAvatar.AvatarUploadCallback() {
+            @Override
+            public void onAvatarUploaded(String avatarPath) {
+                // 头像上传成功后，更新头像显示
+                updateAvatarDisplay(avatarPath);
+                
+                // 更新当前用户对象的头像路径
+                if (currentUser != null && avatarPath != null) {
+                    currentUser.setAvatarPath(avatarPath);
+                    System.out.println("已更新当前用户头像路径: " + avatarPath);
+                }
+            }
+        });
         // 设置默认头像
         setDefaultAvatar();
         
@@ -347,6 +362,12 @@ public class SideNav extends JPanel {
     private JPanel navPanel; // 导航菜单面板
     
     private void setDefaultAvatar() {
+        // 首先尝试加载用户自定义头像
+        if (currentUser != null && currentUser.getAvatarPath() != null && !currentUser.getAvatarPath().trim().isEmpty()) {
+            updateAvatarDisplay(currentUser.getAvatarPath());
+            return;
+        }
+        
         // 尝试加载默认头像图片
         try {
             // 尝试多个可能的路径
@@ -391,6 +412,72 @@ public class SideNav extends JPanel {
         // 如果所有方法都失败，使用默认头像
         avatarLabel.setDefaultText(currentUser != null && currentUser.getName() != null && !currentUser.getName().isEmpty() 
             ? currentUser.getName().substring(0, 1) : "U");
+    }
+    
+    /**
+     * 更新头像显示
+     * @param avatarPath 头像路径
+     */
+    private void updateAvatarDisplay(String avatarPath) {
+        if (avatarPath == null || avatarPath.trim().isEmpty()) {
+            return;
+        }
+        
+        try {
+            // 尝试加载头像图片
+            java.io.File avatarFile = new java.io.File(avatarPath);
+            if (avatarFile.exists()) {
+                ImageIcon icon = new ImageIcon(avatarFile.getAbsolutePath());
+                Image img = icon.getImage();
+                if (img != null) {
+                    // 缩放图片以适应头像尺寸
+                    Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
+                    avatarLabel.setAvatarImage(scaledImg);
+                    System.out.println("头像更新成功: " + avatarPath);
+                    return;
+                }
+            }
+            
+            // 如果文件不存在或加载失败，尝试其他路径
+            String[] possiblePaths = {
+                avatarPath,
+                "resources/" + avatarPath,
+                "../resources/" + avatarPath,
+                "./resources/" + avatarPath
+            };
+            
+            for (String path : possiblePaths) {
+                java.io.File file = new java.io.File(path);
+                if (file.exists()) {
+                    ImageIcon icon = new ImageIcon(file.getAbsolutePath());
+                    Image img = icon.getImage();
+                    if (img != null) {
+                        Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
+                        avatarLabel.setAvatarImage(scaledImg);
+                        System.out.println("头像更新成功: " + path);
+                        return;
+                    }
+                }
+            }
+            
+            System.err.println("无法加载头像文件: " + avatarPath);
+            
+        } catch (Exception e) {
+            System.err.println("更新头像显示失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 刷新头像显示（供外部调用）
+     * 当用户信息更新后，可以调用此方法刷新头像显示
+     */
+    public void refreshAvatar() {
+        if (currentUser != null && currentUser.getAvatarPath() != null && !currentUser.getAvatarPath().trim().isEmpty()) {
+            updateAvatarDisplay(currentUser.getAvatarPath());
+        } else {
+            setDefaultAvatar();
+        }
     }
 
     public void addItem(final String key, String text, Icon icon) {

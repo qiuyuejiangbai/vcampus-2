@@ -19,6 +19,7 @@ public class UserVO implements Serializable {
     private String email;           // 邮箱
     private Integer status;         // 状态
     private Double balance;         // 余额
+    private String avatarPath;      // 头像文件路径
     private Timestamp createdTime;  // 创建时间
     private Timestamp updatedTime;  // 更新时间
     
@@ -124,6 +125,14 @@ public class UserVO implements Serializable {
     
     public void setUpdatedTime(Timestamp updatedTime) {
         this.updatedTime = updatedTime;
+    }
+    
+    public String getAvatarPath() {
+        return avatarPath;
+    }
+    
+    public void setAvatarPath(String avatarPath) {
+        this.avatarPath = avatarPath;
     }
     
     // 别名方法，用于兼容性

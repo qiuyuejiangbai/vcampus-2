@@ -118,6 +118,14 @@ public class StudentDashboardUI extends JFrame {
         // 设置当前用户信息到导航栏
         sideNav.setCurrentUser(currentUser);
     }
+    
+    /**
+     * 刷新用户信息显示
+     * 当用户信息更新后（如头像上传），调用此方法刷新显示
+     */
+    public void refreshUserInfo() {
+        sideNav.refreshAvatar();
+    }
 
     private void initModules() {
         // 注册学生版论坛

@@ -116,6 +116,14 @@ public class TeacherDashboardUI extends JFrame {
         // 设置当前用户信息到导航栏（教师：显示姓名 + 职称/院系占位）
         sideNav.setCurrentUser(currentUser);
     }
+    
+    /**
+     * 刷新用户信息显示
+     * 当用户信息更新后（如头像上传），调用此方法刷新显示
+     */
+    public void refreshUserInfo() {
+        sideNav.refreshAvatar();
+    }
 
     private void initModules() {
         ModuleRegistry.register(new client.ui.modules.TeacherForumModule());

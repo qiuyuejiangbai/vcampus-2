@@ -4,7 +4,9 @@ import javax.swing.*;
 import java.awt.*;
 import client.ui.util.FontUtil;
 import java.awt.geom.Ellipse2D;
-import java.awt.image.BufferedImage;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import client.ui.dialog.AvatarUploadDialog;
 
 /**
  * 圆形头像组件
@@ -20,6 +22,14 @@ public class CircularAvatar extends JPanel {
     private float borderWidth = 2f;
     private Color borderColor = new Color(0x2C, 0x4F, 0x3D);
     
+    // 头像上传功能
+    private boolean clickable = false;
+    private AvatarUploadCallback uploadCallback;
+    
+    public interface AvatarUploadCallback {
+        void onAvatarUploaded(String avatarPath);
+    }
+    
     public CircularAvatar(int size) {
         this.size = size;
         this.backgroundColor = new Color(0x4A, 0x90, 0xE2);
@@ -29,6 +39,30 @@ public class CircularAvatar extends JPanel {
         setMaximumSize(new Dimension(size, size));
         setMinimumSize(new Dimension(size, size));
         setOpaque(false);
+        
+        // 添加鼠标监听器
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (clickable && uploadCallback != null) {
+                    openAvatarUploadDialog();
+                }
+            }
+            
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                if (clickable) {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                }
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                if (clickable) {
+                    setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        });
     }
     
     public void setAvatarImage(Image image) {
@@ -59,6 +93,44 @@ public class CircularAvatar extends JPanel {
     public void setBorderColor(Color c) {
         this.borderColor = c;
         repaint();
+    }
+    
+    /**
+     * 设置是否可点击上传
+     */
+    public void setClickable(boolean clickable) {
+        this.clickable = clickable;
+    }
+    
+    /**
+     * 设置上传回调
+     */
+    public void setUploadCallback(AvatarUploadCallback callback) {
+        this.uploadCallback = callback;
+    }
+    
+    /**
+     * 打开头像上传对话框
+     */
+    private void openAvatarUploadDialog() {
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        AvatarUploadDialog dialog = new AvatarUploadDialog(parentFrame, new AvatarUploadDialog.UploadCallback() {
+            @Override
+            public void onUploadSuccess(String avatarPath) {
+                if (uploadCallback != null) {
+                    uploadCallback.onAvatarUploaded(avatarPath);
+                }
+            }
+            
+            @Override
+            public void onUploadFailure(String errorMessage) {
+                JOptionPane.showMessageDialog(CircularAvatar.this, 
+                    "头像上传失败: " + errorMessage, 
+                    "错误", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        dialog.setVisible(true);
     }
     
     @Override

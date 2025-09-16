@@ -133,6 +133,10 @@ public class ClientHandler implements Runnable {
                     handleUpdateUser(request);
                     break;
                     
+                case UPLOAD_AVATAR_REQUEST:
+                    handleUploadAvatar(request);
+                    break;
+                    
                 case GET_ALL_USERS_REQUEST:
                     handleGetAllUsers(request);
                     break;
@@ -1725,6 +1729,56 @@ private void handleShipOrder(Message request) {
             }
         } else {
             sendErrorMessage("更新数据格式错误");
+        }
+    }
+    
+    /**
+     * 处理头像上传请求
+     */
+    private void handleUploadAvatar(Message request) {
+        if (!isLoggedIn()) {
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        try {
+            // 检查请求数据格式
+            if (request.getData() instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) request.getData();
+                
+                byte[] fileData = (byte[]) data.get("fileData");
+                String fileName = (String) data.get("fileName");
+                
+                if (fileData == null || fileName == null) {
+                    Message response = new Message(MessageType.UPLOAD_AVATAR_FAIL, StatusCode.BAD_REQUEST, null, "头像数据不能为空");
+                    sendMessage(response);
+                    return;
+                }
+                
+                // 上传头像
+                String avatarPath = userService.uploadAvatar(currentUserId, fileData, fileName);
+                
+                if (avatarPath != null) {
+                    // 更新当前用户信息
+                    currentUser = userService.getUserById(currentUserId);
+                    
+                    Message response = new Message(MessageType.UPLOAD_AVATAR_SUCCESS, StatusCode.SUCCESS, avatarPath, "头像上传成功");
+                    sendMessage(response);
+                    System.out.println("用户 " + currentUser.getId() + " 头像上传成功: " + avatarPath);
+                } else {
+                    Message response = new Message(MessageType.UPLOAD_AVATAR_FAIL, StatusCode.INTERNAL_ERROR, null, "头像上传失败");
+                    sendMessage(response);
+                }
+            } else {
+                Message response = new Message(MessageType.UPLOAD_AVATAR_FAIL, StatusCode.BAD_REQUEST, null, "无效的头像数据格式");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("处理头像上传请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.UPLOAD_AVATAR_FAIL, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
         }
     }
     
