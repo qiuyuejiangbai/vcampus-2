@@ -119,7 +119,28 @@ public class TeacherCourseCardPanel extends JPanel {
             connection.setMessageListener(MessageType.GET_ALL_COURSES_SUCCESS, message -> {
                 SwingUtilities.invokeLater(() -> {
                     System.out.println("收到课程列表响应消息");
-                    if (message.getData() instanceof List) {
+                    if (message.getData() instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> responseData = (Map<String, Object>) message.getData();
+                        
+                        // 获取课程列表
+                        if (responseData.get("courses") instanceof List) {
+                            @SuppressWarnings("unchecked")
+                            List<CourseVO> courses = (List<CourseVO>) responseData.get("courses");
+                            courseList.clear();
+                            courseList.addAll(courses);
+                            
+                            // 按课程代码分组教学班数据
+                            groupCoursesByCode(courses);
+                            
+                            refreshCards();
+                            System.out.println("教师成功加载 " + courses.size() + " 门课程");
+                            
+                            // 同时更新成绩管理面板的数据
+                            updateGradeCardPanelData(courses);
+                        }
+                    } else if (message.getData() instanceof List) {
+                        // 兼容旧的响应格式
                         @SuppressWarnings("unchecked")
                         List<CourseVO> courses = (List<CourseVO>) message.getData();
                         courseList.clear();
