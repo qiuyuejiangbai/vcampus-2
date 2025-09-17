@@ -6,6 +6,7 @@ import client.ui.integration.ModuleKeys;
 import client.ui.integration.ModuleRegistry;
 import client.ui.modules.course.CourseTablePanel;
 import client.ui.modules.course.StudentEnrollmentTablePanel;
+import client.ui.modules.course.StudentGradeTablePanel;
 import client.ui.modules.course.UITheme;
 import common.vo.UserVO;
 
@@ -17,6 +18,7 @@ public class StudentCourseModule implements IModuleView {
     private JPanel root;
     private common.vo.UserVO currentUser;
     private client.net.ServerConnection connection;
+    private StudentGradeTablePanel gradeTablePanel; // 成绩表格面板实例
 
 
     public StudentCourseModule() { 
@@ -95,6 +97,10 @@ public class StudentCourseModule implements IModuleView {
         // 选课记录选项卡
         JPanel enrollmentManagementPanel = createEnrollmentManagementPanel();
         tabbedPane.addTab("选课记录", enrollmentManagementPanel);
+
+        // 成绩查看选项卡
+        JPanel gradeViewPanel = createGradeViewPanel();
+        tabbedPane.addTab("成绩查看", gradeViewPanel);
 
         return tabbedPane;
     }
@@ -290,6 +296,99 @@ public class StudentCourseModule implements IModuleView {
         return searchPanel;
     }
 
+    //创建成绩查看选项卡
+    private JPanel createGradeViewPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(UITheme.WHITE);
+        panel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE));
+        
+        // 创建学生成绩查看表格面板
+        gradeTablePanel = new StudentGradeTablePanel();
+        
+        // 创建搜索面板
+        JPanel searchPanel = createGradeSearchPanel(gradeTablePanel);
+        
+        // 设置布局
+        panel.add(searchPanel, BorderLayout.NORTH);
+        panel.add(gradeTablePanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
+
+    // 创建成绩查看搜索面板
+    private JPanel createGradeSearchPanel(StudentGradeTablePanel gradeTablePanel) {
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setBackground(UITheme.WHITE);
+        searchPanel.setBorder(UITheme.createEmptyBorder(0, 0, UITheme.PADDING_LARGE, 0));
+        
+        // 左侧搜索区域
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, UITheme.PADDING_MEDIUM, 0));
+        leftPanel.setBackground(UITheme.WHITE);
+        
+        // 搜索标签
+        JLabel searchLabel = new JLabel("搜索成绩记录:");
+        searchLabel.setFont(UITheme.CONTENT_FONT);
+        searchLabel.setForeground(UITheme.DARK_GRAY);
+        
+        // 搜索输入框
+        JTextField searchField = new JTextField(25);
+        UITheme.styleTextField(searchField);
+        searchField.setPreferredSize(new Dimension(300, UITheme.INPUT_HEIGHT));
+        
+        // 搜索按钮
+        JButton searchButton = new JButton("搜索");
+        UITheme.styleButton(searchButton);
+        searchButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        
+        // 刷新按钮
+        JButton refreshButton = new JButton("刷新");
+        UITheme.styleButton(refreshButton);
+        refreshButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        
+        // 添加事件监听器
+        searchButton.addActionListener(e -> {
+            String searchText = searchField.getText().trim();
+            if (!searchText.isEmpty()) {
+                gradeTablePanel.searchByCourseName(searchText);
+            } else {
+                gradeTablePanel.refreshData();
+            }
+        });
+        
+        refreshButton.addActionListener(e -> {
+            gradeTablePanel.refreshData();
+            searchField.setText("");
+        });
+        
+        // 添加到左侧面板
+        leftPanel.add(searchLabel);
+        leftPanel.add(searchField);
+        leftPanel.add(searchButton);
+        leftPanel.add(refreshButton);
+        
+        // 右侧状态区域
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, UITheme.PADDING_MEDIUM, 0));
+        rightPanel.setBackground(UITheme.WHITE);
+        
+        // 状态标签
+        JLabel statusLabel = new JLabel("成绩记录总数: 0");
+        statusLabel.setFont(UITheme.CONTENT_FONT);
+        statusLabel.setForeground(UITheme.MEDIUM_GRAY);
+        
+        // 更新状态标签
+        SwingUtilities.invokeLater(() -> {
+            int gradeCount = gradeTablePanel.getGradeTable().getRowCount();
+            statusLabel.setText("成绩记录总数: " + gradeCount);
+        });
+        
+        rightPanel.add(statusLabel);
+        
+        // 添加到搜索面板
+        searchPanel.add(leftPanel, BorderLayout.WEST);
+        searchPanel.add(rightPanel, BorderLayout.EAST);
+        
+        return searchPanel;
+    }
 
     private void setupLayout() {
     }
@@ -330,6 +429,9 @@ public class StudentCourseModule implements IModuleView {
         // 更新课程表格面板的用户信息
         updateCourseTablePanelUser();
         
+        // 更新成绩查看面板的用户信息
+        updateGradeTablePanelUser();
+        
         // 设置选课成功和失败的消息监听器，用于刷新选课记录表格
         setupEnrollmentMessageListeners();
     }
@@ -350,6 +452,19 @@ public class StudentCourseModule implements IModuleView {
     }
     
     /**
+     * 更新成绩查看面板的用户信息
+     */
+    private void updateGradeTablePanelUser() {
+        System.out.println("StudentCourseModule: 更新成绩查看面板用户信息");
+        if (gradeTablePanel != null) {
+            System.out.println("StudentCourseModule: 成绩表格面板存在，设置用户");
+            gradeTablePanel.setCurrentUser(currentUser);
+        } else {
+            System.out.println("StudentCourseModule: 成绩表格面板为空！");
+        }
+    }
+    
+    /**
      * 在面板中查找课程表格面板
      */
     private CourseTablePanel findCourseTablePanel(Container container) {
@@ -358,6 +473,23 @@ public class StudentCourseModule implements IModuleView {
                 return (CourseTablePanel) component;
             } else if (component instanceof Container) {
                 CourseTablePanel result = findCourseTablePanel((Container) component);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 在面板中查找成绩表格面板
+     */
+    private StudentGradeTablePanel findGradeTablePanel(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof StudentGradeTablePanel) {
+                return (StudentGradeTablePanel) component;
+            } else if (component instanceof Container) {
+                StudentGradeTablePanel result = findGradeTablePanel((Container) component);
                 if (result != null) {
                     return result;
                 }

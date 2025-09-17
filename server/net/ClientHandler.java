@@ -2252,15 +2252,29 @@ private void handleShipOrder(Message request) {
             System.out.println("[Grade][Server] 开始处理根据学生ID获取成绩请求");
             
             if (request.getData() instanceof Integer) {
-                Integer studentId = (Integer) request.getData();
+                Integer userId = (Integer) request.getData();
+                
+                // 先根据用户ID获取学生信息
+                server.service.StudentService studentService = new server.service.StudentService();
+                common.vo.StudentVO student = studentService.getStudentByUserId(userId);
+                
+                if (student == null) {
+                    System.out.println("[Grade][Server] 未找到用户ID " + userId + " 对应的学生信息");
+                    Message response = new Message(MessageType.GET_GRADES_BY_STUDENT_SUCCESS, StatusCode.NOT_FOUND, new java.util.ArrayList<>(), "学生信息不存在");
+                    sendMessage(response);
+                    return;
+                }
+                
+                // 使用学生ID查询成绩
+                Integer studentId = student.getStudentId();
                 List<common.vo.GradeVO> grades = gradeService.getGradesByStudentId(studentId);
                 
-                System.out.println("[Grade][Server] 查询到学生 " + studentId + " 的 " + grades.size() + " 条成绩记录");
+                System.out.println("[Grade][Server] 查询到学生 " + studentId + " (用户ID: " + userId + ") 的 " + grades.size() + " 条成绩记录");
                 
                 Message response = new Message(MessageType.GET_GRADES_BY_STUDENT_SUCCESS, StatusCode.SUCCESS, grades, "获取学生成绩成功");
                 sendMessage(response);
             } else {
-                sendErrorMessage("学生ID格式错误");
+                sendErrorMessage("用户ID格式错误");
             }
             
         } catch (Exception e) {

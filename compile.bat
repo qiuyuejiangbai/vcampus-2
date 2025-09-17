@@ -56,7 +56,7 @@ javac -cp "libs/*;bin;." -d bin -encoding UTF-8 ^
 if %errorlevel% == 0 (
     echo.
     echo Copying config files to classpath...
-    copy resources\config.properties bin\ >nul 2>&1
+    copy resources\config.local.properties bin\ >nul 2>&1
     echo.
     echo ================================
     echo Compilation successful!
@@ -69,8 +69,10 @@ if %errorlevel% == 0 (
     echo 3. Run client: start_client.bat
     echo.
     pause
+    exit /b 0
 ) else (
     echo Client compilation failed! Please check error messages.
     pause
+    exit /b 1
 )
 
