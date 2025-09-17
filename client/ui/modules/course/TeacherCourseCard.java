@@ -185,8 +185,14 @@ public class TeacherCourseCard extends JPanel {
         
         // 查看学生名单按钮点击事件
         viewStudentsButton.addActionListener(e -> {
+            System.out.println("=== 查看学生名单按钮被点击 ===");
+            System.out.println("课程: " + (course != null ? course.getCourseName() : "null"));
+            System.out.println("父面板: " + (parentPanel != null ? "存在" : "null"));
+            
             if (parentPanel != null) {
                 parentPanel.onCourseCardClicked(course);
+            } else {
+                System.err.println("父面板为空，无法处理点击事件");
             }
         });
     }

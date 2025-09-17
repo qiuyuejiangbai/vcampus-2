@@ -2,7 +2,6 @@ package server.dao.impl;
 
 import common.vo.EnrollmentVO;
 import server.dao.EnrollmentDAO;
-import server.dao.BaseDAO;
 import server.util.DatabaseUtil;
 
 import java.sql.*;
@@ -289,7 +288,51 @@ public class EnrollmentDAOImpl implements EnrollmentDAO {
     
     @Override
     public List<EnrollmentVO> getStudentListByCourseId(Integer courseId) {
-        return findByCourseId(courseId);
+        if (courseId == null) return new ArrayList<>();
+        
+        // 使用JOIN查询获取选课记录和学生详细信息
+        String sql = "SELECT e.*, s.name, s.student_no, s.major, s.class_name, s.department, " +
+                    "c.course_name, c.course_code, c.credits, c.teacher_name " +
+                    "FROM enrollments e " +
+                    "JOIN students s ON e.student_id = s.student_id " +
+                    "JOIN courses c ON e.course_id = c.course_id " +
+                    "WHERE e.course_id = ? AND e.status = 'enrolled' " +
+                    "ORDER BY e.enrollment_time DESC";
+        
+        List<EnrollmentVO> enrollments = new ArrayList<>();
+        
+        try (Connection conn = DatabaseUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, courseId);
+            ResultSet rs = stmt.executeQuery();
+            
+            while (rs.next()) {
+                EnrollmentVO enrollment = mapResultSetToEnrollmentVO(rs);
+                
+                // 创建并设置学生对象
+                common.vo.StudentVO student = new common.vo.StudentVO();
+                student.setStudentId(rs.getInt("student_id"));
+                student.setName(rs.getString("name"));
+                student.setStudentNo(rs.getString("student_no"));
+                student.setMajor(rs.getString("major"));
+                student.setClassName(rs.getString("class_name"));
+                student.setDepartment(rs.getString("department"));
+                
+                enrollment.setStudent(student);
+                enrollments.add(enrollment);
+                
+                System.out.println("加载学生信息: " + student.getName() + 
+                                 ", 专业: " + student.getMajor() + 
+                                 ", 班级: " + student.getClassName());
+            }
+        } catch (SQLException e) {
+            System.err.println("根据课程ID查询学生名单失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        System.out.println("共加载 " + enrollments.size() + " 条学生记录");
+        return enrollments;
     }
     
     @Override

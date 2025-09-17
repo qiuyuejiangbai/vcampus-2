@@ -26,6 +26,7 @@ public class TeacherCourseCardPanel extends JPanel {
     private UserVO currentUser;
     private ServerConnection connection;
     private JLabel emptyLabel;
+    private Object parentModule; // 保持对父模块的引用
 
     public TeacherCourseCardPanel(UserVO currentUser, ServerConnection connection) {
         this.currentUser = currentUser;
@@ -383,6 +384,14 @@ public class TeacherCourseCardPanel extends JPanel {
         this.connection = connection;
         setupMessageListener();
     }
+    
+    /**
+     * 设置父模块引用
+     */
+    public void setParentModule(Object parentModule) {
+        this.parentModule = parentModule;
+        System.out.println("设置父模块引用: " + (parentModule != null ? parentModule.getClass().getSimpleName() : "null"));
+    }
 
     /**
      * 获取课程卡片列表
@@ -395,23 +404,58 @@ public class TeacherCourseCardPanel extends JPanel {
      * 处理课程卡片点击事件
      */
     public void onCourseCardClicked(CourseVO course) {
-        System.out.println("点击了课程卡片: " + course.getCourseName());
+        System.out.println("=== TeacherCourseCardPanel.onCourseCardClicked 被调用 ===");
+        System.out.println("点击了课程卡片: " + (course != null ? course.getCourseName() : "null"));
         
-        // 通知父组件切换到学生名单界面
+        // 使用直接引用调用父模块方法
+        if (parentModule != null) {
+            System.out.println("使用直接引用调用父模块: " + parentModule.getClass().getSimpleName());
+            try {
+                java.lang.reflect.Method method = parentModule.getClass().getMethod("showStudentList", CourseVO.class);
+                method.invoke(parentModule, course);
+                System.out.println("成功通过直接引用调用 showStudentList 方法");
+                return;
+            } catch (Exception ex) {
+                System.err.println("通过直接引用调用showStudentList方法失败: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+        
+        // 备用方案：通过父容器查找
+        System.out.println("尝试备用方案：通过父容器查找");
         if (getParent() != null) {
             Container parent = getParent();
+            int level = 0;
             while (parent != null) {
+                System.out.println("查找父容器 [" + level + "]: " + parent.getClass().getName());
+                
                 if (parent.getClass().getName().equals("client.ui.modules.TeacherCourseModule")) {
+                    System.out.println("找到 TeacherCourseModule，准备调用 showStudentList");
                     try {
                         java.lang.reflect.Method method = parent.getClass().getMethod("showStudentList", CourseVO.class);
                         method.invoke(parent, course);
+                        System.out.println("成功调用 showStudentList 方法");
                     } catch (Exception ex) {
                         System.err.println("无法调用showStudentList方法: " + ex.getMessage());
+                        ex.printStackTrace();
                     }
                     break;
                 }
                 parent = parent.getParent();
+                level++;
+                
+                // 防止无限循环
+                if (level > 10) {
+                    System.err.println("查找父容器层级过深，停止查找");
+                    break;
+                }
             }
+            
+            if (parent == null) {
+                System.err.println("未找到 TeacherCourseModule 父容器");
+            }
+        } else {
+            System.err.println("getParent() 返回 null，且无直接引用");
         }
     }
 }

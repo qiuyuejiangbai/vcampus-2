@@ -46,6 +46,7 @@ public class TeacherCourseModule implements IModuleView {
 
         // 创建学生名单面板
         studentListPanel = new StudentListPanel(currentUser, connection);
+        studentListPanel.setParentModule(this); // 设置父模块引用
         cardContainer.add(studentListPanel, "studentListPanel");
 
         root.add(cardContainer, BorderLayout.CENTER);
@@ -285,6 +286,7 @@ public class TeacherCourseModule implements IModuleView {
         // 创建课程卡片面板（现在用户信息已经可用）
         System.out.println("创建课程卡片面板...");
         courseCardPanel = new TeacherCourseCardPanel(currentUser, connection);
+        courseCardPanel.setParentModule(this); // 设置父模块引用
         System.out.println("课程卡片面板创建完成");
         
         // 重新创建整个界面
@@ -319,6 +321,7 @@ public class TeacherCourseModule implements IModuleView {
 
             // 创建学生名单面板
             studentListPanel = new StudentListPanel(currentUser, connection);
+            studentListPanel.setParentModule(this); // 设置父模块引用
             cardContainer.add(studentListPanel, "studentListPanel");
 
             root.add(cardContainer, BorderLayout.CENTER);
@@ -386,18 +389,89 @@ public class TeacherCourseModule implements IModuleView {
      * 显示学生名单界面
      */
     public void showStudentList(CourseVO course) {
-        if (studentListPanel != null && course != null) {
-            studentListPanel.setCourseInfo(course.getCourseCode(), course.getCourseName());
-            studentListPanel.loadStudentData(course.getCourseCode());
-            cardLayout.show((Container) root.getComponent(0), "studentListPanel");
+        System.out.println("=== TeacherCourseModule.showStudentList 被调用 ===");
+        System.out.println("课程: " + (course != null ? course.getCourseName() : "null"));
+        System.out.println("课程代码: " + (course != null ? course.getCourseCode() : "null"));
+        System.out.println("学生名单面板: " + (studentListPanel != null ? "已创建" : "null"));
+        System.out.println("卡片布局: " + (cardLayout != null ? "已创建" : "null"));
+        System.out.println("根面板: " + (root != null ? "已创建" : "null"));
+        System.out.println("根面板组件数量: " + (root != null ? root.getComponentCount() : "N/A"));
+        
+        if (studentListPanel != null && course != null && cardLayout != null) {
+            try {
+                System.out.println("设置课程信息...");
+                studentListPanel.setCourseInfo(course.getCourseCode(), course.getCourseName());
+                
+                System.out.println("加载学生数据...");
+                studentListPanel.loadStudentData(course.getCourseCode());
+                
+                // 确保卡片容器存在
+                System.out.println("查找卡片容器...");
+                Container cardContainer = (Container) root.getComponent(0);
+                if (cardContainer != null) {
+                    System.out.println("卡片容器类型: " + cardContainer.getClass().getName());
+                    System.out.println("卡片容器组件数量: " + cardContainer.getComponentCount());
+                    
+                    System.out.println("执行卡片布局切换...");
+                    cardLayout.show(cardContainer, "studentListPanel");
+                    
+                    System.out.println("刷新界面...");
+                    root.revalidate();
+                    root.repaint();
+                    
+                    System.out.println("成功切换到学生名单界面");
+                } else {
+                    System.err.println("卡片容器不存在");
+                }
+            } catch (Exception e) {
+                System.err.println("显示学生名单界面时发生错误: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("无法显示学生名单界面 - 缺少必要组件:");
+            System.err.println("  studentListPanel: " + (studentListPanel != null ? "OK" : "NULL"));
+            System.err.println("  course: " + (course != null ? "OK" : "NULL"));
+            System.err.println("  cardLayout: " + (cardLayout != null ? "OK" : "NULL"));
         }
+        System.out.println("=== showStudentList 方法执行完成 ===");
     }
 
     /**
      * 显示课程管理界面
      */
     public void showCoursePanel() {
-        cardLayout.show((Container) root.getComponent(0), "tabbedPanel");
+        System.out.println("=== TeacherCourseModule.showCoursePanel 被调用 ===");
+        System.out.println("卡片布局: " + (cardLayout != null ? "已创建" : "null"));
+        System.out.println("根面板: " + (root != null ? "已创建" : "null"));
+        System.out.println("根面板组件数量: " + (root != null ? root.getComponentCount() : "N/A"));
+        
+        if (cardLayout != null) {
+            try {
+                System.out.println("查找卡片容器...");
+                Container cardContainer = (Container) root.getComponent(0);
+                if (cardContainer != null) {
+                    System.out.println("卡片容器类型: " + cardContainer.getClass().getName());
+                    System.out.println("卡片容器组件数量: " + cardContainer.getComponentCount());
+                    
+                    System.out.println("执行卡片布局切换到课程管理界面...");
+                    cardLayout.show(cardContainer, "tabbedPanel");
+                    
+                    System.out.println("刷新界面...");
+                    root.revalidate();
+                    root.repaint();
+                    
+                    System.out.println("成功切换到课程管理界面");
+                } else {
+                    System.err.println("卡片容器不存在");
+                }
+            } catch (Exception e) {
+                System.err.println("显示课程管理界面时发生错误: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("卡片布局未初始化");
+        }
+        System.out.println("=== showCoursePanel 方法执行完成 ===");
     }
 
     public static void registerTo(Class<?> ignored) { 
@@ -410,5 +484,18 @@ public class TeacherCourseModule implements IModuleView {
 
     public ServerConnection getConnection() {
         return connection;
+    }
+    
+    /**
+     * 测试方法：手动触发显示学生名单
+     */
+    public void testShowStudentList() {
+        System.out.println("=== 测试显示学生名单功能 ===");
+        if (courseCardPanel != null && courseCardPanel.getCourseCards().size() > 0) {
+            CourseVO testCourse = courseCardPanel.getCourseCards().get(0).getCourse();
+            showStudentList(testCourse);
+        } else {
+            System.err.println("没有可用的课程进行测试");
+        }
     }
 }

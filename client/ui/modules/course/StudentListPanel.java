@@ -28,6 +28,9 @@ public class StudentListPanel extends JPanel {
     private JButton backButton;
     private JButton refreshButton;
     private String currentCourseCode;
+    private CardLayout contentCardLayout;
+    private JPanel contentPanel;
+    private Object parentModule; // 保持对父模块的引用
 
     public StudentListPanel(UserVO currentUser, ServerConnection connection) {
         this.connection = connection;
@@ -159,28 +162,74 @@ public class StudentListPanel extends JPanel {
         topPanel.add(rightPanel, BorderLayout.EAST);
         
         add(topPanel, BorderLayout.NORTH);
-        add(scrollTablePane, BorderLayout.CENTER);
-        add(emptyLabel, BorderLayout.CENTER);
+        
+        // 创建内容面板，使用 CardLayout 来管理表格和空状态标签的显示
+        contentCardLayout = new CardLayout();
+        contentPanel = new JPanel(contentCardLayout);
+        contentPanel.setBackground(UITheme.WHITE);
+        contentPanel.add(scrollTablePane, "table");
+        contentPanel.add(emptyLabel, "empty");
+        
+        // 初始显示空状态
+        contentCardLayout.show(contentPanel, "empty");
+        
+        add(contentPanel, BorderLayout.CENTER);
     }
 
     private void setupEventHandlers() {
         // 返回按钮事件
         backButton.addActionListener(e -> {
-            // 隐藏学生名单面板，显示课程卡片面板
+            System.out.println("=== 返回课程列表按钮被点击 ===");
+            
+            // 使用直接引用调用父模块方法
+            if (parentModule != null) {
+                System.out.println("使用直接引用调用父模块: " + parentModule.getClass().getSimpleName());
+                try {
+                    java.lang.reflect.Method method = parentModule.getClass().getMethod("showCoursePanel");
+                    method.invoke(parentModule);
+                    System.out.println("成功通过直接引用调用 showCoursePanel 方法");
+                    return;
+                } catch (Exception ex) {
+                    System.err.println("通过直接引用调用showCoursePanel方法失败: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            }
+            
+            // 备用方案：通过父容器查找
+            System.out.println("尝试备用方案：通过父容器查找");
             if (getParent() != null) {
                 Container parent = getParent();
+                int level = 0;
                 while (parent != null) {
+                    System.out.println("查找父容器 [" + level + "]: " + parent.getClass().getName());
+                    
                     if (parent.getClass().getName().equals("client.ui.modules.TeacherCourseModule")) {
+                        System.out.println("找到 TeacherCourseModule，准备调用 showCoursePanel");
                         try {
                             java.lang.reflect.Method method = parent.getClass().getMethod("showCoursePanel");
                             method.invoke(parent);
+                            System.out.println("成功调用 showCoursePanel 方法");
                         } catch (Exception ex) {
                             System.err.println("无法调用showCoursePanel方法: " + ex.getMessage());
+                            ex.printStackTrace();
                         }
                         break;
                     }
                     parent = parent.getParent();
+                    level++;
+                    
+                    // 防止无限循环
+                    if (level > 10) {
+                        System.err.println("查找父容器层级过深，停止查找");
+                        break;
+                    }
                 }
+                
+                if (parent == null) {
+                    System.err.println("未找到 TeacherCourseModule 父容器");
+                }
+            } else {
+                System.err.println("getParent() 返回 null，且无直接引用");
             }
         });
         
@@ -272,32 +321,58 @@ public class StudentListPanel extends JPanel {
         tableModel.setRowCount(0);
         
         if (enrollmentList.isEmpty()) {
-            emptyLabel.setVisible(true);
-            scrollTablePane.setVisible(false);
+            // 显示空状态标签
+            contentCardLayout.show(contentPanel, "empty");
             return;
         }
         
-        emptyLabel.setVisible(false);
-        scrollTablePane.setVisible(true);
+        // 显示表格
+        contentCardLayout.show(contentPanel, "table");
         
         // 添加选课记录数据到表格
         for (EnrollmentVO enrollment : enrollmentList) {
+            // 跳过空的选课记录
+            if (enrollment == null) {
+                System.err.println("警告：发现空的选课记录，已跳过");
+                continue;
+            }
+            
             String major = "未知";
             String className = "未知";
+            String studentNo = "未知";
+            String studentName = "未知";
+            String statusName = "未知";
+            
+            // 安全获取学生学号
+            if (enrollment.getStudentNo() != null) {
+                studentNo = enrollment.getStudentNo();
+            }
+            
+            // 安全获取学生姓名
+            if (enrollment.getStudentName() != null) {
+                studentName = enrollment.getStudentName();
+            }
+            
+            // 安全获取状态名称
+            if (enrollment.getStatusName() != null) {
+                statusName = enrollment.getStatusName();
+            }
             
             // 从关联的StudentVO获取专业和班级信息
             if (enrollment.getStudent() != null) {
                 major = enrollment.getStudent().getMajor() != null ? enrollment.getStudent().getMajor() : "未知";
                 className = enrollment.getStudent().getClassName() != null ? enrollment.getStudent().getClassName() : "未知";
+            } else {
+                System.out.println("警告：选课记录 " + studentNo + " 缺少关联的学生信息");
             }
             
             Object[] rowData = {
-                enrollment.getStudentNo(),
-                enrollment.getStudentName(),
+                studentNo,
+                studentName,
                 major,
                 className,
                 enrollment.getEnrollmentTime() != null ? enrollment.getEnrollmentTime().toString() : "未知",
-                enrollment.getStatusName()
+                statusName
             };
             tableModel.addRow(rowData);
         }
@@ -329,5 +404,13 @@ public class StudentListPanel extends JPanel {
     public void setConnection(ServerConnection connection) {
         this.connection = connection;
         setupMessageListener();
+    }
+    
+    /**
+     * 设置父模块引用
+     */
+    public void setParentModule(Object parentModule) {
+        this.parentModule = parentModule;
+        System.out.println("StudentListPanel 设置父模块引用: " + (parentModule != null ? parentModule.getClass().getSimpleName() : "null"));
     }
 }

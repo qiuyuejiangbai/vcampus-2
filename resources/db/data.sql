@@ -50,7 +50,7 @@ INSERT INTO teachers (user_id, name, teacher_no, phone, email, department, resea
 INSERT INTO students (user_id, name, student_no, gender, birth_date, phone, email, address, department, class_name, major, grade_table_key, balance, enrollment_year) VALUES 
 (5, '赵六', '2021001', 'male', '2003-05-15', '13800001001', 'zhaoliu@student.vcampus.edu.cn', '北京市海淀区', '计算机学院', '计科2101班', '计算机科学与技术', 'CS2021001', 1000.00, 2021),
 (6, '钱七', '2021002', 'female', '2003-03-22', '13800001002', 'qianqi@student.vcampus.edu.cn', '上海市浦东新区', '计算机学院', '软工2101班', '软件工程', 'SE2021002', 1000.00, 2021),
-(7, '孙八', '2021003', 'male', '2003-07-08', '13800001003', 'sunba@student.vcampus.edu.cn', '广州市天河区', '计算机学院', '信安2101班', '信息安全', 'IS2021003', 1000.00, 2021),
+(7, '孙八', '2021003', 'male', '2003-07-08', '13800001003', 'sunba@student.vcampus.edu.cn', '广州市天河区', '计算机学院', '网安2101班', '信息安全', 'IS2021003', 1000.00, 2021),
 (8, '周九', '2021004', 'female', '2003-01-12', '13800001004', 'zhoujiu@student.vcampus.edu.cn', '深圳市南山区', '计算机学院', '计科2101班', '计算机科学与技术', 'CS2021004', 1000.00, 2021),
 (9, '吴十', '2021005', 'male', '2003-09-30', '13800001005', 'wushi@student.vcampus.edu.cn', '杭州市西湖区', '计算机学院', '软工2101班', '软件工程', 'SE2021005', 1000.00, 2021);
 
