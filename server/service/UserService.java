@@ -103,6 +103,11 @@ public class UserService {
                 user.setRole(0); // 默认为学生
             }
             
+            // 设置默认头像路径
+            if (user.getAvatarPath() == null || user.getAvatarPath().trim().isEmpty()) {
+                user.setAvatarPath("resources/icons/默认头像.png");
+            }
+            
             // 插入用户基础信息
             Integer userId = userDAO.insert(user);
             if (userId == null) {
@@ -141,6 +146,15 @@ public class UserService {
      */
     public Integer register(UserVO user) {
         return register(user, null, null);
+    }
+    
+    /**
+     * 创建用户 - 与register方法功能相同，提供别名
+     * @param user 用户信息
+     * @return 创建成功返回用户ID，失败返回null
+     */
+    public Integer createUser(UserVO user) {
+        return register(user);
     }
     
     /**
@@ -245,6 +259,43 @@ public class UserService {
             return userDAO.updatePassword(userId, newPasswordHash);
         } catch (Exception e) {
             System.err.println("修改密码失败: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 重置用户密码为默认密码
+     * @param userId 用户ID
+     * @return 重置成功返回true，失败返回false
+     */
+    public boolean resetPassword(Integer userId) {
+        if (userId == null) {
+            return false;
+        }
+        
+        try {
+            // 检查用户是否存在
+            UserVO user = userDAO.findById(userId);
+            if (user == null) {
+                System.err.println("用户不存在: " + userId);
+                return false;
+            }
+            
+            // 重置密码为123456
+            String defaultPassword = "123456";
+            String passwordHash = MD5Util.encrypt(defaultPassword);
+            boolean success = userDAO.updatePassword(userId, passwordHash);
+            
+            if (success) {
+                System.out.println("用户 " + userId + " 密码重置成功");
+            } else {
+                System.err.println("用户 " + userId + " 密码重置失败");
+            }
+            
+            return success;
+        } catch (Exception e) {
+            System.err.println("重置密码失败: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }

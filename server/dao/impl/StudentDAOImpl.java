@@ -16,34 +16,84 @@ public class StudentDAOImpl implements StudentDAO {
     
     @Override
     public Integer insert(StudentVO student) {
-        String sql = "INSERT INTO students (user_id, student_no, major, class_name, grade, enrollment_year) VALUES (?, ?, ?, ?, ?, ?)";
+        System.out.println("[DEBUG][StudentDAOImpl] ========== 开始插入学生到数据库 ==========");
+        System.out.println("[DEBUG][StudentDAOImpl] SQL: INSERT INTO students (user_id, name, student_no, gender, birth_date, phone, email, address, department, class_name, major, grade, enrollment_year, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        
+        String sql = "INSERT INTO students (user_id, name, student_no, gender, birth_date, phone, email, address, department, class_name, major, grade, enrollment_year, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         
         try {
+            System.out.println("[DEBUG][StudentDAOImpl] 获取数据库连接");
             conn = DatabaseUtil.getConnection();
+            if (conn == null) {
+                System.err.println("[DEBUG][StudentDAOImpl] 数据库连接获取失败");
+                return null;
+            }
+            System.out.println("[DEBUG][StudentDAOImpl] 数据库连接获取成功");
+            
+            System.out.println("[DEBUG][StudentDAOImpl] 准备SQL语句");
             pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             
+            System.out.println("[DEBUG][StudentDAOImpl] 设置SQL参数：");
             pstmt.setInt(1, student.getUserId());
-            pstmt.setString(2, student.getStudentNo());
-            pstmt.setString(3, student.getMajor());
-            pstmt.setString(4, student.getClassName());
-            pstmt.setString(5, student.getGrade());
-            pstmt.setObject(6, student.getEnrollmentYear());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数1 (user_id): " + student.getUserId());
+            pstmt.setString(2, student.getName());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数2 (name): " + student.getName());
+            pstmt.setString(3, student.getStudentNo());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数3 (student_no): " + student.getStudentNo());
+            pstmt.setString(4, student.getGender());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数4 (gender): " + student.getGender());
+            pstmt.setDate(5, student.getBirthDate());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数5 (birth_date): " + student.getBirthDate());
+            pstmt.setString(6, student.getPhone());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数6 (phone): " + student.getPhone());
+            pstmt.setString(7, student.getEmail());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数7 (email): " + student.getEmail());
+            pstmt.setString(8, student.getAddress());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数8 (address): " + student.getAddress());
+            pstmt.setString(9, student.getDepartment());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数9 (department): " + student.getDepartment());
+            pstmt.setString(10, student.getClassName());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数10 (class_name): " + student.getClassName());
+            pstmt.setString(11, student.getMajor());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数11 (major): " + student.getMajor());
+            pstmt.setString(12, student.getGrade());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数12 (grade): " + student.getGrade());
+            pstmt.setObject(13, student.getEnrollmentYear());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数13 (enrollment_year): " + student.getEnrollmentYear());
+            pstmt.setBigDecimal(14, student.getBalance());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数14 (balance): " + student.getBalance());
             
+            System.out.println("[DEBUG][StudentDAOImpl] 执行SQL插入操作");
             int affectedRows = pstmt.executeUpdate();
+            System.out.println("[DEBUG][StudentDAOImpl] SQL执行完成，影响行数: " + affectedRows);
+            
             if (affectedRows > 0) {
+                System.out.println("[DEBUG][StudentDAOImpl] 获取生成的主键");
                 rs = pstmt.getGeneratedKeys();
                 if (rs.next()) {
-                    return rs.getInt(1);
+                    Integer studentId = rs.getInt(1);
+                    System.out.println("[DEBUG][StudentDAOImpl] 学生插入成功，生成的学生ID: " + studentId);
+                    System.out.println("[DEBUG][StudentDAOImpl] ========== 学生插入完成 ==========");
+                    return studentId;
+                } else {
+                    System.err.println("[DEBUG][StudentDAOImpl] 无法获取生成的主键");
                 }
+            } else {
+                System.err.println("[DEBUG][StudentDAOImpl] 没有行被插入");
             }
         } catch (SQLException e) {
-            System.err.println("插入学生失败: " + e.getMessage());
+            System.err.println("[DEBUG][StudentDAOImpl] 插入学生失败: " + e.getMessage());
+            System.err.println("[DEBUG][StudentDAOImpl] SQL错误代码: " + e.getErrorCode());
+            System.err.println("[DEBUG][StudentDAOImpl] SQL状态: " + e.getSQLState());
+            e.printStackTrace();
         } finally {
+            System.out.println("[DEBUG][StudentDAOImpl] 关闭数据库资源");
             DatabaseUtil.closeAll(conn, pstmt, rs);
         }
+        System.out.println("[DEBUG][StudentDAOImpl] ========== 学生插入失败 ==========");
         return null;
     }
     
@@ -352,12 +402,20 @@ public class StudentDAOImpl implements StudentDAO {
             
             while (rs.next()) {
                 StudentVO student = mapResultSetToStudentVO(rs);
-                UserVO user = mapResultSetToUserVO(rs);
+                // 创建用户信息对象，只包含users表中实际存在的字段
+                UserVO user = new UserVO();
+                user.setUserId(rs.getInt("user_id"));
+                user.setLoginId(rs.getString("login_id"));
+                user.setRole(rs.getInt("role"));
+                user.setAvatarPath(rs.getString("avatar_path"));
+                user.setCreatedTime(rs.getTimestamp("created_time"));
+                user.setUpdatedTime(rs.getTimestamp("updated_time"));
                 student.setUserInfo(user);
                 students.add(student);
             }
         } catch (SQLException e) {
             System.err.println("查询所有学生（含用户信息）失败: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, rs);
         }

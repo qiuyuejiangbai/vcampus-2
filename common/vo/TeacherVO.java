@@ -1,6 +1,7 @@
 package common.vo;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class TeacherVO implements Serializable {
     private String title;           // 职称
     private String office;          // 办公室
     private String researchArea;    // 研究方向
+    private BigDecimal balance;     // 账户余额
     private Timestamp createdTime;  // 创建时间
     private Timestamp updatedTime;  // 更新时间
     
@@ -38,6 +40,7 @@ public class TeacherVO implements Serializable {
         this.phone = phone;
         this.email = email;
         this.department = department;
+        this.balance = BigDecimal.ZERO;
     }
     
     // Getters and Setters
@@ -119,6 +122,14 @@ public class TeacherVO implements Serializable {
     
     public void setResearchArea(String researchArea) {
         this.researchArea = researchArea;
+    }
+    
+    public BigDecimal getBalance() {
+        return balance;
+    }
+    
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
     }
     
     public Timestamp getCreatedTime() {
@@ -227,6 +238,14 @@ public class TeacherVO implements Serializable {
         return name;
     }
     
+    /**
+     * 获取账户余额（兼容性方法，优先使用直接字段）
+     * @return 账户余额
+     */
+    public Double getBalanceFromUser() {
+        return user != null ? user.getBalance() : null;
+    }
+    
     @Override
     public String toString() {
         return "TeacherVO{" +
@@ -237,6 +256,7 @@ public class TeacherVO implements Serializable {
                 ", department='" + department + '\'' +
                 ", title='" + title + '\'' +
                 ", office='" + office + '\'' +
+                ", balance=" + balance +
                 ", teachingCourseCount=" + getTeachingCourseCount() +
                 '}';
     }

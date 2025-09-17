@@ -45,6 +45,7 @@ public class TeacherProfileModule implements IModuleView {
     private InfoLabel titleLabel;
     private InfoLabel officeLabel;
     private InfoLabel researchAreaLabel;
+    private InfoLabel balanceLabel;
     private JButton editButton;
 
     // 编辑模式组件
@@ -57,6 +58,7 @@ public class TeacherProfileModule implements IModuleView {
     private JTextField titleField;
     private JTextField officeField;
     private JTextArea researchAreaArea;
+    private JTextField balanceField;
     private JButton saveButton;
     private JButton cancelButton;
 
@@ -380,6 +382,7 @@ public class TeacherProfileModule implements IModuleView {
         titleLabel = createInfoLabel("职称", "", 14);
         officeLabel = createInfoLabel("办公室", "", 14);
         researchAreaLabel = createInfoLabel("研究方向", "", 14);
+        balanceLabel = createInfoLabel("账户余额", "", 14);
 
         // 添加标签到面板
         int row = 0;
@@ -387,6 +390,13 @@ public class TeacherProfileModule implements IModuleView {
         addInfoRow(panel, gbc, phoneLabel, emailLabel, row++);
         addInfoRow(panel, gbc, departmentLabel, titleLabel, row++);
         addInfoRow(panel, gbc, officeLabel, researchAreaLabel, row++);
+        
+        // 账户余额单独一行
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(balanceLabel, gbc);
 
         return panel;
     }
@@ -527,6 +537,7 @@ public class TeacherProfileModule implements IModuleView {
         teacherNoField = createReadOnlyTextField("工号", 20);
         departmentField = createReadOnlyTextField("院系", 20);
         titleField = createReadOnlyTextField("职称", 20);
+        balanceField = createReadOnlyTextField("账户余额", 20);
 
         // 添加字段到面板
         int row = 0;
@@ -558,7 +569,7 @@ public class TeacherProfileModule implements IModuleView {
 
         // 添加只读字段显示
         addFormRow(panel, gbc, teacherNoField, departmentField, row++);
-        addFormRow(panel, gbc, titleField, new JPanel(), row++); // 空面板占位
+        addFormRow(panel, gbc, titleField, balanceField, row++);
 
         return panel;
     }
@@ -735,6 +746,13 @@ public class TeacherProfileModule implements IModuleView {
         titleField.setText(currentTeacher.getTitle());
         officeField.setText(currentTeacher.getOffice());
         researchAreaArea.setText(currentTeacher.getResearchArea());
+        
+        // 填充账户余额
+        if (currentTeacher.getBalance() != null) {
+            balanceField.setText("¥" + currentTeacher.getBalance().toString());
+        } else {
+            balanceField.setText("¥0.00");
+        }
     }
 
     private void refreshTeacherInfo() {
@@ -798,21 +816,51 @@ public class TeacherProfileModule implements IModuleView {
         System.out.println("  - 办公室=" + office);
         System.out.println("  - 研究方向=" + researchArea);
 
+        // 验证姓名
         if (name.isEmpty()) {
             System.err.println("[DEBUG][TeacherProfileModule] 姓名不能为空");
-            showStatus("姓名不能为空", true);
+            JOptionPane.showMessageDialog(root, "姓名不能为空", "输入错误", JOptionPane.WARNING_MESSAGE);
+            nameField.requestFocus();
+            return;
+        }
+        
+        String nameError = client.ui.util.ValidationUtil.getNameValidationError(name);
+        if (nameError != null) {
+            System.err.println("[DEBUG][TeacherProfileModule] 姓名格式错误: " + nameError);
+            JOptionPane.showMessageDialog(root, nameError, "姓名格式错误", JOptionPane.WARNING_MESSAGE);
+            nameField.requestFocus();
             return;
         }
 
+        // 验证联系电话
         if (phone.isEmpty()) {
             System.err.println("[DEBUG][TeacherProfileModule] 联系电话不能为空");
-            showStatus("联系电话不能为空", true);
+            JOptionPane.showMessageDialog(root, "联系电话不能为空", "输入错误", JOptionPane.WARNING_MESSAGE);
+            phoneField.requestFocus();
+            return;
+        }
+        
+        String phoneError = client.ui.util.ValidationUtil.getPhoneValidationError(phone);
+        if (phoneError != null) {
+            System.err.println("[DEBUG][TeacherProfileModule] 联系电话格式错误: " + phoneError);
+            JOptionPane.showMessageDialog(root, phoneError, "联系电话格式错误", JOptionPane.WARNING_MESSAGE);
+            phoneField.requestFocus();
             return;
         }
 
+        // 验证邮箱
         if (email.isEmpty()) {
             System.err.println("[DEBUG][TeacherProfileModule] 邮箱不能为空");
-            showStatus("邮箱不能为空", true);
+            JOptionPane.showMessageDialog(root, "邮箱不能为空", "输入错误", JOptionPane.WARNING_MESSAGE);
+            emailField.requestFocus();
+            return;
+        }
+        
+        String emailError = client.ui.util.ValidationUtil.getEmailValidationError(email);
+        if (emailError != null) {
+            System.err.println("[DEBUG][TeacherProfileModule] 邮箱格式错误: " + emailError);
+            JOptionPane.showMessageDialog(root, emailError, "邮箱格式错误", JOptionPane.WARNING_MESSAGE);
+            emailField.requestFocus();
             return;
         }
 
@@ -886,6 +934,13 @@ public class TeacherProfileModule implements IModuleView {
             titleLabel.setText(currentTeacher.getTitle());
             officeLabel.setText(currentTeacher.getOffice());
             researchAreaLabel.setText(currentTeacher.getResearchArea());
+            
+            // 显示账户余额
+            if (currentTeacher.getBalance() != null) {
+                balanceLabel.setText("¥" + currentTeacher.getBalance().toString());
+            } else {
+                balanceLabel.setText("¥0.00");
+            }
 
             // 更新头像
             System.out.println("[DEBUG][TeacherProfileModule] 开始更新头像");
@@ -926,12 +981,12 @@ public class TeacherProfileModule implements IModuleView {
                     }
                 } catch (Exception e) {
                     System.err.println("[DEBUG][TeacherProfileModule] 头像图片加载失败: " + e.getMessage());
-                    avatarLabel.setDefaultText(currentTeacher.getName().substring(0, 1).toUpperCase());
-                    System.out.println("[DEBUG][TeacherProfileModule] 使用默认头像文字: " + currentTeacher.getName().substring(0, 1).toUpperCase());
+                    loadDefaultAvatarImage();
+                    System.out.println("[DEBUG][TeacherProfileModule] 使用默认头像图片");
                 }
             } else {
-                avatarLabel.setDefaultText(currentTeacher.getName().substring(0, 1).toUpperCase());
-                System.out.println("[DEBUG][TeacherProfileModule] 使用默认头像文字: " + currentTeacher.getName().substring(0, 1).toUpperCase());
+                loadDefaultAvatarImage();
+                System.out.println("[DEBUG][TeacherProfileModule] 使用默认头像图片");
             }
             
             // 强制刷新UI
@@ -952,6 +1007,73 @@ public class TeacherProfileModule implements IModuleView {
         } else {
             statusLabel.setForeground(new Color(0x66, 0x66, 0x66));
         }
+    }
+    
+    /**
+     * 加载默认头像图片
+     */
+    private void loadDefaultAvatarImage() {
+        try {
+            // 尝试多个可能的路径
+            String[] possiblePaths = {
+                "resources/icons/默认头像.png",
+                "icons/默认头像.png",
+                "../resources/icons/默认头像.png",
+                "./resources/icons/默认头像.png"
+            };
+            
+            ImageIcon icon = null;
+            for (String path : possiblePaths) {
+                try {
+                    java.io.File file = new java.io.File(path);
+                    if (file.exists()) {
+                        icon = new ImageIcon(file.getAbsolutePath());
+                        System.out.println("[TeacherProfileModule] 从文件路径加载默认头像: " + path);
+                        break;
+                    }
+                } catch (Exception e) {
+                    // 继续尝试下一个路径
+                }
+            }
+            
+            // 如果文件路径都失败，尝试从类路径加载
+            if (icon == null) {
+                try {
+                    icon = new ImageIcon(getClass().getClassLoader().getResource("icons/默认头像.png"));
+                    if (icon != null && icon.getImageLoadStatus() == java.awt.MediaTracker.COMPLETE) {
+                        System.out.println("[TeacherProfileModule] 从类路径加载默认头像: icons/默认头像.png");
+                    }
+                } catch (Exception e) {
+                    // 尝试其他类路径变体
+                    try {
+                        icon = new ImageIcon(getClass().getClassLoader().getResource("resources/icons/默认头像.png"));
+                        if (icon != null && icon.getImageLoadStatus() == java.awt.MediaTracker.COMPLETE) {
+                            System.out.println("[TeacherProfileModule] 从类路径加载默认头像: resources/icons/默认头像.png");
+                        }
+                    } catch (Exception e2) {
+                        // 忽略
+                    }
+                }
+            }
+            
+            if (icon != null && icon.getImageLoadStatus() == java.awt.MediaTracker.COMPLETE) {
+                Image img = icon.getImage();
+                if (img != null) {
+                    // 与 CircularAvatar 尺寸一致，避免插值裁切
+                    Image scaledImg = img.getScaledInstance(120, 120, Image.SCALE_SMOOTH);
+                    avatarLabel.setAvatarImage(scaledImg);
+                    System.out.println("[TeacherProfileModule] 成功加载默认头像图片");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[TeacherProfileModule] 加载默认头像图片失败: " + e.getMessage());
+        }
+        
+        // 如果所有方法都失败，使用文字默认头像
+        System.out.println("[TeacherProfileModule] 使用文字默认头像");
+        avatarLabel.setDefaultText(currentTeacher != null && currentTeacher.getName() != null && !currentTeacher.getName().isEmpty() 
+            ? currentTeacher.getName().substring(0, 1) : "U");
     }
 
     @Override

@@ -16,33 +16,76 @@ public class TeacherDAOImpl implements TeacherDAO {
     
     @Override
     public Integer insert(TeacherVO teacher) {
-        String sql = "INSERT INTO teachers (user_id, teacher_no, title, office, research_area) VALUES (?, ?, ?, ?, ?)";
+        System.out.println("[DEBUG][TeacherDAOImpl] ========== 开始插入教师到数据库 ==========");
+            System.out.println("[DEBUG][TeacherDAOImpl] SQL: INSERT INTO teachers (user_id, name, teacher_no, phone, email, department, title, office, research_area, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        
+        String sql = "INSERT INTO teachers (user_id, name, teacher_no, phone, email, department, title, office, research_area, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         
         try {
+            System.out.println("[DEBUG][TeacherDAOImpl] 获取数据库连接");
             conn = DatabaseUtil.getConnection();
+            if (conn == null) {
+                System.err.println("[DEBUG][TeacherDAOImpl] 数据库连接获取失败");
+                return null;
+            }
+            System.out.println("[DEBUG][TeacherDAOImpl] 数据库连接获取成功");
+            
+            System.out.println("[DEBUG][TeacherDAOImpl] 准备SQL语句");
             pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             
+            System.out.println("[DEBUG][TeacherDAOImpl] 设置SQL参数：");
             pstmt.setInt(1, teacher.getUserId());
-            pstmt.setString(2, teacher.getTeacherNo());
-            pstmt.setString(3, teacher.getTitle());
-            pstmt.setString(4, teacher.getOffice());
-            pstmt.setString(5, teacher.getResearchArea());
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数1 (user_id): " + teacher.getUserId());
+            pstmt.setString(2, teacher.getName());
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数2 (name): " + teacher.getName());
+            pstmt.setString(3, teacher.getTeacherNo());
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数3 (teacher_no): " + teacher.getTeacherNo());
+            pstmt.setString(4, teacher.getPhone());
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数4 (phone): " + teacher.getPhone());
+            pstmt.setString(5, teacher.getEmail());
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数5 (email): " + teacher.getEmail());
+            pstmt.setString(6, teacher.getDepartment());
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数6 (department): " + teacher.getDepartment());
+            pstmt.setString(7, teacher.getTitle());
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数7 (title): " + teacher.getTitle());
+            pstmt.setString(8, teacher.getOffice());
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数8 (office): " + teacher.getOffice());
+            pstmt.setString(9, teacher.getResearchArea());
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数9 (research_area): " + teacher.getResearchArea());
+            pstmt.setBigDecimal(10, teacher.getBalance() != null ? teacher.getBalance() : java.math.BigDecimal.ZERO);
+            System.out.println("[DEBUG][TeacherDAOImpl] - 参数10 (balance): " + (teacher.getBalance() != null ? teacher.getBalance() : java.math.BigDecimal.ZERO));
             
+            System.out.println("[DEBUG][TeacherDAOImpl] 执行SQL插入操作");
             int affectedRows = pstmt.executeUpdate();
+            System.out.println("[DEBUG][TeacherDAOImpl] SQL执行完成，影响行数: " + affectedRows);
+            
             if (affectedRows > 0) {
+                System.out.println("[DEBUG][TeacherDAOImpl] 获取生成的主键");
                 rs = pstmt.getGeneratedKeys();
                 if (rs.next()) {
-                    return rs.getInt(1);
+                    Integer teacherId = rs.getInt(1);
+                    System.out.println("[DEBUG][TeacherDAOImpl] 教师插入成功，生成的教师ID: " + teacherId);
+                    System.out.println("[DEBUG][TeacherDAOImpl] ========== 教师插入完成 ==========");
+                    return teacherId;
+                } else {
+                    System.err.println("[DEBUG][TeacherDAOImpl] 无法获取生成的主键");
                 }
+            } else {
+                System.err.println("[DEBUG][TeacherDAOImpl] 没有行被插入");
             }
         } catch (SQLException e) {
-            System.err.println("插入教师失败: " + e.getMessage());
+            System.err.println("[DEBUG][TeacherDAOImpl] 插入教师失败: " + e.getMessage());
+            System.err.println("[DEBUG][TeacherDAOImpl] SQL错误代码: " + e.getErrorCode());
+            System.err.println("[DEBUG][TeacherDAOImpl] SQL状态: " + e.getSQLState());
+            e.printStackTrace();
         } finally {
+            System.out.println("[DEBUG][TeacherDAOImpl] 关闭数据库资源");
             DatabaseUtil.closeAll(conn, pstmt, rs);
         }
+        System.out.println("[DEBUG][TeacherDAOImpl] ========== 教师插入失败 ==========");
         return null;
     }
     
@@ -102,15 +145,16 @@ public class TeacherDAOImpl implements TeacherDAO {
             System.out.println("[DEBUG][TeacherDAOImpl] teachers表基本信息更新影响行数：" + teacherBasicRows);
             
             // 更新teachers表的专业信息
-            String teacherSql = "UPDATE teachers SET teacher_no = ?, title = ?, office = ?, research_area = ?, updated_time = CURRENT_TIMESTAMP WHERE teacher_id = ?";
+            String teacherSql = "UPDATE teachers SET teacher_no = ?, title = ?, office = ?, research_area = ?, balance = ?, updated_time = CURRENT_TIMESTAMP WHERE teacher_id = ?";
             System.out.println("[DEBUG][TeacherDAOImpl] 准备teachers表更新SQL：" + teacherSql);
             pstmt2 = conn.prepareStatement(teacherSql);
             pstmt2.setString(1, teacher.getTeacherNo());
             pstmt2.setString(2, teacher.getTitle());
             pstmt2.setString(3, teacher.getOffice());
             pstmt2.setString(4, teacher.getResearchArea());
-            pstmt2.setInt(5, teacher.getId());
-            System.out.println("[DEBUG][TeacherDAOImpl] teachers表专业信息更新参数：teacherNo=" + teacher.getTeacherNo() + ", title=" + teacher.getTitle() + ", office=" + teacher.getOffice() + ", researchArea=" + teacher.getResearchArea() + ", teacherId=" + teacher.getId());
+            pstmt2.setBigDecimal(5, teacher.getBalance() != null ? teacher.getBalance() : java.math.BigDecimal.ZERO);
+            pstmt2.setInt(6, teacher.getId());
+            System.out.println("[DEBUG][TeacherDAOImpl] teachers表专业信息更新参数：teacherNo=" + teacher.getTeacherNo() + ", title=" + teacher.getTitle() + ", office=" + teacher.getOffice() + ", researchArea=" + teacher.getResearchArea() + ", balance=" + (teacher.getBalance() != null ? teacher.getBalance() : java.math.BigDecimal.ZERO) + ", teacherId=" + teacher.getId());
             
             int teacherRows = pstmt2.executeUpdate();
             System.out.println("[DEBUG][TeacherDAOImpl] teachers表更新影响行数：" + teacherRows);
@@ -336,21 +380,21 @@ public class TeacherDAOImpl implements TeacherDAO {
     
     @Override
     public List<TeacherVO> findByDepartment(String department) {
-        String sql = "SELECT t.*, u.name, u.phone, u.email, u.department FROM teachers t " +
-                    "JOIN users u ON t.user_id = u.user_id WHERE u.department = ? ORDER BY t.teacher_id";
+        String sql = "SELECT t.*, u.login_id, u.role, u.avatar_path, u.created_time, u.updated_time FROM teachers t " +
+                    "JOIN users u ON t.user_id = u.user_id WHERE t.department = ? ORDER BY t.teacher_id";
         return findByStringFieldWithUserInfo(sql, department);
     }
     
     @Override
     public List<TeacherVO> findByTitle(String title) {
-        String sql = "SELECT t.*, u.name, u.phone, u.email, u.department FROM teachers t " +
+        String sql = "SELECT t.*, u.login_id, u.role, u.avatar_path, u.created_time, u.updated_time FROM teachers t " +
                     "JOIN users u ON t.user_id = u.user_id WHERE t.title = ? ORDER BY t.teacher_id";
         return findByStringFieldWithUserInfo(sql, title);
     }
     
     @Override
     public List<TeacherVO> findAllWithUserInfo() {
-        String sql = "SELECT t.*, u.name, u.phone, u.email, u.department FROM teachers t " +
+        String sql = "SELECT t.*, u.login_id, u.role, u.avatar_path, u.created_time, u.updated_time FROM teachers t " +
                     "JOIN users u ON t.user_id = u.user_id ORDER BY t.teacher_id";
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -363,10 +407,21 @@ public class TeacherDAOImpl implements TeacherDAO {
             rs = pstmt.executeQuery();
             
             while (rs.next()) {
-                teachers.add(mapResultSetToTeacherVOWithUserInfo(rs));
+                TeacherVO teacher = mapResultSetToTeacherVO(rs);
+                // 创建用户信息对象，只包含users表中实际存在的字段
+                UserVO user = new UserVO();
+                user.setUserId(rs.getInt("user_id"));
+                user.setLoginId(rs.getString("login_id"));
+                user.setRole(rs.getInt("role"));
+                user.setAvatarPath(rs.getString("avatar_path"));
+                user.setCreatedTime(rs.getTimestamp("created_time"));
+                user.setUpdatedTime(rs.getTimestamp("updated_time"));
+                teacher.setUser(user);
+                teachers.add(teacher);
             }
         } catch (SQLException e) {
             System.err.println("查询所有教师（含用户信息）失败: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, rs);
         }
@@ -375,7 +430,7 @@ public class TeacherDAOImpl implements TeacherDAO {
     
     @Override
     public TeacherVO findByIdWithUserInfo(Integer teacherId) {
-        String sql = "SELECT t.*, u.name, u.phone, u.email, u.department FROM teachers t " +
+        String sql = "SELECT t.*, u.login_id, u.role, u.avatar_path, u.created_time, u.updated_time FROM teachers t " +
                     "JOIN users u ON t.user_id = u.user_id WHERE t.teacher_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -388,10 +443,21 @@ public class TeacherDAOImpl implements TeacherDAO {
             
             rs = pstmt.executeQuery();
             if (rs.next()) {
-                return mapResultSetToTeacherVOWithUserInfo(rs);
+                TeacherVO teacher = mapResultSetToTeacherVO(rs);
+                // 创建用户信息对象，只包含users表中实际存在的字段
+                UserVO user = new UserVO();
+                user.setUserId(rs.getInt("user_id"));
+                user.setLoginId(rs.getString("login_id"));
+                user.setRole(rs.getInt("role"));
+                user.setAvatarPath(rs.getString("avatar_path"));
+                user.setCreatedTime(rs.getTimestamp("created_time"));
+                user.setUpdatedTime(rs.getTimestamp("updated_time"));
+                teacher.setUser(user);
+                return teacher;
             }
         } catch (SQLException e) {
             System.err.println("查询教师（含用户信息）失败: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, rs);
         }
@@ -400,8 +466,8 @@ public class TeacherDAOImpl implements TeacherDAO {
     
     @Override
     public List<TeacherVO> findByNameLike(String name) {
-        String sql = "SELECT t.*, u.name, u.phone, u.email, u.department FROM teachers t " +
-                    "JOIN users u ON t.user_id = u.user_id WHERE u.name LIKE ? ORDER BY t.teacher_id";
+        String sql = "SELECT t.*, u.login_id, u.role, u.avatar_path, u.created_time, u.updated_time FROM teachers t " +
+                    "JOIN users u ON t.user_id = u.user_id WHERE t.name LIKE ? ORDER BY t.teacher_id";
         return findByStringFieldWithUserInfo(sql, "%" + name + "%");
     }
     
@@ -453,31 +519,6 @@ public class TeacherDAOImpl implements TeacherDAO {
         return 0;
     }
     
-    /**
-     * 通用的字符串字段查询方法
-     */
-    private List<TeacherVO> findByStringField(String sql, String value) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
-        List<TeacherVO> teachers = new ArrayList<>();
-        
-        try {
-            conn = DatabaseUtil.getConnection();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, value);
-            rs = pstmt.executeQuery();
-            
-            while (rs.next()) {
-                teachers.add(mapResultSetToTeacherVO(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("查询教师失败: " + e.getMessage());
-        } finally {
-            DatabaseUtil.closeAll(conn, pstmt, rs);
-        }
-        return teachers;
-    }
     
     /**
      * 通用的字符串字段查询方法（包含用户信息）
@@ -495,10 +536,21 @@ public class TeacherDAOImpl implements TeacherDAO {
             rs = pstmt.executeQuery();
             
             while (rs.next()) {
-                teachers.add(mapResultSetToTeacherVOWithUserInfo(rs));
+                TeacherVO teacher = mapResultSetToTeacherVO(rs);
+                // 创建用户信息对象，只包含users表中实际存在的字段
+                UserVO user = new UserVO();
+                user.setUserId(rs.getInt("user_id"));
+                user.setLoginId(rs.getString("login_id"));
+                user.setRole(rs.getInt("role"));
+                user.setAvatarPath(rs.getString("avatar_path"));
+                user.setCreatedTime(rs.getTimestamp("created_time"));
+                user.setUpdatedTime(rs.getTimestamp("updated_time"));
+                teacher.setUser(user);
+                teachers.add(teacher);
             }
         } catch (SQLException e) {
             System.err.println("查询教师（含用户信息）失败: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, rs);
         }
@@ -520,23 +572,12 @@ public class TeacherDAOImpl implements TeacherDAO {
         teacher.setTitle(rs.getString("title"));
         teacher.setOffice(rs.getString("office"));
         teacher.setResearchArea(rs.getString("research_area"));
+        teacher.setBalance(rs.getBigDecimal("balance"));
         teacher.setCreatedTime(rs.getTimestamp("created_time"));
         teacher.setUpdatedTime(rs.getTimestamp("updated_time"));
         return teacher;
     }
     
-    /**
-     * 将ResultSet映射为TeacherVO对象（包含用户信息）
-     */
-    private TeacherVO mapResultSetToTeacherVOWithUserInfo(ResultSet rs) throws SQLException {
-        TeacherVO teacher = mapResultSetToTeacherVO(rs);
-        // 用户信息字段会覆盖从teachers表读取的字段
-        teacher.setName(rs.getString("name"));
-        teacher.setPhone(rs.getString("phone"));
-        teacher.setEmail(rs.getString("email"));
-        teacher.setDepartment(rs.getString("department"));
-        return teacher;
-    }
     
     /**
      * 将ResultSet映射为UserVO对象（用于关联查询）

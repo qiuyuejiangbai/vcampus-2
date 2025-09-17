@@ -24,7 +24,6 @@ public class AdminDashboardUI extends JFrame {
     private final AppBar appBar = new AppBar();
     private AppTitleBar titleBar;
 
-    private boolean useGrayTheme = false; // false=墨绿主题, true=灰色主题
 
     public AdminDashboardUI(common.vo.UserVO user, client.net.ServerConnection conn) {
         this.currentUser = user;
@@ -53,7 +52,10 @@ public class AdminDashboardUI extends JFrame {
                 setExtendedState((getExtendedState() & Frame.MAXIMIZED_BOTH) == 0 ? Frame.MAXIMIZED_BOTH : Frame.NORMAL);
             }
             @Override public void close() { dispose(); }
-            @Override public void toggleTheme() { toggleThemeImpl(); }
+            @Override public void logout() { logoutImpl(); }
+            @Override public void changePassword() { 
+                new client.ui.dialog.ChangePasswordDialog(AdminDashboardUI.this, connection, currentUser.getUserId()).setVisible(true);
+            }
         });
         try { titleBar.setTitleText("vCampus-管理员端"); } catch (Throwable ignored) {}
 
@@ -91,7 +93,7 @@ public class AdminDashboardUI extends JFrame {
         center.setBackground(new Color(0xF5, 0xF6, 0xF8));
         JPanel contentWrap = new JPanel(new BorderLayout());
         contentWrap.setOpaque(false);
-        contentWrap.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        contentWrap.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         contentWrap.add(contentHost, BorderLayout.CENTER);
 
         center.add(north, BorderLayout.NORTH);
@@ -145,6 +147,9 @@ public class AdminDashboardUI extends JFrame {
                 )
         );
 
+        // 注册信息管理模块
+        client.ui.modules.AdminInfoManagementModule.registerTo(ModuleRegistry.class);
+
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
             contentHost.addPage(m.getKey(), m.getComponent());
@@ -194,22 +199,30 @@ public class AdminDashboardUI extends JFrame {
         return null;
     }
 
-    private void toggleThemeImpl() {
+    private void logoutImpl() {
         try {
-            useGrayTheme = !useGrayTheme;
-            if (sideNav != null) {
-                if (useGrayTheme) sideNav.applyGrayTheme();
-                else sideNav.applyGreenTheme();
-            }
-            if (titleBar != null) {
-                if (useGrayTheme) {
-                    titleBar.setBarBackground(new Color(0x33, 0x33, 0x33));
-                } else {
-                    titleBar.resetBarBackground();
-                }
+            // 确认登出
+            int result = JOptionPane.showConfirmDialog(
+                this,
+                "确定要登出吗？",
+                "确认登出",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+            );
+            
+            if (result == JOptionPane.YES_OPTION) {
+                // 关闭当前窗口
+                dispose();
+                
+                // 显示登录窗口
+                SwingUtilities.invokeLater(() -> {
+                    client.ui.LoginFrame loginFrame = new client.ui.LoginFrame();
+                    loginFrame.setVisible(true);
+                });
             }
         } catch (Exception e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "登出时发生错误: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

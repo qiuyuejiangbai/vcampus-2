@@ -864,20 +864,58 @@ public class StudentProfileModule implements IModuleView {
         String name = nameField.getText().trim();
         String phone = phoneField.getText().trim();
         String email = emailField.getText().trim();
+        String birthDateStr = birthDateField.getText().trim();
 
+        // 验证姓名
         if (name.isEmpty()) {
-            showStatus("姓名不能为空", true);
+            JOptionPane.showMessageDialog(root, "姓名不能为空", "输入错误", JOptionPane.WARNING_MESSAGE);
+            nameField.requestFocus();
+            return;
+        }
+        
+        String nameError = client.ui.util.ValidationUtil.getNameValidationError(name);
+        if (nameError != null) {
+            JOptionPane.showMessageDialog(root, nameError, "姓名格式错误", JOptionPane.WARNING_MESSAGE);
+            nameField.requestFocus();
             return;
         }
 
+        // 验证联系电话
         if (phone.isEmpty()) {
-            showStatus("联系电话不能为空", true);
+            JOptionPane.showMessageDialog(root, "联系电话不能为空", "输入错误", JOptionPane.WARNING_MESSAGE);
+            phoneField.requestFocus();
+            return;
+        }
+        
+        String phoneError = client.ui.util.ValidationUtil.getPhoneValidationError(phone);
+        if (phoneError != null) {
+            JOptionPane.showMessageDialog(root, phoneError, "联系电话格式错误", JOptionPane.WARNING_MESSAGE);
+            phoneField.requestFocus();
             return;
         }
 
+        // 验证邮箱
         if (email.isEmpty()) {
-            showStatus("邮箱不能为空", true);
+            JOptionPane.showMessageDialog(root, "邮箱不能为空", "输入错误", JOptionPane.WARNING_MESSAGE);
+            emailField.requestFocus();
             return;
+        }
+        
+        String emailError = client.ui.util.ValidationUtil.getEmailValidationError(email);
+        if (emailError != null) {
+            JOptionPane.showMessageDialog(root, emailError, "邮箱格式错误", JOptionPane.WARNING_MESSAGE);
+            emailField.requestFocus();
+            return;
+        }
+
+        // 验证出生日期格式（如果填写了的话）
+        if (!birthDateStr.isEmpty()) {
+            String dateError = client.ui.util.ValidationUtil.getDateValidationError(birthDateStr);
+            if (dateError != null) {
+                JOptionPane.showMessageDialog(root, dateError, "出生日期格式错误", JOptionPane.WARNING_MESSAGE);
+                birthDateField.requestFocus();
+                return;
+            }
         }
 
         showStatus("正在保存信息...", false);
@@ -891,7 +929,6 @@ public class StudentProfileModule implements IModuleView {
         updatedStudent.setName(name);
         
         // 设置出生日期
-        String birthDateStr = birthDateField.getText().trim();
         if (!birthDateStr.isEmpty()) {
             try {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -1005,12 +1042,12 @@ public class StudentProfileModule implements IModuleView {
                     }
                 } catch (Exception e) {
                     System.err.println("[DEBUG][StudentProfileModule] 头像图片加载失败: " + e.getMessage());
-                    avatarLabel.setDefaultText(currentStudent.getName().substring(0, 1).toUpperCase());
-                    System.out.println("[DEBUG][StudentProfileModule] 使用默认头像文字: " + currentStudent.getName().substring(0, 1).toUpperCase());
+                    loadDefaultAvatarImage();
+                    System.out.println("[DEBUG][StudentProfileModule] 使用默认头像图片");
                 }
             } else {
-                avatarLabel.setDefaultText(currentStudent.getName().substring(0, 1).toUpperCase());
-                System.out.println("[DEBUG][StudentProfileModule] 使用默认头像文字: " + currentStudent.getName().substring(0, 1).toUpperCase());
+                loadDefaultAvatarImage();
+                System.out.println("[DEBUG][StudentProfileModule] 使用默认头像图片");
             }
             
             // 强制刷新UI
@@ -1031,6 +1068,73 @@ public class StudentProfileModule implements IModuleView {
         } else {
             statusLabel.setForeground(new Color(0x66, 0x66, 0x66));
         }
+    }
+    
+    /**
+     * 加载默认头像图片
+     */
+    private void loadDefaultAvatarImage() {
+        try {
+            // 尝试多个可能的路径
+            String[] possiblePaths = {
+                "resources/icons/默认头像.png",
+                "icons/默认头像.png",
+                "../resources/icons/默认头像.png",
+                "./resources/icons/默认头像.png"
+            };
+            
+            ImageIcon icon = null;
+            for (String path : possiblePaths) {
+                try {
+                    java.io.File file = new java.io.File(path);
+                    if (file.exists()) {
+                        icon = new ImageIcon(file.getAbsolutePath());
+                        System.out.println("[StudentProfileModule] 从文件路径加载默认头像: " + path);
+                        break;
+                    }
+                } catch (Exception e) {
+                    // 继续尝试下一个路径
+                }
+            }
+            
+            // 如果文件路径都失败，尝试从类路径加载
+            if (icon == null) {
+                try {
+                    icon = new ImageIcon(getClass().getClassLoader().getResource("icons/默认头像.png"));
+                    if (icon != null && icon.getImageLoadStatus() == java.awt.MediaTracker.COMPLETE) {
+                        System.out.println("[StudentProfileModule] 从类路径加载默认头像: icons/默认头像.png");
+                    }
+                } catch (Exception e) {
+                    // 尝试其他类路径变体
+                    try {
+                        icon = new ImageIcon(getClass().getClassLoader().getResource("resources/icons/默认头像.png"));
+                        if (icon != null && icon.getImageLoadStatus() == java.awt.MediaTracker.COMPLETE) {
+                            System.out.println("[StudentProfileModule] 从类路径加载默认头像: resources/icons/默认头像.png");
+                        }
+                    } catch (Exception e2) {
+                        // 忽略
+                    }
+                }
+            }
+            
+            if (icon != null && icon.getImageLoadStatus() == java.awt.MediaTracker.COMPLETE) {
+                Image img = icon.getImage();
+                if (img != null) {
+                    // 与 CircularAvatar 尺寸一致，避免插值裁切
+                    Image scaledImg = img.getScaledInstance(120, 120, Image.SCALE_SMOOTH);
+                    avatarLabel.setAvatarImage(scaledImg);
+                    System.out.println("[StudentProfileModule] 成功加载默认头像图片");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[StudentProfileModule] 加载默认头像图片失败: " + e.getMessage());
+        }
+        
+        // 如果所有方法都失败，使用文字默认头像
+        System.out.println("[StudentProfileModule] 使用文字默认头像");
+        avatarLabel.setDefaultText(currentStudent != null && currentStudent.getName() != null && !currentStudent.getName().isEmpty() 
+            ? currentStudent.getName().substring(0, 1) : "U");
     }
 
     @Override

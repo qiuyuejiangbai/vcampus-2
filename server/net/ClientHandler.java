@@ -141,6 +141,14 @@ public class ClientHandler implements Runnable {
                     handleGetAllUsers(request);
                     break;
                     
+                case RESET_PASSWORD_REQUEST:
+                    handleResetPassword(request);
+                    break;
+                    
+                case CHANGE_PASSWORD_REQUEST:
+                    handleChangePassword(request);
+                    break;
+                    
                 case GET_STUDENT_INFO_REQUEST:
                     handleGetStudentInfo(request);
                     break;
@@ -155,6 +163,34 @@ public class ClientHandler implements Runnable {
                     
                 case UPDATE_TEACHER_REQUEST:
                     handleUpdateTeacher(request);
+                    break;
+                    
+                // 学生管理模块
+                case GET_ALL_STUDENTS_REQUEST:
+                    handleGetAllStudents(request);
+                    break;
+                case ADD_STUDENT:
+                    handleAddStudent(request);
+                    break;
+                case UPDATE_STUDENT:
+                    handleAdminUpdateStudent(request);
+                    break;
+                case DELETE_STUDENT:
+                    handleDeleteStudent(request);
+                    break;
+                    
+                // 教师管理模块
+                case GET_ALL_TEACHERS_REQUEST:
+                    handleGetAllTeachers(request);
+                    break;
+                case ADD_TEACHER:
+                    handleAddTeacher(request);
+                    break;
+                case UPDATE_TEACHER:
+                    handleAdminUpdateTeacher(request);
+                    break;
+                case DELETE_TEACHER:
+                    handleDeleteTeacher(request);
                     break;
                     
                 // 课程模块
@@ -1925,6 +1961,100 @@ private void handleShipOrder(Message request) {
     }
     
     /**
+     * 处理密码重置请求
+     */
+    private void handleResetPassword(Message request) {
+        if (!isLoggedIn()) {
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查管理员权限
+        if (!currentUser.isAdmin()) {
+            Message response = new Message(MessageType.RESET_PASSWORD_FAILURE, StatusCode.FORBIDDEN, null, "需要管理员权限");
+            sendMessage(response);
+            return;
+        }
+        
+        try {
+            Integer userId = (Integer) request.getData();
+            if (userId == null) {
+                Message response = new Message(MessageType.RESET_PASSWORD_FAILURE, StatusCode.BAD_REQUEST, null, "用户ID不能为空");
+                sendMessage(response);
+                return;
+            }
+            
+            System.out.println("管理员 " + currentUser.getLoginId() + " 请求重置用户 " + userId + " 的密码");
+            
+            boolean success = userService.resetPassword(userId);
+            
+            if (success) {
+                Message response = new Message(MessageType.RESET_PASSWORD_SUCCESS, StatusCode.SUCCESS, null, "密码重置成功");
+                sendMessage(response);
+                System.out.println("用户 " + userId + " 密码重置成功");
+            } else {
+                Message response = new Message(MessageType.RESET_PASSWORD_FAILURE, StatusCode.INTERNAL_ERROR, null, "密码重置失败");
+                sendMessage(response);
+                System.err.println("用户 " + userId + " 密码重置失败");
+            }
+        } catch (Exception e) {
+            System.err.println("处理密码重置请求异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.RESET_PASSWORD_FAILURE, StatusCode.INTERNAL_ERROR, null, "密码重置异常: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理修改密码请求
+     */
+    private void handleChangePassword(Message request) {
+        if (!isLoggedIn()) {
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        try {
+            Object[] data = (Object[]) request.getData();
+            if (data == null || data.length != 3) {
+                Message response = new Message(MessageType.CHANGE_PASSWORD_FAILURE, StatusCode.BAD_REQUEST, null, "请求数据格式错误");
+                sendMessage(response);
+                return;
+            }
+            
+            Integer userId = (Integer) data[0];
+            String oldPassword = (String) data[1];
+            String newPassword = (String) data[2];
+            
+            // 安全检查：只能修改自己的密码
+            if (!currentUserId.equals(userId)) {
+                Message response = new Message(MessageType.CHANGE_PASSWORD_FAILURE, StatusCode.FORBIDDEN, null, "无权限修改他人密码");
+                sendMessage(response);
+                return;
+            }
+            
+            System.out.println("用户 " + currentUser.getLoginId() + " 请求修改密码");
+            
+            boolean success = userService.changePassword(userId, oldPassword, newPassword);
+            
+            if (success) {
+                Message response = new Message(MessageType.CHANGE_PASSWORD_SUCCESS, StatusCode.SUCCESS, null, "密码修改成功");
+                sendMessage(response);
+                System.out.println("用户 " + userId + " 密码修改成功");
+            } else {
+                Message response = new Message(MessageType.CHANGE_PASSWORD_FAILURE, StatusCode.INTERNAL_ERROR, null, "密码修改失败，请检查当前密码是否正确");
+                sendMessage(response);
+                System.err.println("用户 " + userId + " 密码修改失败");
+            }
+        } catch (Exception e) {
+            System.err.println("处理修改密码请求异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.CHANGE_PASSWORD_FAILURE, StatusCode.INTERNAL_ERROR, null, "密码修改异常: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
      * 处理心跳请求
      */
     private void handleHeartbeat(Message request) {
@@ -2305,6 +2435,290 @@ private void handleShipOrder(Message request) {
         }
     }
     
+    // ================= 学生管理模块 =================
+    
+    /**
+     * 处理获取所有学生请求
+     */
+    private void handleGetAllStudents(Message request) {
+        try {
+            System.out.println("[Student][Server] 收到获取所有学生请求");
+            
+            // 检查管理员权限
+            if (currentUser == null || !currentUser.isAdmin()) {
+                sendErrorMessage("权限不足，只有管理员可以查看所有学生信息");
+                return;
+            }
+            
+            server.service.StudentService studentService = new server.service.StudentService();
+            List<StudentVO> students = studentService.getAllStudents();
+            
+            Message response = new Message(MessageType.GET_ALL_STUDENTS_SUCCESS, StatusCode.SUCCESS, students, "获取学生列表成功");
+            sendMessage(response);
+            System.out.println("[Student][Server] 已发送学生列表，共 " + (students != null ? students.size() : 0) + " 个学生");
+        } catch (Exception e) {
+            System.err.println("处理获取所有学生请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("获取学生列表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理添加学生请求
+     */
+    private void handleAddStudent(Message request) {
+        try {
+            System.out.println("[Student][Server] 收到添加学生请求");
+            
+            // 检查管理员权限
+            if (currentUser == null || !currentUser.isAdmin()) {
+                sendErrorMessage("权限不足，只有管理员可以添加学生");
+                return;
+            }
+            
+            StudentVO student = (StudentVO) request.getData();
+            if (student == null) {
+                sendErrorMessage("学生信息不能为空");
+                return;
+            }
+            
+            server.service.StudentService studentService = new server.service.StudentService();
+            boolean success = studentService.addStudent(student);
+            
+            if (success) {
+                Message response = new Message(MessageType.ADD_STUDENT_SUCCESS, StatusCode.SUCCESS, student, "学生添加成功");
+                sendMessage(response);
+                System.out.println("[Student][Server] 学生添加成功: " + student.getName());
+            } else {
+                Message response = new Message(MessageType.ADD_STUDENT_FAILURE, StatusCode.BAD_REQUEST, null, "学生添加失败");
+                sendMessage(response);
+                System.out.println("[Student][Server] 学生添加失败: " + student.getName());
+            }
+        } catch (Exception e) {
+            System.err.println("处理添加学生请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("添加学生失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理更新学生请求
+     */
+    private void handleAdminUpdateStudent(Message request) {
+        try {
+            System.out.println("[Student][Server] 收到管理员更新学生请求");
+            
+            // 检查管理员权限
+            if (currentUser == null || !currentUser.isAdmin()) {
+                sendErrorMessage("权限不足，只有管理员可以更新学生信息");
+                return;
+            }
+            
+            StudentVO student = (StudentVO) request.getData();
+            if (student == null || student.getId() == null) {
+                sendErrorMessage("学生信息或ID不能为空");
+                return;
+            }
+            
+            server.service.StudentService studentService = new server.service.StudentService();
+            boolean success = studentService.updateStudent(student);
+            
+            if (success) {
+                Message response = new Message(MessageType.UPDATE_STUDENT_SUCCESS, StatusCode.SUCCESS, student, "学生信息更新成功");
+                sendMessage(response);
+                System.out.println("[Student][Server] 学生信息更新成功: " + student.getName());
+            } else {
+                Message response = new Message(MessageType.UPDATE_STUDENT_FAILURE, StatusCode.BAD_REQUEST, null, "学生信息更新失败");
+                sendMessage(response);
+                System.out.println("[Student][Server] 学生信息更新失败: " + student.getName());
+            }
+        } catch (Exception e) {
+            System.err.println("处理更新学生请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("更新学生信息失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理删除学生请求
+     */
+    private void handleDeleteStudent(Message request) {
+        try {
+            System.out.println("[Student][Server] 收到删除学生请求");
+            
+            // 检查管理员权限
+            if (currentUser == null || !currentUser.isAdmin()) {
+                sendErrorMessage("权限不足，只有管理员可以删除学生");
+                return;
+            }
+            
+            Integer studentId = (Integer) request.getData();
+            if (studentId == null) {
+                sendErrorMessage("学生ID不能为空");
+                return;
+            }
+            
+            server.service.StudentService studentService = new server.service.StudentService();
+            boolean success = studentService.deleteStudent(studentId);
+            
+            if (success) {
+                Message response = new Message(MessageType.DELETE_STUDENT_SUCCESS, StatusCode.SUCCESS, studentId, "学生删除成功");
+                sendMessage(response);
+                System.out.println("[Student][Server] 学生删除成功: ID " + studentId);
+            } else {
+                Message response = new Message(MessageType.DELETE_STUDENT_FAILURE, StatusCode.BAD_REQUEST, null, "学生删除失败");
+                sendMessage(response);
+                System.out.println("[Student][Server] 学生删除失败: ID " + studentId);
+            }
+        } catch (Exception e) {
+            System.err.println("处理删除学生请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("删除学生失败: " + e.getMessage());
+        }
+    }
+    
+    // ================= 教师管理模块 =================
+    
+    /**
+     * 处理获取所有教师请求
+     */
+    private void handleGetAllTeachers(Message request) {
+        try {
+            System.out.println("[Teacher][Server] 收到获取所有教师请求");
+            
+            // 检查管理员权限
+            if (currentUser == null || !currentUser.isAdmin()) {
+                sendErrorMessage("权限不足，只有管理员可以查看所有教师信息");
+                return;
+            }
+            
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            List<TeacherVO> teachers = teacherService.getAllTeachers();
+            
+            Message response = new Message(MessageType.GET_ALL_TEACHERS_SUCCESS, StatusCode.SUCCESS, teachers, "获取教师列表成功");
+            sendMessage(response);
+            System.out.println("[Teacher][Server] 已发送教师列表，共 " + (teachers != null ? teachers.size() : 0) + " 个教师");
+        } catch (Exception e) {
+            System.err.println("处理获取所有教师请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("获取教师列表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理添加教师请求
+     */
+    private void handleAddTeacher(Message request) {
+        try {
+            System.out.println("[Teacher][Server] 收到添加教师请求");
+            
+            // 检查管理员权限
+            if (currentUser == null || !currentUser.isAdmin()) {
+                sendErrorMessage("权限不足，只有管理员可以添加教师");
+                return;
+            }
+            
+            TeacherVO teacher = (TeacherVO) request.getData();
+            if (teacher == null) {
+                sendErrorMessage("教师信息不能为空");
+                return;
+            }
+            
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            boolean success = teacherService.addTeacher(teacher);
+            
+            if (success) {
+                Message response = new Message(MessageType.ADD_TEACHER_SUCCESS, StatusCode.SUCCESS, teacher, "教师添加成功");
+                sendMessage(response);
+                System.out.println("[Teacher][Server] 教师添加成功: " + teacher.getName());
+            } else {
+                Message response = new Message(MessageType.ADD_TEACHER_FAILURE, StatusCode.BAD_REQUEST, null, "教师添加失败");
+                sendMessage(response);
+                System.out.println("[Teacher][Server] 教师添加失败: " + teacher.getName());
+            }
+        } catch (Exception e) {
+            System.err.println("处理添加教师请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("添加教师失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理更新教师请求
+     */
+    private void handleAdminUpdateTeacher(Message request) {
+        try {
+            System.out.println("[Teacher][Server] 收到管理员更新教师请求");
+            
+            // 检查管理员权限
+            if (currentUser == null || !currentUser.isAdmin()) {
+                sendErrorMessage("权限不足，只有管理员可以更新教师信息");
+                return;
+            }
+            
+            TeacherVO teacher = (TeacherVO) request.getData();
+            if (teacher == null || teacher.getId() == null) {
+                sendErrorMessage("教师信息或ID不能为空");
+                return;
+            }
+            
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            boolean success = teacherService.updateTeacher(teacher);
+            
+            if (success) {
+                Message response = new Message(MessageType.UPDATE_TEACHER_SUCCESS, StatusCode.SUCCESS, teacher, "教师信息更新成功");
+                sendMessage(response);
+                System.out.println("[Teacher][Server] 教师信息更新成功: " + teacher.getName());
+            } else {
+                Message response = new Message(MessageType.UPDATE_TEACHER_FAILURE, StatusCode.BAD_REQUEST, null, "教师信息更新失败");
+                sendMessage(response);
+                System.out.println("[Teacher][Server] 教师信息更新失败: " + teacher.getName());
+            }
+        } catch (Exception e) {
+            System.err.println("处理更新教师请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("更新教师信息失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理删除教师请求
+     */
+    private void handleDeleteTeacher(Message request) {
+        try {
+            System.out.println("[Teacher][Server] 收到删除教师请求");
+            
+            // 检查管理员权限
+            if (currentUser == null || !currentUser.isAdmin()) {
+                sendErrorMessage("权限不足，只有管理员可以删除教师");
+                return;
+            }
+            
+            Integer teacherId = (Integer) request.getData();
+            if (teacherId == null) {
+                sendErrorMessage("教师ID不能为空");
+                return;
+            }
+            
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            boolean success = teacherService.deleteTeacher(teacherId);
+            
+            if (success) {
+                Message response = new Message(MessageType.DELETE_TEACHER_SUCCESS, StatusCode.SUCCESS, teacherId, "教师删除成功");
+                sendMessage(response);
+                System.out.println("[Teacher][Server] 教师删除成功: ID " + teacherId);
+            } else {
+                Message response = new Message(MessageType.DELETE_TEACHER_FAILURE, StatusCode.BAD_REQUEST, null, "教师删除失败");
+                sendMessage(response);
+                System.out.println("[Teacher][Server] 教师删除失败: ID " + teacherId);
+            }
+        } catch (Exception e) {
+            System.err.println("处理删除教师请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("删除教师失败: " + e.getMessage());
+        }
+    }
+
     /**
      * 检查连接是否活跃
      * @return 连接活跃返回true，已断开返回false

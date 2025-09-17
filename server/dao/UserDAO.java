@@ -96,4 +96,10 @@ public interface UserDAO extends BaseDAO<UserVO, Integer> {
      * @return 更新成功返回true，失败返回false
      */
     boolean updateAvatarPath(Integer userId, String avatarPath);
+    
+    /**
+     * 查找没有头像的用户
+     * @return 没有头像的用户列表
+     */
+    List<UserVO> findUsersWithoutAvatar();
 }
