@@ -272,4 +272,12 @@ public class StudentEnrollmentTablePanel extends JPanel {
     public JScrollPane getScrollPane() {
         return scrollTablePane;
     }
+    
+    /**
+     * 获取选课记录列表
+     * @return 选课记录列表
+     */
+    public List<EnrollmentVO> getEnrollmentList() {
+        return enrollmentList;
+    }
 }

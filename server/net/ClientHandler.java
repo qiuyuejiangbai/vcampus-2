@@ -193,6 +193,11 @@ public class ClientHandler implements Runnable {
                     handleGetEnrollmentsByCourse(request);
                     break;
                     
+                case GET_COURSE_SCHEDULES_REQUEST:
+                    System.out.println("[CourseSchedule][Server] 收到请求: GET_COURSE_SCHEDULES_REQUEST");
+                    handleGetCourseSchedules(request);
+                    break;
+                    
                 // 成绩管理模块
                 case GET_ALL_GRADES_REQUEST:
                     System.out.println("[Grade][Server] 收到请求: GET_ALL_GRADES_REQUEST");
@@ -2403,6 +2408,50 @@ private void handleShipOrder(Message request) {
             e.printStackTrace();
             Message response = new Message(MessageType.DELETE_GRADE_FAIL, StatusCode.INTERNAL_ERROR, null, "删除成绩失败: " + e.getMessage());
             sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理获取课程时间表请求
+     */
+    private void handleGetCourseSchedules(Message request) {
+        try {
+            System.out.println("[CourseSchedule][Server] 开始查询课程时间表");
+            
+            // 检查用户是否已登录
+            if (currentUser == null) {
+                sendErrorMessage("用户未登录");
+                return;
+            }
+            
+            server.service.CourseScheduleService courseScheduleService = new server.service.CourseScheduleService();
+            java.util.List<common.vo.CourseScheduleVO> schedules = null;
+            
+            if (request.getData() instanceof java.util.List) {
+                // 根据课程ID列表查询
+                @SuppressWarnings("unchecked")
+                java.util.List<Integer> courseIds = (java.util.List<Integer>) request.getData();
+                System.out.println("[CourseSchedule][Server] 查询课程ID列表: " + courseIds);
+                schedules = courseScheduleService.getSchedulesByCourseIds(courseIds);
+                System.out.println("[CourseSchedule][Server] 查询结果数量: " + (schedules != null ? schedules.size() : 0));
+            } else if (request.getData() instanceof Integer) {
+                // 根据单个课程ID查询
+                Integer courseId = (Integer) request.getData();
+                System.out.println("[CourseSchedule][Server] 查询单个课程ID: " + courseId);
+                schedules = courseScheduleService.getSchedulesByCourseId(courseId);
+            } else {
+                // 查询所有课程时间表
+                System.out.println("[CourseSchedule][Server] 查询所有课程时间表");
+                schedules = courseScheduleService.getAllSchedules();
+            }
+            
+            System.out.println("[CourseSchedule][Server] 查询完成，返回条数=" + (schedules != null ? schedules.size() : -1));
+            Message response = new Message(MessageType.GET_COURSE_SCHEDULES_SUCCESS, StatusCode.SUCCESS, schedules, "获取课程时间表成功");
+            sendMessage(response);
+            System.out.println("[CourseSchedule][Server] 已发送响应: GET_COURSE_SCHEDULES_SUCCESS");
+        } catch (Exception e) {
+            System.err.println("处理获取课程时间表请求时发生异常: " + e.getMessage());
+            sendErrorMessage("获取课程时间表失败: " + e.getMessage());
         }
     }
     

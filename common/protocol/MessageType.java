@@ -75,6 +75,9 @@ public enum MessageType {
     GET_STUDENT_ENROLLMENTS_SUCCESS, // 获取学生选课记录成功
     GET_ENROLLMENTS_BY_COURSE_REQUEST, // 获取指定课程的选课记录请求
     GET_ENROLLMENTS_BY_COURSE_SUCCESS, // 获取指定课程的选课记录成功
+    GET_COURSE_SCHEDULES_REQUEST,      // 获取课程时间表请求
+    GET_COURSE_SCHEDULES_SUCCESS,      // 获取课程时间表成功
+    GET_COURSE_SCHEDULES_FAIL,         // 获取课程时间表失败
     
     // 成绩管理模块
     GET_ALL_GRADES_REQUEST,           // 获取所有成绩请求

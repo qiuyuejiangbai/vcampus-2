@@ -1,4 +1,4 @@
- package client.ui.modules;
+package client.ui.modules;
 
 import client.net.ServerConnection;
 import client.ui.api.IModuleView;
@@ -251,6 +251,13 @@ public class StudentCourseModule implements IModuleView {
         UITheme.styleButton(refreshButton);
         refreshButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
         
+        // 课程表按钮
+        JButton scheduleButton = new JButton("课程表");
+        UITheme.styleButton(scheduleButton);
+        scheduleButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        scheduleButton.setBackground(UITheme.PRIMARY_GREEN);
+        scheduleButton.setForeground(UITheme.WHITE);
+        
         // 添加事件监听器
         searchButton.addActionListener(e -> {
             String searchText = searchField.getText().trim();
@@ -266,11 +273,17 @@ public class StudentCourseModule implements IModuleView {
             searchField.setText("");
         });
         
+        // 课程表按钮事件
+        scheduleButton.addActionListener(e -> {
+            showScheduleDialog();
+        });
+        
         // 添加到左侧面板
         leftPanel.add(searchLabel);
         leftPanel.add(searchField);
         leftPanel.add(searchButton);
         leftPanel.add(refreshButton);
+        leftPanel.add(scheduleButton);
         
         // 右侧状态区域
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, UITheme.PADDING_MEDIUM, 0));
@@ -636,5 +649,78 @@ public class StudentCourseModule implements IModuleView {
 
     public ServerConnection getConnection() {
         return connection;
+    }
+    
+    /**
+     * 显示课程表对话框
+     */
+    private void showScheduleDialog() {
+        // 获取选课记录表格面板
+        StudentEnrollmentTablePanel enrollmentTablePanel = getEnrollmentTablePanel();
+        
+        // 创建课程表面板
+        client.ui.modules.course.StudentSchedulePanel schedulePanel = new client.ui.modules.course.StudentSchedulePanel(enrollmentTablePanel);
+        
+        // 创建对话框
+        JDialog scheduleDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(root), "我的课程表", true);
+        scheduleDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        scheduleDialog.setSize(1000, 700);
+        scheduleDialog.setLocationRelativeTo(root);
+        scheduleDialog.setResizable(true);
+        
+        // 设置对话框布局
+        scheduleDialog.setLayout(new BorderLayout());
+        scheduleDialog.add(schedulePanel, BorderLayout.CENTER);
+        
+        // 添加底部按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(UITheme.WHITE);
+        buttonPanel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_MEDIUM, 0, UITheme.PADDING_MEDIUM, 0));
+        
+        JButton refreshButton = new JButton("刷新");
+        UITheme.styleButton(refreshButton);
+        refreshButton.addActionListener(e -> schedulePanel.refreshData());
+        
+        JButton closeButton = new JButton("关闭");
+        UITheme.styleButton(closeButton);
+        closeButton.addActionListener(e -> scheduleDialog.dispose());
+        
+        buttonPanel.add(refreshButton);
+        buttonPanel.add(closeButton);
+        
+        scheduleDialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        // 显示对话框
+        scheduleDialog.setVisible(true);
+    }
+    
+    /**
+     * 获取选课记录表格面板
+     */
+    private StudentEnrollmentTablePanel getEnrollmentTablePanel() {
+        // 查找选课记录选项卡中的表格面板
+        JTabbedPane tabbedPane = (JTabbedPane) root.getComponent(0);
+        if (tabbedPane.getTabCount() > 1) {
+            JPanel enrollmentPanel = (JPanel) tabbedPane.getComponentAt(1);
+            return findEnrollmentTablePanel(enrollmentPanel);
+        }
+        return null;
+    }
+    
+    /**
+     * 在面板中查找选课记录表格面板
+     */
+    private StudentEnrollmentTablePanel findEnrollmentTablePanel(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof StudentEnrollmentTablePanel) {
+                return (StudentEnrollmentTablePanel) component;
+            } else if (component instanceof Container) {
+                StudentEnrollmentTablePanel result = findEnrollmentTablePanel((Container) component);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 }
