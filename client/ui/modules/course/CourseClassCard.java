@@ -163,7 +163,7 @@ public class CourseClassCard extends JPanel {
         addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
-                setBorder(UITheme.createRoundedBorder(UITheme.PRIMARY_GREEN, 2, UITheme.RADIUS_MEDIUM));
+                setBorder(UITheme.createRoundedCardBorder(UITheme.PRIMARY_GREEN, 2, UITheme.RADIUS_XXLARGE));
                 setBackground(UITheme.VERY_LIGHT_GREEN);
                 repaint();
             }

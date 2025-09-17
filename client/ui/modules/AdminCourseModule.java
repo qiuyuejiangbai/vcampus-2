@@ -29,7 +29,7 @@ public class AdminCourseModule implements IModuleView {
         root = new JPanel(new BorderLayout());
         root.setOpaque(true);
         root.setBackground(UITheme.BACKGROUND_GRAY);
-        root.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE));
+        root.setBorder(null); // 移除边距，让选项卡占满整个灰色背景
 
         root.add(createTabbedPane(), BorderLayout.CENTER);
 

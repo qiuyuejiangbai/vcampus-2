@@ -42,6 +42,7 @@ public class UITheme {
     public static final int RADIUS_MEDIUM = 8;
     public static final int RADIUS_LARGE = 12;
     public static final int RADIUS_XLARGE = 16;
+    public static final int RADIUS_XXLARGE = 20;  // 新增：更大的圆角
     
     // 间距常量
     public static final int PADDING_SMALL = 8;
@@ -57,10 +58,12 @@ public class UITheme {
     
     // 创建常用边框的方法
     public static Border createCardBorder() {
-        return BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(CARD_BORDER, 1),
-            BorderFactory.createEmptyBorder(PADDING_MEDIUM, PADDING_MEDIUM, PADDING_MEDIUM, PADDING_MEDIUM)
-        );
+        return createRoundedCardBorder(CARD_BORDER, 1, RADIUS_XXLARGE);
+    }
+    
+    // 创建圆角卡片边框的方法
+    public static Border createRoundedCardBorder(Color color, int thickness, int radius) {
+        return new RoundedBorder(color, thickness, radius);
     }
     
     public static Border createRoundedBorder(Color color, int thickness, int radius) {
@@ -100,5 +103,40 @@ public class UITheme {
             BorderFactory.createEmptyBorder(PADDING_SMALL, PADDING_MEDIUM, PADDING_SMALL, PADDING_MEDIUM)
         ));
         textField.setBackground(WHITE);
+    }
+    
+    // 圆角边框实现类
+    public static class RoundedBorder implements Border {
+        private Color color;
+        private int thickness;
+        private int radius;
+        
+        public RoundedBorder(Color color, int thickness, int radius) {
+            this.color = color;
+            this.thickness = thickness;
+            this.radius = radius;
+        }
+        
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setColor(color);
+            g2d.setStroke(new BasicStroke(thickness));
+            g2d.drawRoundRect(x + thickness/2, y + thickness/2, 
+                            width - thickness, height - thickness, radius, radius);
+            g2d.dispose();
+        }
+        
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return new Insets(radius + thickness, radius + thickness, 
+                            radius + thickness, radius + thickness);
+        }
+        
+        @Override
+        public boolean isBorderOpaque() {
+            return false;
+        }
     }
 }

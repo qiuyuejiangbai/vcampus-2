@@ -201,12 +201,14 @@ public class TeacherCourseCard extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
+                setBorder(UITheme.createRoundedCardBorder(UITheme.PRIMARY_GREEN, 2, UITheme.RADIUS_XXLARGE));
                 setBackground(UITheme.VERY_LIGHT_GREEN);
                 setCursor(new Cursor(Cursor.HAND_CURSOR));
             }
             
             @Override
             public void mouseExited(MouseEvent e) {
+                setBorder(UITheme.createCardBorder());
                 setBackground(UITheme.WHITE);
                 setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
             }
