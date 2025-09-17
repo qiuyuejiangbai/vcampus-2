@@ -9,6 +9,7 @@ import common.vo.TeacherVO;
 import common.vo.BookVO;
 import common.vo.BorrowRecordVO;
 import server.service.UserService;
+import server.service.GradeService;
 import server.dao.impl.LibraryServiceImpl;
 import server.service.ForumService;
 import server.dao.impl.StoreServiceImpl;
@@ -40,11 +41,13 @@ public class ClientHandler implements Runnable {
     
     // 业务服务
     private final UserService userService;
+    private final GradeService gradeService;
     
     public ClientHandler(Socket clientSocket, VCampusServer server) {
         this.clientSocket = clientSocket;
         this.server = server;
         this.userService = new UserService();
+        this.gradeService = new GradeService();
         
         try {
             // 创建输入输出流
@@ -188,6 +191,37 @@ public class ClientHandler implements Runnable {
                 case GET_ENROLLMENTS_BY_COURSE_REQUEST:
                     System.out.println("[Enrollment][Server] 收到请求: GET_ENROLLMENTS_BY_COURSE_REQUEST");
                     handleGetEnrollmentsByCourse(request);
+                    break;
+                    
+                // 成绩管理模块
+                case GET_ALL_GRADES_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: GET_ALL_GRADES_REQUEST");
+                    handleGetAllGrades(request);
+                    break;
+                    
+                case GET_GRADES_BY_STUDENT_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: GET_GRADES_BY_STUDENT_REQUEST");
+                    handleGetGradesByStudent(request);
+                    break;
+                    
+                case GET_GRADES_BY_COURSE_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: GET_GRADES_BY_COURSE_REQUEST");
+                    handleGetGradesByCourse(request);
+                    break;
+                    
+                case ADD_GRADE_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: ADD_GRADE_REQUEST");
+                    handleAddGrade(request);
+                    break;
+                    
+                case UPDATE_GRADE_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: UPDATE_GRADE_REQUEST");
+                    handleUpdateGrade(request);
+                    break;
+                    
+                case DELETE_GRADE_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: DELETE_GRADE_REQUEST");
+                    handleDeleteGrade(request);
                     break;
                     
                 case HEARTBEAT:
@@ -2184,6 +2218,177 @@ private void handleShipOrder(Message request) {
         } catch (Exception e) {
             System.err.println("处理退选请求时发生异常: " + e.getMessage());
             sendErrorMessage("退选失败: " + e.getMessage());
+        }
+    }
+    
+    // ================= 成绩管理模块 =================
+    
+    /**
+     * 处理获取所有成绩请求
+     */
+    private void handleGetAllGrades(Message request) {
+        try {
+            System.out.println("[Grade][Server] 开始处理获取所有成绩请求");
+            
+            List<common.vo.GradeVO> grades = gradeService.getAllGrades();
+            System.out.println("[Grade][Server] 查询到 " + grades.size() + " 条成绩记录");
+            
+            Message response = new Message(MessageType.GET_ALL_GRADES_SUCCESS, StatusCode.SUCCESS, grades, "获取成绩列表成功");
+            sendMessage(response);
+            
+        } catch (Exception e) {
+            System.err.println("处理获取所有成绩请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.GET_ALL_GRADES_FAIL, StatusCode.INTERNAL_ERROR, null, "获取成绩列表失败: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理根据学生ID获取成绩请求
+     */
+    private void handleGetGradesByStudent(Message request) {
+        try {
+            System.out.println("[Grade][Server] 开始处理根据学生ID获取成绩请求");
+            
+            if (request.getData() instanceof Integer) {
+                Integer studentId = (Integer) request.getData();
+                List<common.vo.GradeVO> grades = gradeService.getGradesByStudentId(studentId);
+                
+                System.out.println("[Grade][Server] 查询到学生 " + studentId + " 的 " + grades.size() + " 条成绩记录");
+                
+                Message response = new Message(MessageType.GET_GRADES_BY_STUDENT_SUCCESS, StatusCode.SUCCESS, grades, "获取学生成绩成功");
+                sendMessage(response);
+            } else {
+                sendErrorMessage("学生ID格式错误");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("处理根据学生ID获取成绩请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("获取学生成绩失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理根据课程ID获取成绩请求
+     */
+    private void handleGetGradesByCourse(Message request) {
+        try {
+            System.out.println("[Grade][Server] 开始处理根据课程ID获取成绩请求");
+            
+            if (request.getData() instanceof Integer) {
+                Integer courseId = (Integer) request.getData();
+                List<common.vo.GradeVO> grades = gradeService.getGradesByCourseId(courseId);
+                
+                System.out.println("[Grade][Server] 查询到课程 " + courseId + " 的 " + grades.size() + " 条成绩记录");
+                
+                Message response = new Message(MessageType.GET_GRADES_BY_COURSE_SUCCESS, StatusCode.SUCCESS, grades, "获取课程成绩成功");
+                sendMessage(response);
+            } else {
+                sendErrorMessage("课程ID格式错误");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("处理根据课程ID获取成绩请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            sendErrorMessage("获取课程成绩失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理添加成绩请求
+     */
+    private void handleAddGrade(Message request) {
+        try {
+            System.out.println("[Grade][Server] 开始处理添加成绩请求");
+            
+            if (request.getData() instanceof common.vo.GradeVO) {
+                common.vo.GradeVO grade = (common.vo.GradeVO) request.getData();
+                boolean success = gradeService.addGrade(grade);
+                
+                if (success) {
+                    System.out.println("[Grade][Server] 添加成绩成功");
+                    Message response = new Message(MessageType.ADD_GRADE_SUCCESS, StatusCode.SUCCESS, grade, "添加成绩成功");
+                    sendMessage(response);
+                } else {
+                    System.out.println("[Grade][Server] 添加成绩失败");
+                    Message response = new Message(MessageType.ADD_GRADE_FAIL, StatusCode.BAD_REQUEST, null, "添加成绩失败");
+                    sendMessage(response);
+                }
+            } else {
+                sendErrorMessage("成绩数据格式错误");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("处理添加成绩请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.ADD_GRADE_FAIL, StatusCode.INTERNAL_ERROR, null, "添加成绩失败: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理更新成绩请求
+     */
+    private void handleUpdateGrade(Message request) {
+        try {
+            System.out.println("[Grade][Server] 开始处理更新成绩请求");
+            
+            if (request.getData() instanceof common.vo.GradeVO) {
+                common.vo.GradeVO grade = (common.vo.GradeVO) request.getData();
+                boolean success = gradeService.updateGrade(grade);
+                
+                if (success) {
+                    System.out.println("[Grade][Server] 更新成绩成功");
+                    Message response = new Message(MessageType.UPDATE_GRADE_SUCCESS, StatusCode.SUCCESS, grade, "更新成绩成功");
+                    sendMessage(response);
+                } else {
+                    System.out.println("[Grade][Server] 更新成绩失败");
+                    Message response = new Message(MessageType.UPDATE_GRADE_FAIL, StatusCode.BAD_REQUEST, null, "更新成绩失败");
+                    sendMessage(response);
+                }
+            } else {
+                sendErrorMessage("成绩数据格式错误");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("处理更新成绩请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.UPDATE_GRADE_FAIL, StatusCode.INTERNAL_ERROR, null, "更新成绩失败: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理删除成绩请求
+     */
+    private void handleDeleteGrade(Message request) {
+        try {
+            System.out.println("[Grade][Server] 开始处理删除成绩请求");
+            
+            if (request.getData() instanceof Integer) {
+                Integer gradeId = (Integer) request.getData();
+                boolean success = gradeService.deleteGrade(gradeId);
+                
+                if (success) {
+                    System.out.println("[Grade][Server] 删除成绩成功");
+                    Message response = new Message(MessageType.DELETE_GRADE_SUCCESS, StatusCode.SUCCESS, gradeId, "删除成绩成功");
+                    sendMessage(response);
+                } else {
+                    System.out.println("[Grade][Server] 删除成绩失败");
+                    Message response = new Message(MessageType.DELETE_GRADE_FAIL, StatusCode.BAD_REQUEST, null, "删除成绩失败");
+                    sendMessage(response);
+                }
+            } else {
+                sendErrorMessage("成绩ID格式错误");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("处理删除成绩请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.DELETE_GRADE_FAIL, StatusCode.INTERNAL_ERROR, null, "删除成绩失败: " + e.getMessage());
+            sendMessage(response);
         }
     }
     

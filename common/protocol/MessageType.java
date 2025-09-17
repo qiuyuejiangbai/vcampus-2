@@ -75,6 +75,22 @@ public enum MessageType {
     GET_STUDENT_ENROLLMENTS_SUCCESS, // 获取学生选课记录成功
     GET_ENROLLMENTS_BY_COURSE_REQUEST, // 获取指定课程的选课记录请求
     GET_ENROLLMENTS_BY_COURSE_SUCCESS, // 获取指定课程的选课记录成功
+    
+    // 成绩管理模块
+    GET_ALL_GRADES_REQUEST,           // 获取所有成绩请求
+    GET_ALL_GRADES_SUCCESS,           // 获取所有成绩成功
+    GET_ALL_GRADES_FAIL,              // 获取所有成绩失败
+    GET_GRADES_BY_STUDENT_REQUEST,    // 获取学生成绩请求
+    GET_GRADES_BY_STUDENT_SUCCESS,    // 获取学生成绩成功
+    GET_GRADES_BY_COURSE_REQUEST,     // 获取课程成绩请求
+    GET_GRADES_BY_COURSE_SUCCESS,     // 获取课程成绩成功
+    ADD_GRADE_REQUEST,                // 添加成绩请求
+    ADD_GRADE_SUCCESS,                // 添加成绩成功
+    ADD_GRADE_FAIL,                   // 添加成绩失败
+    UPDATE_GRADE_FAIL,                // 更新成绩失败
+    DELETE_GRADE_REQUEST,             // 删除成绩请求
+    DELETE_GRADE_SUCCESS,             // 删除成绩成功
+    DELETE_GRADE_FAIL,                // 删除成绩失败
 
     // ================= 图书馆模块 =================
 
