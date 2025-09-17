@@ -396,8 +396,18 @@ public class TeacherGradeCardPanel extends JPanel {
         System.out.println("=== TeacherGradeCardPanel.onCourseCardClicked 被调用 ===");
         System.out.println("点击了成绩管理课程卡片: " + (course != null ? course.getCourseName() : "null"));
         
-        // 这里可以添加成绩管理相关的逻辑
-        // 目前暂时输出日志
-        System.out.println("成绩管理功能待实现...");
+        if (parentModule != null) {
+            try {
+                // 调用父模块的显示成绩管理方法
+                java.lang.reflect.Method method = parentModule.getClass().getMethod("showGradeManagement", CourseVO.class);
+                method.invoke(parentModule, course);
+                System.out.println("成功调用父模块的成绩管理方法");
+            } catch (Exception e) {
+                System.err.println("调用父模块成绩管理方法失败: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("父模块为空，无法显示成绩管理界面");
+        }
     }
 }

@@ -8,6 +8,7 @@ import client.ui.modules.course.UITheme;
 import client.ui.modules.course.TeacherCourseCardPanel;
 import client.ui.modules.course.TeacherGradeCardPanel;
 import client.ui.modules.course.StudentListPanel;
+import client.ui.modules.course.TeacherEditableGradeTablePanel;
 import common.vo.UserVO;
 import common.vo.CourseVO;
 
@@ -22,6 +23,7 @@ public class TeacherCourseModule implements IModuleView {
     private TeacherCourseCardPanel courseCardPanel;
     private TeacherGradeCardPanel gradeCardPanel;
     private StudentListPanel studentListPanel;
+    private TeacherEditableGradeTablePanel gradeTablePanel;
     private CardLayout cardLayout;
 
     public TeacherCourseModule() { 
@@ -439,6 +441,9 @@ public class TeacherCourseModule implements IModuleView {
             studentListPanel.setParentModule(this); // 设置父模块引用
             cardContainer.add(studentListPanel, "studentListPanel");
 
+            // 创建成绩管理表格面板（初始为空，会在需要时创建）
+            gradeTablePanel = null;
+
             root.add(cardContainer, BorderLayout.CENTER);
             root.revalidate();
             root.repaint();
@@ -640,6 +645,60 @@ public class TeacherCourseModule implements IModuleView {
             System.err.println("卡片布局未初始化");
         }
         System.out.println("=== showCoursePanel 方法执行完成 ===");
+    }
+
+    /**
+     * 显示成绩管理界面
+     */
+    public void showGradeManagement(CourseVO course) {
+        System.out.println("=== TeacherCourseModule.showGradeManagement 被调用 ===");
+        System.out.println("课程: " + (course != null ? course.getCourseName() : "null"));
+        System.out.println("卡片布局: " + (cardLayout != null ? "已创建" : "null"));
+        System.out.println("根面板: " + (root != null ? "已创建" : "null"));
+        
+        if (course == null) {
+            System.err.println("课程信息为空，无法显示成绩管理界面");
+            return;
+        }
+        
+        if (cardLayout != null) {
+            try {
+                System.out.println("查找卡片容器...");
+                Container cardContainer = (Container) root.getComponent(0);
+                if (cardContainer != null) {
+                    System.out.println("卡片容器类型: " + cardContainer.getClass().getName());
+                    System.out.println("卡片容器组件数量: " + cardContainer.getComponentCount());
+                    
+                    // 创建或更新成绩管理表格面板
+                    if (gradeTablePanel == null) {
+                        System.out.println("创建新的成绩管理表格面板...");
+                        gradeTablePanel = new TeacherEditableGradeTablePanel(course, currentUser, connection, this);
+                        cardContainer.add(gradeTablePanel, "gradeTablePanel");
+                    } else {
+                        System.out.println("更新现有成绩管理表格面板...");
+                        // 如果面板已存在，可以更新课程信息或重新加载数据
+                        gradeTablePanel.refreshData();
+                    }
+                    
+                    System.out.println("执行卡片布局切换到成绩管理界面...");
+                    cardLayout.show(cardContainer, "gradeTablePanel");
+                    
+                    System.out.println("刷新界面...");
+                    root.revalidate();
+                    root.repaint();
+                    
+                    System.out.println("成功切换到成绩管理界面");
+                } else {
+                    System.err.println("卡片容器不存在");
+                }
+            } catch (Exception e) {
+                System.err.println("显示成绩管理界面时发生错误: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("卡片布局未初始化");
+        }
+        System.out.println("=== showGradeManagement 方法执行完成 ===");
     }
 
     public static void registerTo(Class<?> ignored) { 
