@@ -105,22 +105,15 @@ public class SideNav extends JPanel {
     }
     
     public void setCurrentUser(UserVO user) {
-        System.out.println("[DEBUG][SideNav] 设置当前用户：" + (user != null ? 
-            ("loginId=" + user.getLoginId() + ", userId=" + user.getUserId() + ", role=" + user.getRoleName()) : "null"));
-        
         this.currentUser = user;
         initUserInfo();
         
         // 如果是学生，获取详细信息
         if (user != null && user.isStudent()) {
-            System.out.println("[DEBUG][SideNav] 检测到学生用户，开始加载学生信息");
             loadStudentInfo();
         } else if (user != null && user.isTeacher()) {
             // 教师端：加载教师详细信息
-            System.out.println("[DEBUG][SideNav] 检测到教师用户，开始加载教师信息");
             loadTeacherInfo();
-        } else {
-            System.out.println("[DEBUG][SideNav] 其他类型用户或用户为null，跳过详细信息加载");
         }
     }
 
@@ -424,8 +417,15 @@ public class SideNav extends JPanel {
         }
         
         try {
+            // 修复头像路径：如果路径不以resources/开头，则添加resources/前缀
+            String fullAvatarPath = avatarPath;
+            if (!avatarPath.startsWith("resources/")) {
+                fullAvatarPath = "resources/" + avatarPath;
+                System.out.println("[DEBUG][SideNav] 修正头像路径: " + fullAvatarPath);
+            }
+            
             // 尝试加载头像图片
-            java.io.File avatarFile = new java.io.File(avatarPath);
+            java.io.File avatarFile = new java.io.File(fullAvatarPath);
             if (avatarFile.exists()) {
                 ImageIcon icon = new ImageIcon(avatarFile.getAbsolutePath());
                 Image img = icon.getImage();
@@ -433,7 +433,7 @@ public class SideNav extends JPanel {
                     // 缩放图片以适应头像尺寸
                     Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
                     avatarLabel.setAvatarImage(scaledImg);
-                    System.out.println("头像更新成功: " + avatarPath);
+                    System.out.println("头像更新成功: " + fullAvatarPath);
                     return;
                 }
             }

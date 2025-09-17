@@ -145,8 +145,16 @@ public class ClientHandler implements Runnable {
                     handleGetStudentInfo(request);
                     break;
                     
+                case UPDATE_STUDENT_REQUEST:
+                    handleUpdateStudent(request);
+                    break;
+                    
                 case GET_TEACHER_INFO_REQUEST:
                     handleGetTeacherInfo(request);
+                    break;
+                    
+                case UPDATE_TEACHER_REQUEST:
+                    handleUpdateTeacher(request);
                     break;
                     
                 // 课程模块
@@ -1617,21 +1625,70 @@ private void handleShipOrder(Message request) {
             return;
         }
         
-        // 获取学生详细信息
-        System.out.println("准备查询学生信息，userId=" + currentUserId + ", loginId=" + currentUser.getLoginId());
-        server.service.StudentService studentService = new server.service.StudentService();
-        StudentVO student = studentService.getStudentByUserId(currentUserId);
+        try {
+            // 获取学生详细信息
+            server.service.StudentService studentService = new server.service.StudentService();
+            StudentVO student = studentService.getStudentByUserId(currentUserId);
+            
+            if (student != null) {
+                // 设置用户信息
+                student.setUserInfo(currentUser);
+                
+                Message response = new Message(MessageType.GET_STUDENT_INFO_SUCCESS, StatusCode.SUCCESS, student, "获取学生信息成功");
+                sendMessage(response);
+            } else {
+                Message response = new Message(MessageType.GET_STUDENT_INFO_FAIL, StatusCode.NOT_FOUND, null, "学生信息不存在");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendErrorMessage("服务器内部错误：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理更新学生信息请求
+     */
+    private void handleUpdateStudent(Message request) {
+        if (!isLoggedIn()) {
+            sendUnauthorizedMessage();
+            return;
+        }
         
-        if (student != null) {
-            // 设置用户信息
-            student.setUserInfo(currentUser);
-            System.out.println("学生信息查询成功：姓名=" + student.getName() + ", 专业=" + student.getMajor());
-            Message response = new Message(MessageType.GET_STUDENT_INFO_SUCCESS, StatusCode.SUCCESS, student, "获取学生信息成功");
-            sendMessage(response);
+        // 检查当前用户是否为学生
+        if (!currentUser.isStudent()) {
+            sendErrorMessage("只有学生用户才能更新学生信息");
+            return;
+        }
+        
+        if (request.getData() instanceof StudentVO) {
+            StudentVO updateStudent = (StudentVO) request.getData();
+            
+            // 安全检查：只能更新自己的信息
+            if (!currentUserId.equals(updateStudent.getUserId())) {
+                Message response = new Message(MessageType.UPDATE_STUDENT_FAIL, StatusCode.FORBIDDEN, null, "无权限修改他人信息");
+                sendMessage(response);
+                return;
+            }
+            
+            // 如果没有设置userId，则设置为当前用户的ID
+            if (updateStudent.getUserId() == null) {
+                updateStudent.setUserId(currentUserId);
+            }
+            
+            // 更新学生信息
+            server.service.StudentService studentService = new server.service.StudentService();
+            boolean success = studentService.updateStudent(updateStudent);
+            
+            if (success) {
+                Message response = new Message(MessageType.UPDATE_STUDENT_SUCCESS, StatusCode.SUCCESS, null, "更新成功");
+                sendMessage(response);
+            } else {
+                Message response = new Message(MessageType.UPDATE_STUDENT_FAIL, StatusCode.INTERNAL_ERROR, null, "更新失败");
+                sendMessage(response);
+            }
         } else {
-            System.out.println("学生信息查询结果为空，userId=" + currentUserId);
-            Message response = new Message(MessageType.GET_STUDENT_INFO_SUCCESS, StatusCode.NOT_FOUND, null, "学生信息不存在");
-            sendMessage(response);
+            sendErrorMessage("更新数据格式错误");
         }
     }
     
@@ -1687,6 +1744,67 @@ private void handleShipOrder(Message request) {
             System.err.println("[DEBUG][ClientHandler] 处理教师信息请求时发生异常：" + e.getMessage());
             e.printStackTrace();
             sendErrorMessage("服务器内部错误：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理更新教师信息请求
+     */
+    private void handleUpdateTeacher(Message request) {
+        System.out.println("[DEBUG][ClientHandler] 收到UPDATE_TEACHER_REQUEST请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[DEBUG][ClientHandler] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        System.out.println("[DEBUG][ClientHandler] 用户已登录，当前用户：userId=" + currentUserId + 
+            ", loginId=" + currentUser.getLoginId() + ", role=" + currentUser.getRoleName());
+        
+        // 检查当前用户是否为教师
+        if (!currentUser.isTeacher()) {
+            System.err.println("[DEBUG][ClientHandler] 当前用户非教师角色：role=" + currentUser.getRole());
+            sendErrorMessage("只有教师用户才能更新教师信息");
+            return;
+        }
+        
+        if (request.getData() instanceof TeacherVO) {
+            TeacherVO updateTeacher = (TeacherVO) request.getData();
+            System.out.println("[DEBUG][ClientHandler] 收到教师更新数据：teacherId=" + updateTeacher.getId() + ", userId=" + updateTeacher.getUserId());
+            System.out.println("[DEBUG][ClientHandler] 更新字段：name=" + updateTeacher.getName() + ", phone=" + updateTeacher.getPhone() + ", email=" + updateTeacher.getEmail());
+            
+            // 安全检查：只能更新自己的信息
+            if (!currentUserId.equals(updateTeacher.getUserId())) {
+                System.err.println("[DEBUG][ClientHandler] 权限检查失败：当前用户ID=" + currentUserId + ", 更新用户ID=" + updateTeacher.getUserId());
+                Message response = new Message(MessageType.UPDATE_TEACHER_FAIL, StatusCode.FORBIDDEN, null, "无权限修改他人信息");
+                sendMessage(response);
+                return;
+            }
+            
+            // 如果没有设置userId，则设置为当前用户的ID
+            if (updateTeacher.getUserId() == null) {
+                updateTeacher.setUserId(currentUserId);
+                System.out.println("[DEBUG][ClientHandler] 设置userId为当前用户ID：" + currentUserId);
+            }
+            
+            // 更新教师信息
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            System.out.println("[DEBUG][ClientHandler] 开始调用TeacherService.updateTeacher");
+            boolean success = teacherService.updateTeacher(updateTeacher);
+            System.out.println("[DEBUG][ClientHandler] TeacherService.updateTeacher返回结果：" + success);
+            
+            if (success) {
+                Message response = new Message(MessageType.UPDATE_TEACHER_SUCCESS, StatusCode.SUCCESS, null, "更新成功");
+                sendMessage(response);
+                System.out.println("[DEBUG][ClientHandler] 发送成功响应");
+            } else {
+                Message response = new Message(MessageType.UPDATE_TEACHER_FAIL, StatusCode.INTERNAL_ERROR, null, "更新失败");
+                sendMessage(response);
+                System.err.println("[DEBUG][ClientHandler] 发送失败响应");
+            }
+        } else {
+            sendErrorMessage("更新数据格式错误");
         }
     }
     

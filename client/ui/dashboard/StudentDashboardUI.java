@@ -148,6 +148,9 @@ public class StudentDashboardUI extends JFrame {
                  )
          );
 
+        // 注册学籍管理模块
+        ModuleRegistry.register(new client.ui.modules.StudentProfileModule());
+
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
             contentHost.addPage(m.getKey(), m.getComponent());

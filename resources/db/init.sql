@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS teachers (
     phone VARCHAR(20) COMMENT '联系方式',
     email VARCHAR(100) COMMENT '邮箱',
     department VARCHAR(100) COMMENT '所属院系',
+    title VARCHAR(100) COMMENT '职称',
+    office VARCHAR(200) COMMENT '办公室',
     research_area TEXT COMMENT '研究方向',
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -73,7 +75,9 @@ CREATE TABLE IF NOT EXISTS teachers (
     
     -- 索引
     INDEX idx_teacher_no (teacher_no),
-    INDEX idx_user_id (user_id)
+    INDEX idx_user_id (user_id),
+    INDEX idx_title (title),
+    INDEX idx_office (office)
 ) COMMENT='教师信息表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 管理员信息表（根据AdminVO类设计）

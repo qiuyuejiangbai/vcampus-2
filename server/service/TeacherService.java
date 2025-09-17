@@ -124,14 +124,37 @@ public class TeacherService {
      * @return 更新成功返回true，失败返回false
      */
     public boolean updateTeacher(TeacherVO teacher) {
-        if (teacher == null || teacher.getId() == null) {
+        System.out.println("[DEBUG][TeacherService] 开始更新教师信息");
+        
+        if (teacher == null) {
+            System.err.println("[DEBUG][TeacherService] 教师信息为空");
             return false;
         }
         
+        if (teacher.getId() == null) {
+            System.err.println("[DEBUG][TeacherService] 教师ID为空");
+            return false;
+        }
+        
+        System.out.println("[DEBUG][TeacherService] 教师信息验证通过：");
+        System.out.println("  - 教师ID=" + teacher.getId());
+        System.out.println("  - 用户ID=" + teacher.getUserId());
+        System.out.println("  - 姓名=" + teacher.getName());
+        System.out.println("  - 电话=" + teacher.getPhone());
+        System.out.println("  - 邮箱=" + teacher.getEmail());
+        System.out.println("  - 工号=" + teacher.getTeacherNo());
+        System.out.println("  - 职称=" + teacher.getTitle());
+        System.out.println("  - 办公室=" + teacher.getOffice());
+        System.out.println("  - 研究方向=" + teacher.getResearchArea());
+        
         try {
-            return teacherDAO.update(teacher);
+            System.out.println("[DEBUG][TeacherService] 调用teacherDAO.update方法");
+            boolean result = teacherDAO.update(teacher);
+            System.out.println("[DEBUG][TeacherService] DAO更新结果：" + result);
+            return result;
         } catch (Exception e) {
-            System.err.println("更新教师信息失败: " + e.getMessage());
+            System.err.println("[DEBUG][TeacherService] 更新教师信息失败: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }

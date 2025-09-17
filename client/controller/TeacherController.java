@@ -12,6 +12,7 @@ import common.vo.TeacherVO;
 public class TeacherController {
     private ServerConnection serverConnection;
     private GetTeacherInfoCallback currentGetTeacherInfoCallback;
+    private UpdateTeacherCallback currentUpdateTeacherCallback;
     
     public TeacherController() {
         this.serverConnection = ServerConnection.getInstance();
@@ -45,6 +46,25 @@ public class TeacherController {
                 currentGetTeacherInfoCallback = null;
             } else {
                 System.err.println("[DEBUG][TeacherController] 回调函数为null，可能是重复响应");
+            }
+        });
+        
+        // 更新教师信息响应监听器
+        serverConnection.setMessageListener(MessageType.UPDATE_TEACHER_SUCCESS, message -> {
+            System.out.println("[DEBUG][TeacherController] 收到更新成功响应");
+            if (currentUpdateTeacherCallback != null) {
+                String successMsg = message.getMessage() != null ? message.getMessage() : "更新成功";
+                currentUpdateTeacherCallback.onSuccess(successMsg);
+                currentUpdateTeacherCallback = null;
+            }
+        });
+        
+        serverConnection.setMessageListener(MessageType.UPDATE_TEACHER_FAIL, message -> {
+            System.err.println("[DEBUG][TeacherController] 收到更新失败响应");
+            if (currentUpdateTeacherCallback != null) {
+                String errorMsg = message.getMessage() != null ? message.getMessage() : "更新教师信息失败";
+                currentUpdateTeacherCallback.onFailure(errorMsg);
+                currentUpdateTeacherCallback = null;
             }
         });
     }
@@ -87,6 +107,44 @@ public class TeacherController {
     }
     
     /**
+     * 更新教师信息
+     * @param teacher 要更新的教师信息
+     * @param callback 更新教师信息回调
+     */
+    public void updateTeacher(TeacherVO teacher, UpdateTeacherCallback callback) {
+        System.out.println("[DEBUG][TeacherController] ========== 开始更新教师信息 ==========");
+        System.out.println("[DEBUG][TeacherController] 教师ID=" + teacher.getId() + ", 用户ID=" + teacher.getUserId());
+        System.out.println("[DEBUG][TeacherController] 更新字段：name=" + teacher.getName() + ", phone=" + teacher.getPhone() + ", email=" + teacher.getEmail());
+        System.out.println("[DEBUG][TeacherController] 专业字段：teacherNo=" + teacher.getTeacherNo() + ", title=" + teacher.getTitle() + ", office=" + teacher.getOffice() + ", researchArea=" + teacher.getResearchArea());
+        
+        if (!serverConnection.isConnected()) {
+            System.err.println("[DEBUG][TeacherController] 服务器未连接");
+            callback.onFailure("未连接到服务器");
+            return;
+        }
+        
+        // 创建请求消息
+        Message request = new Message(MessageType.UPDATE_TEACHER_REQUEST, teacher);
+        System.out.println("[DEBUG][TeacherController] 创建更新请求消息：" + request.getType());
+        
+        // 设置回调
+        this.currentUpdateTeacherCallback = callback;
+        System.out.println("[DEBUG][TeacherController] 设置更新回调函数");
+        
+        // 发送请求
+        boolean sent = serverConnection.sendMessage(request);
+        System.out.println("[DEBUG][TeacherController] 发送更新消息结果：" + sent);
+        
+        if (!sent) {
+            this.currentUpdateTeacherCallback = null;
+            System.err.println("[DEBUG][TeacherController] 发送更新请求失败");
+            callback.onFailure("发送请求失败");
+        } else {
+            System.out.println("[DEBUG][TeacherController] 更新请求发送成功，等待服务器响应");
+        }
+    }
+    
+    /**
      * 检查服务器连接状态
      * @return 连接正常返回true，断开返回false
      */
@@ -99,6 +157,14 @@ public class TeacherController {
      */
     public interface GetTeacherInfoCallback {
         void onSuccess(TeacherVO teacher);
+        void onFailure(String error);
+    }
+    
+    /**
+     * 更新教师信息回调接口
+     */
+    public interface UpdateTeacherCallback {
+        void onSuccess(String message);
         void onFailure(String error);
     }
 }

@@ -168,27 +168,35 @@ public class ServerConnection {
      * 消息接收线程
      */
     private void receiveMessages() {
+        System.out.println("[DEBUG][ServerConnection] 消息接收线程启动");
+        
         while (isConnected && !Thread.currentThread().isInterrupted()) {
             try {
+                System.out.println("[DEBUG][ServerConnection] 等待接收消息...");
                 Object receivedObject = objectIn.readObject();
+                System.out.println("[DEBUG][ServerConnection] 接收到对象: " + 
+                    (receivedObject != null ? receivedObject.getClass().getName() : "null"));
                 
                 if (receivedObject instanceof Message) {
                     Message message = (Message) receivedObject;
+                    System.out.println("[DEBUG][ServerConnection] 对象是Message类型，开始处理");
                     handleReceivedMessage(message);
                 } else {
-                    System.err.println("收到无效消息类型: " + receivedObject.getClass().getName());
+                    System.err.println("[DEBUG][ServerConnection] 收到无效消息类型: " + receivedObject.getClass().getName());
                 }
                 
             } catch (SocketException | EOFException e) {
                 // 连接断开
-                System.out.println("服务器连接断开");
+                System.out.println("[DEBUG][ServerConnection] 服务器连接断开: " + e.getMessage());
                 break;
             } catch (IOException | ClassNotFoundException e) {
-                System.err.println("接收消息失败: " + e.getMessage());
+                System.err.println("[DEBUG][ServerConnection] 接收消息失败: " + e.getMessage());
+                e.printStackTrace();
                 break;
             }
         }
         
+        System.out.println("[DEBUG][ServerConnection] 消息接收线程结束");
         disconnect();
     }
     
@@ -197,30 +205,53 @@ public class ServerConnection {
      * @param message 接收到的消息
      */
     private void handleReceivedMessage(Message message) {
+        System.out.println("[DEBUG][ServerConnection] ========== 开始处理接收到的消息 ==========");
+        
         if (message == null || message.getType() == null) {
+            System.err.println("[DEBUG][ServerConnection] 收到空消息或消息类型为空");
             return;
+        }
+        
+        System.out.println("[DEBUG][ServerConnection] 收到消息类型: " + message.getType());
+        System.out.println("[DEBUG][ServerConnection] 消息状态码: " + message.getStatusCode());
+        System.out.println("[DEBUG][ServerConnection] 消息内容: " + message.getMessage());
+        System.out.println("[DEBUG][ServerConnection] 消息数据是否为null: " + (message.getData() == null));
+        
+        if (message.getData() != null) {
+            System.out.println("[DEBUG][ServerConnection] 消息数据类型: " + message.getData().getClass().getName());
+            if (message.getData() instanceof common.vo.StudentVO) {
+                common.vo.StudentVO student = (common.vo.StudentVO) message.getData();
+                System.out.println("[DEBUG][ServerConnection] 学生信息 - 姓名: " + student.getName() + 
+                    ", 学号: " + student.getStudentNo() + ", 专业: " + student.getMajor());
+            }
         }
         
         // 查找特定类型的监听器
         MessageListener listener = messageListeners.get(message.getType());
         if (listener != null) {
+            System.out.println("[DEBUG][ServerConnection] 找到消息监听器: " + message.getType());
             try {
                 listener.onMessageReceived(message);
+                System.out.println("[DEBUG][ServerConnection] 消息监听器处理完成: " + message.getType());
             } catch (Exception e) {
-                System.err.println("处理消息监听器异常: " + e.getMessage());
+                System.err.println("[DEBUG][ServerConnection] 处理消息监听器异常: " + e.getMessage());
                 e.printStackTrace();
             }
         } else if (defaultMessageListener != null) {
+            System.out.println("[DEBUG][ServerConnection] 使用默认消息监听器处理: " + message.getType());
             // 使用默认监听器
             try {
                 defaultMessageListener.onMessageReceived(message);
             } catch (Exception e) {
-                System.err.println("处理默认消息监听器异常: " + e.getMessage());
+                System.err.println("[DEBUG][ServerConnection] 处理默认消息监听器异常: " + e.getMessage());
                 e.printStackTrace();
             }
         } else {
-            System.out.println("收到未处理的消息: " + message.getType());
+            System.out.println("[DEBUG][ServerConnection] 收到未处理的消息: " + message.getType());
+            System.out.println("[DEBUG][ServerConnection] 当前注册的监听器: " + messageListeners.keySet());
         }
+        
+        System.out.println("[DEBUG][ServerConnection] ========== 消息处理完成 ==========");
     }
     
     /**
@@ -230,7 +261,11 @@ public class ServerConnection {
      */
     public void setMessageListener(MessageType messageType, MessageListener listener) {
         if (messageType != null && listener != null) {
+            System.out.println("[DEBUG][ServerConnection] 设置消息监听器: " + messageType);
             messageListeners.put(messageType, listener);
+            System.out.println("[DEBUG][ServerConnection] 当前注册的监听器: " + messageListeners.keySet());
+        } else {
+            System.err.println("[DEBUG][ServerConnection] 设置消息监听器失败：消息类型或监听器为null");
         }
     }
     
@@ -240,7 +275,11 @@ public class ServerConnection {
      */
     public void removeMessageListener(MessageType messageType) {
         if (messageType != null) {
+            System.out.println("[DEBUG][ServerConnection] 移除消息监听器: " + messageType);
             messageListeners.remove(messageType);
+            System.out.println("[DEBUG][ServerConnection] 当前注册的监听器: " + messageListeners.keySet());
+        } else {
+            System.err.println("[DEBUG][ServerConnection] 移除消息监听器失败：消息类型为null");
         }
     }
     

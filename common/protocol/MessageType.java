@@ -32,8 +32,10 @@ public enum MessageType {
     // 学籍管理模块
     GET_STUDENT_INFO_REQUEST,   // 获取学生信息请求
     GET_STUDENT_INFO_SUCCESS,   // 获取学生信息成功
+    GET_STUDENT_INFO_FAIL,      // 获取学生信息失败
     UPDATE_STUDENT_REQUEST,     // 更新学生信息请求
     UPDATE_STUDENT_SUCCESS,     // 更新学生信息成功
+    UPDATE_STUDENT_FAIL,        // 更新学生信息失败
     CREATE_STUDENT_REQUEST,     // 创建学生请求
     CREATE_STUDENT_SUCCESS,     // 创建学生成功
     DELETE_STUDENT_REQUEST,     // 删除学生请求
@@ -47,6 +49,9 @@ public enum MessageType {
     GET_TEACHER_INFO_REQUEST,   // 获取教师信息请求
     GET_TEACHER_INFO_SUCCESS,   // 获取教师信息成功
     GET_TEACHER_INFO_FAIL,      // 获取教师信息失败
+    UPDATE_TEACHER_REQUEST,     // 更新教师信息请求
+    UPDATE_TEACHER_SUCCESS,     // 更新教师信息成功
+    UPDATE_TEACHER_FAIL,        // 更新教师信息失败
     
     // 教务管理模块
     GET_ALL_COURSES_REQUEST,    // 获取所有课程请求

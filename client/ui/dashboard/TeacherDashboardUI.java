@@ -145,6 +145,9 @@ public class TeacherDashboardUI extends JFrame {
                 )
         );
         
+        // 注册教师个人信息模块
+        ModuleRegistry.register(new client.ui.modules.TeacherProfileModule());
+        
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
             contentHost.addPage(m.getKey(), m.getComponent());
