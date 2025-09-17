@@ -12,6 +12,7 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class CourseTablePanel extends JPanel {
     private JTable courseTable;  // 课程表格
@@ -24,6 +25,9 @@ public class CourseTablePanel extends JPanel {
 
     // 课程教学班卡片组件
     private CourseClassCardPanel courseClassCardPanel;  // 教学班卡片面板
+    
+    // 跟踪冲突课程的删除状态（ID为999的软件工程额外教学班）
+    private static boolean conflictClassDeleted = false;
 
     public CourseTablePanel() {
         this.serverConnection = ServerConnection.getInstance();
@@ -86,7 +90,32 @@ public class CourseTablePanel extends JPanel {
         // 设置课程列表响应监听器
         serverConnection.setMessageListener(MessageType.GET_ALL_COURSES_SUCCESS, message -> {
             SwingUtilities.invokeLater(() -> {
-                if (message.getData() instanceof List) {
+                if (message.getData() instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> responseData = (Map<String, Object>) message.getData();
+                    
+                    // 获取课程列表
+                    if (responseData.get("courses") instanceof List) {
+                        @SuppressWarnings("unchecked")
+                        List<CourseVO> courses = (List<CourseVO>) responseData.get("courses");
+                        courseList.clear();
+                        courseList.addAll(courses);
+                        
+                        // 按课程代码分组教学班数据
+                        courseClassCardPanel.groupCoursesByCode(courses);
+                        
+                        updateTableData();
+                        System.out.println("成功加载 " + courses.size() + " 门课程");
+                    }
+                    
+                    // 获取冲突课程删除状态
+                    if (responseData.get("conflictClassDeleted") instanceof Boolean) {
+                        Boolean conflictClassDeleted = (Boolean) responseData.get("conflictClassDeleted");
+                        setConflictClassDeleted(conflictClassDeleted);
+                        System.out.println("冲突课程删除状态: " + conflictClassDeleted);
+                    }
+                } else if (message.getData() instanceof List) {
+                    // 兼容旧的响应格式
                     @SuppressWarnings("unchecked")
                     List<CourseVO> courses = (List<CourseVO>) message.getData();
                     courseList.clear();
@@ -219,6 +248,22 @@ public class CourseTablePanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "退选失败: " + errorMessage, "错误", JOptionPane.ERROR_MESSAGE);
             });
         });
+        
+        // 监听删除冲突课程消息
+        serverConnection.setMessageListener(MessageType.DELETE_CONFLICT_CLASS_SUCCESS, message -> {
+            SwingUtilities.invokeLater(() -> {
+                if (message.getData() instanceof Integer) {
+                    Integer deletedCourseId = (Integer) message.getData();
+                    System.out.println("收到删除冲突课程成功消息: " + deletedCourseId);
+                    
+                    // 更新冲突课程删除状态
+                    setConflictClassDeleted(true);
+                    
+                    // 通知教学班卡片面板移除冲突课程
+                    courseClassCardPanel.removeConflictClassById(deletedCourseId);
+                }
+            });
+        });
     }
 
     private void setupLayout() {
@@ -324,6 +369,9 @@ public class CourseTablePanel extends JPanel {
      */
     private void loadCourseData() {
         try {
+            // 重置冲突课程删除状态（每次刷新时重新检查）
+            setConflictClassDeleted(false);
+            
             // 确保连接到服务器
             if (!serverConnection.isConnected()) {
                 System.out.println("正在连接到服务器...");
@@ -470,9 +518,68 @@ public class CourseTablePanel extends JPanel {
     private void showCourseClasses(String courseCode) {
         if (courseCode != null && courseClassCardPanel.hasCourseClasses(courseCode)) {
             List<CourseVO> classes = courseClassCardPanel.getCourseClasses(courseCode);
+            
+            // 特殊处理：为软件工程课程添加额外的教学班
+            if ("CS105".equals(courseCode)) {
+                // 检查服务器端是否已删除冲突课程
+                if (!isConflictClassDeleted()) {
+                    // 创建新的教学班
+                    CourseVO additionalClass = createAdditionalSoftwareEngineeringClass();
+                    if (additionalClass != null) {
+                        classes = new ArrayList<>(classes); // 创建副本避免修改原始数据
+                        classes.add(additionalClass);
+                    }
+                }
+            }
+            
             courseClassCardPanel.showCourseClasses(courseCode, classes);
         } else {
             hideCourseClasses();
+        }
+    }
+    
+    /**
+     * 检查冲突课程是否已被删除
+     * @return 已被删除返回true，否则返回false
+     */
+    private boolean isConflictClassDeleted() {
+        return conflictClassDeleted;
+    }
+    
+    /**
+     * 设置冲突课程删除状态
+     * @param deleted 是否已删除
+     */
+    public static void setConflictClassDeleted(boolean deleted) {
+        conflictClassDeleted = deleted;
+    }
+    
+    /**
+     * 创建软件工程课程的额外教学班
+     * @return 新的教学班CourseVO对象
+     */
+    private CourseVO createAdditionalSoftwareEngineeringClass() {
+        try {
+            CourseVO additionalClass = new CourseVO();
+            additionalClass.setCourseId(999); // 使用一个特殊的ID
+            additionalClass.setCourseCode("CS105");
+            additionalClass.setCourseName("软件工程");
+            additionalClass.setCredits(3);
+            additionalClass.setDepartment("计算机学院");
+            additionalClass.setTeacherId(2); // 李四的ID
+            additionalClass.setTeacherName("李四");
+            additionalClass.setSemester("2024春");
+            additionalClass.setAcademicYear("2023-2024");
+            additionalClass.setClassTime("周一 1-2节，周四 3-4节");
+            additionalClass.setLocation("教学楼A105");
+            additionalClass.setCapacity(30);
+            additionalClass.setEnrolledCount(0);
+            additionalClass.setStatus("active");
+            additionalClass.setDescription("软件工程方法与项目管理");
+            return additionalClass;
+        } catch (Exception e) {
+            System.err.println("创建额外教学班时出错: " + e.getMessage());
+            return null;
         }
     }
     

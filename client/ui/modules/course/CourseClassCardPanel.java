@@ -289,6 +289,30 @@ public class CourseClassCardPanel extends JPanel {
     }
     
     /**
+     * 添加新的教学班卡片
+     * @param course 新的教学班课程信息
+     */
+    public void addCourseClass(CourseVO course) {
+        if (course == null) return;
+        
+        // 创建新的教学班卡片
+        CourseClassCard card = new CourseClassCard(course, this, currentUser);
+        classCards.add(card);
+        cardContainer.add(card);
+        
+        // 将课程添加到分组数据中
+        String courseCode = course.getCourseCode();
+        courseClassesMap.computeIfAbsent(courseCode, k -> new ArrayList<>()).add(course);
+        
+        // 刷新容器
+        cardContainer.revalidate();
+        cardContainer.repaint();
+        
+        // 显示面板
+        setVisible(true);
+    }
+    
+    /**
      * 刷新选课记录表格
      * 这个方法会被CourseClassCard调用，用于在选课/退选成功后刷新选课记录表格
      */
@@ -325,6 +349,47 @@ public class CourseClassCardPanel extends JPanel {
                 return;
             } else if (component instanceof Container) {
                 refreshEnrollmentTableInContainer((Container) component);
+            }
+        }
+    }
+    
+    /**
+     * 移除冲突课程卡片
+     * @param card 要移除的卡片
+     */
+    public void removeConflictClassCard(CourseClassCard card) {
+        if (card != null && classCards.contains(card)) {
+            // 从卡片列表中移除
+            classCards.remove(card);
+            cardContainer.remove(card);
+            
+            // 刷新容器
+            cardContainer.revalidate();
+            cardContainer.repaint();
+            
+            // 如果当前没有卡片了，隐藏面板
+            if (classCards.isEmpty()) {
+                hideCourseClasses();
+            }
+        }
+    }
+    
+    /**
+     * 根据课程ID移除冲突课程卡片
+     * @param courseId 要移除的课程ID
+     */
+    public void removeConflictClassById(Integer courseId) {
+        if (courseId != null) {
+            CourseClassCard cardToRemove = null;
+            for (CourseClassCard card : classCards) {
+                if (card.getCourse().getCourseId().equals(courseId)) {
+                    cardToRemove = card;
+                    break;
+                }
+            }
+            
+            if (cardToRemove != null) {
+                removeConflictClassCard(cardToRemove);
             }
         }
     }

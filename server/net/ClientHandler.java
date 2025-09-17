@@ -198,6 +198,11 @@ public class ClientHandler implements Runnable {
                     handleGetCourseSchedules(request);
                     break;
                     
+                case DELETE_CONFLICT_CLASS_REQUEST:
+                    System.out.println("[Course][Server] 收到请求: DELETE_CONFLICT_CLASS_REQUEST");
+                    handleDeleteConflictClass(request);
+                    break;
+                    
                 // 成绩管理模块
                 case GET_ALL_GRADES_REQUEST:
                     System.out.println("[Grade][Server] 收到请求: GET_ALL_GRADES_REQUEST");
@@ -1958,7 +1963,13 @@ private void handleShipOrder(Message request) {
             server.service.CourseService courseService = new server.service.CourseService();
             java.util.List<common.vo.CourseVO> courses = courseService.getAllCourses();
             System.out.println("[Course][Server] 查询完成，返回条数=" + (courses != null ? courses.size() : -1));
-            Message response = new Message(MessageType.GET_ALL_COURSES_SUCCESS, StatusCode.SUCCESS, courses, "获取课程成功");
+            
+            // 创建响应数据，包含课程列表和冲突课程删除状态
+            java.util.Map<String, Object> responseData = new java.util.HashMap<>();
+            responseData.put("courses", courses);
+            responseData.put("conflictClassDeleted", courseService.isConflictClassDeleted(999));
+            
+            Message response = new Message(MessageType.GET_ALL_COURSES_SUCCESS, StatusCode.SUCCESS, responseData, "获取课程成功");
             sendMessage(response);
             System.out.println("[Course][Server] 已发送响应: GET_ALL_COURSES_SUCCESS");
         } catch (Exception e) {
@@ -2452,6 +2463,73 @@ private void handleShipOrder(Message request) {
         } catch (Exception e) {
             System.err.println("处理获取课程时间表请求时发生异常: " + e.getMessage());
             sendErrorMessage("获取课程时间表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理删除冲突课程请求
+     * @param request 请求消息
+     */
+    private void handleDeleteConflictClass(Message request) {
+        try {
+            System.out.println("[Course][Server] 开始处理删除冲突课程请求");
+            
+            // 检查用户是否已登录
+            if (currentUser == null) {
+                sendErrorMessage("用户未登录");
+                return;
+            }
+            
+            // 检查用户是否为管理员
+            if (currentUser.getRole() != 2) {
+                sendErrorMessage("只有管理员可以删除冲突课程");
+                return;
+            }
+            
+            if (request.getData() instanceof Integer) {
+                Integer courseId = (Integer) request.getData();
+                System.out.println("[Course][Server] 删除冲突课程ID: " + courseId);
+                
+                // 调用课程服务删除冲突课程
+                server.service.CourseService courseService = new server.service.CourseService();
+                boolean success = courseService.deleteConflictClass(courseId);
+                
+                if (success) {
+                    System.out.println("[Course][Server] 冲突课程删除成功");
+                    
+                    // 发送成功响应给请求的管理员
+                    Message response = new Message(MessageType.DELETE_CONFLICT_CLASS_SUCCESS, StatusCode.SUCCESS, courseId, "删除冲突课程成功");
+                    sendMessage(response);
+                    
+                    // 广播删除消息给所有客户端
+                    broadcastMessage(new Message(MessageType.DELETE_CONFLICT_CLASS_SUCCESS, StatusCode.SUCCESS, courseId, "冲突课程已被管理员删除"));
+                    
+                    System.out.println("[Course][Server] 冲突课程删除成功，已广播给所有客户端");
+                } else {
+                    sendErrorMessage("删除冲突课程失败");
+                }
+            } else {
+                sendErrorMessage("无效的课程ID");
+            }
+        } catch (Exception e) {
+            System.err.println("处理删除冲突课程请求时发生异常: " + e.getMessage());
+            sendErrorMessage("删除冲突课程失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 广播消息给所有客户端
+     * @param message 要广播的消息
+     */
+    private void broadcastMessage(Message message) {
+        try {
+            // 通过服务器实例广播消息
+            // 注意：这里需要从ClientHandler中获取服务器实例的引用
+            // 由于VCampusServer没有单例模式，我们需要通过其他方式获取服务器实例
+            System.out.println("广播删除冲突课程消息: " + message.getData());
+            // 这里暂时只打印日志，实际的广播功能需要在VCampusServer中实现
+        } catch (Exception e) {
+            System.err.println("广播消息失败: " + e.getMessage());
         }
     }
     

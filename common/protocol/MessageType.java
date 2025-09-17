@@ -78,6 +78,12 @@ public enum MessageType {
     GET_COURSE_SCHEDULES_REQUEST,      // 获取课程时间表请求
     GET_COURSE_SCHEDULES_SUCCESS,      // 获取课程时间表成功
     GET_COURSE_SCHEDULES_FAIL,         // 获取课程时间表失败
+    DELETE_CONFLICT_CLASS_REQUEST,     // 删除冲突课程请求
+    DELETE_CONFLICT_CLASS_SUCCESS,     // 删除冲突课程成功
+    DELETE_CONFLICT_CLASS_FAIL,        // 删除冲突课程失败
+    CHECK_CONFLICT_CLASS_STATUS_REQUEST, // 检查冲突课程状态请求
+    CHECK_CONFLICT_CLASS_STATUS_SUCCESS, // 检查冲突课程状态成功
+    CHECK_CONFLICT_CLASS_STATUS_FAIL,    // 检查冲突课程状态失败
     
     // 成绩管理模块
     GET_ALL_GRADES_REQUEST,           // 获取所有成绩请求
