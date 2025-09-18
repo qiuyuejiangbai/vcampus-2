@@ -22,6 +22,9 @@ public enum MessageType {
     UPLOAD_AVATAR_REQUEST,      // 上传头像请求
     UPLOAD_AVATAR_SUCCESS,      // 上传头像成功
     UPLOAD_AVATAR_FAIL,         // 上传头像失败
+    DOWNLOAD_AVATAR_REQUEST,    // 下载头像请求
+    DOWNLOAD_AVATAR_SUCCESS,    // 下载头像成功
+    DOWNLOAD_AVATAR_FAIL,       // 下载头像失败
     ADD_USER_REQUEST,           // 添加用户请求
     ADD_USER_SUCCESS,           // 添加用户成功
     DELETE_USER_REQUEST,        // 删除用户请求

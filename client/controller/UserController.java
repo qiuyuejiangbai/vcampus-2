@@ -72,12 +72,33 @@ public class UserController {
                 currentAvatarUploadCallback = null;
             }
         });
+        
+        // 头像下载响应监听器
+        serverConnection.setMessageListener(MessageType.DOWNLOAD_AVATAR_SUCCESS, message -> {
+            if (currentAvatarDownloadCallback != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) message.getData();
+                byte[] avatarData = (byte[]) data.get("avatarData");
+                String avatarPath = (String) data.get("avatarPath");
+                currentAvatarDownloadCallback.onSuccess(avatarData, avatarPath);
+                currentAvatarDownloadCallback = null;
+            }
+        });
+        
+        serverConnection.setMessageListener(MessageType.DOWNLOAD_AVATAR_FAIL, message -> {
+            if (currentAvatarDownloadCallback != null) {
+                String errorMsg = message.getMessage() != null ? message.getMessage() : "头像下载失败";
+                currentAvatarDownloadCallback.onFailure(errorMsg);
+                currentAvatarDownloadCallback = null;
+            }
+        });
     }
     
     // 回调接口
     private LoginCallback currentLoginCallback;
     private RegisterCallback currentRegisterCallback;
     private AvatarUploadCallback currentAvatarUploadCallback;
+    private AvatarDownloadCallback currentAvatarDownloadCallback;
     
     /**
      * 用户登录
@@ -408,10 +429,52 @@ public class UserController {
     }
     
     /**
+     * 下载头像
+     * @param avatarPath 头像路径
+     * @param callback 下载回调
+     */
+    public void downloadAvatar(String avatarPath, AvatarDownloadCallback callback) {
+        if (!serverConnection.isConnected()) {
+            callback.onFailure("未连接到服务器");
+            return;
+        }
+        
+        if (avatarPath == null || avatarPath.trim().isEmpty()) {
+            callback.onFailure("头像路径不能为空");
+            return;
+        }
+        
+        // 创建下载数据
+        Map<String, Object> downloadData = new HashMap<>();
+        downloadData.put("avatarPath", avatarPath);
+        
+        // 创建下载请求消息
+        Message request = new Message(MessageType.DOWNLOAD_AVATAR_REQUEST, downloadData);
+        
+        // 设置回调
+        this.currentAvatarDownloadCallback = callback;
+        
+        // 发送下载请求
+        boolean sent = serverConnection.sendMessage(request);
+        if (!sent) {
+            this.currentAvatarDownloadCallback = null;
+            callback.onFailure("发送头像下载请求失败");
+        }
+    }
+    
+    /**
      * 头像上传回调接口
      */
     public interface AvatarUploadCallback {
         void onSuccess(String avatarPath);
+        void onFailure(String errorMessage);
+    }
+    
+    /**
+     * 头像下载回调接口
+     */
+    public interface AvatarDownloadCallback {
+        void onSuccess(byte[] avatarData, String avatarPath);
         void onFailure(String errorMessage);
     }
 }

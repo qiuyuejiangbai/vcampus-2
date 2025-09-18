@@ -106,13 +106,17 @@ public class ForumService {
                     System.out.println("[DEBUG] 获取统计数据失败: " + e.getMessage());
                 }
                 
-                // 设置用户点赞状态
+                // 设置用户点赞状态和实时点赞数量
                 if (currentUserId != null) {
                     boolean isLiked = likeDAO.isLiked("thread", vo.getThreadId(), currentUserId);
                     vo.setIsLiked(isLiked);
                 } else {
                     vo.setIsLiked(false);
                 }
+                
+                // 使用实时点赞数量覆盖数据库中的like_count字段
+                int realLikeCount = likeDAO.getLikeCount("thread", vo.getThreadId());
+                vo.setLikeCount(realLikeCount);
                 
                 list.add(vo);
                 count++;

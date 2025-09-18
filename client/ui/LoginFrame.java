@@ -240,9 +240,9 @@ public class LoginFrame extends JFrame {
         field.setFont(FontUtil.getSourceHanSansFont(Font.PLAIN, 14));
         field.setBorder(BorderFactory.createCompoundBorder(
             new RoundedBorder(BORDER_COLOR, 1, 12),
-            BorderFactory.createEmptyBorder(12, 16, 12, 16) // 统一内边距
+            BorderFactory.createEmptyBorder(16, 16, 16, 16) // 增加上下内边距到16px
         ));
-        field.setPreferredSize(new Dimension(400, 44)); // 增加输入框宽度到400px，统一高度44px
+        field.setPreferredSize(new Dimension(400, 52)); // 增加输入框高度到52px，确保内容不被遮挡
         field.setBackground(new Color(248, 250, 252));
         field.setOpaque(false);
         
@@ -286,9 +286,9 @@ public class LoginFrame extends JFrame {
         field.setFont(FontUtil.getSourceHanSansFont(Font.PLAIN, 14));
         field.setBorder(BorderFactory.createCompoundBorder(
             new RoundedBorder(BORDER_COLOR, 1, 12),
-            BorderFactory.createEmptyBorder(12, 16, 12, 48) // 右侧留空间给眼睛图标
+            BorderFactory.createEmptyBorder(16, 16, 16, 48) // 增加上下内边距到16px，右侧留空间给眼睛图标
         ));
-        field.setPreferredSize(new Dimension(400, 44)); // 增加密码框宽度到400px，统一高度44px
+        field.setPreferredSize(new Dimension(400, 52)); // 增加密码框高度到52px，确保内容不被遮挡
         field.setBackground(new Color(248, 250, 252));
         field.setOpaque(false);
         field.setEchoChar('•'); // 使用更小的密码字符
@@ -695,7 +695,7 @@ public class LoginFrame extends JFrame {
         JPanel passwordFieldContainer = new JPanel();
         passwordFieldContainer.setLayout(new OverlayLayout(passwordFieldContainer));
         passwordFieldContainer.setOpaque(false);
-        passwordFieldContainer.setPreferredSize(new Dimension(400, 44));
+        passwordFieldContainer.setPreferredSize(new Dimension(400, 52));
         
         passwordFieldContainer.add(passwordField);
         
@@ -1293,7 +1293,7 @@ public class LoginFrame extends JFrame {
                     // 获得焦点时的动画 - 主色边框#37A165，1px边框 + 微弱外发光
                     field.setBorder(BorderFactory.createCompoundBorder(
                         new FocusedBorder(FOCUS_COLOR, 1, 12), // 聚焦态专用边框
-                        BorderFactory.createEmptyBorder(12, 16, 12, 16) // 统一内边距
+                        BorderFactory.createEmptyBorder(16, 16, 16, 16) // 增加上下内边距到16px
                     ));
                     
                     // 背景颜色过渡
@@ -1312,7 +1312,7 @@ public class LoginFrame extends JFrame {
                     // 失去焦点时的动画
                     field.setBorder(BorderFactory.createCompoundBorder(
                         new RoundedBorder(BORDER_COLOR, 1, 12),
-                        BorderFactory.createEmptyBorder(12, 16, 12, 16) // 统一内边距
+                        BorderFactory.createEmptyBorder(16, 16, 16, 16) // 增加上下内边距到16px
                     ));
                     
                     // 背景颜色过渡
@@ -1354,7 +1354,7 @@ public class LoginFrame extends JFrame {
                     // 获得焦点时的动画 - 主色边框#37A165，1px边框 + 微弱外发光
                     field.setBorder(BorderFactory.createCompoundBorder(
                         new FocusedBorder(FOCUS_COLOR, 1, 12), // 聚焦态专用边框
-                        BorderFactory.createEmptyBorder(12, 16, 12, 48) // 统一内边距，右侧留空间给眼睛图标
+                        BorderFactory.createEmptyBorder(16, 16, 16, 48) // 增加上下内边距到16px，右侧留空间给眼睛图标
                     ));
                     
                     // 背景颜色过渡
@@ -1368,7 +1368,7 @@ public class LoginFrame extends JFrame {
                     // 失去焦点时的动画
                     field.setBorder(BorderFactory.createCompoundBorder(
                         new RoundedBorder(BORDER_COLOR, 1, 12),
-                        BorderFactory.createEmptyBorder(12, 16, 12, 48) // 统一内边距，右侧留空间给眼睛图标
+                        BorderFactory.createEmptyBorder(16, 16, 16, 48) // 增加上下内边距到16px，右侧留空间给眼睛图标
                     ));
                     
                     // 背景颜色过渡

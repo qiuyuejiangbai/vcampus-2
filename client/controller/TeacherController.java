@@ -23,18 +23,30 @@ public class TeacherController {
      * 设置消息监听器
      */
     private void setupMessageListeners() {
+        // 检查是否已经存在监听器，避免覆盖
+        if (serverConnection.getMessageListener(MessageType.GET_TEACHER_INFO_SUCCESS) != null) {
+            System.out.println("[DEBUG][TeacherController] 监听器已存在，跳过设置");
+            return;
+        }
+        
         // 获取教师信息响应监听器
         serverConnection.setMessageListener(MessageType.GET_TEACHER_INFO_SUCCESS, message -> {
-            System.out.println("[DEBUG][TeacherController] 收到成功响应");
+            System.out.println("[DEBUG][TeacherController] ========== 收到GET_TEACHER_INFO_SUCCESS响应 ==========");
+            System.out.println("[DEBUG][TeacherController] 消息类型：" + message.getType());
+            System.out.println("[DEBUG][TeacherController] 消息数据：" + message.getData());
+            System.out.println("[DEBUG][TeacherController] currentGetTeacherInfoCallback=" + (currentGetTeacherInfoCallback != null ? "非null" : "null"));
+            
             if (currentGetTeacherInfoCallback != null) {
                 TeacherVO teacher = (TeacherVO) message.getData();
                 System.out.println("[DEBUG][TeacherController] 解析教师数据：" + (teacher != null ? 
                     ("姓名=" + teacher.getName() + ", 学院=" + teacher.getDepartment() + ", 职称=" + teacher.getTitle()) : "null"));
                 currentGetTeacherInfoCallback.onSuccess(teacher);
                 currentGetTeacherInfoCallback = null;
+                System.out.println("[DEBUG][TeacherController] 回调执行完成，回调函数已清空");
             } else {
-                System.err.println("[DEBUG][TeacherController] 回调函数为null，可能是重复响应");
+                System.err.println("[DEBUG][TeacherController] 回调函数为null，可能是重复响应或监听器被覆盖");
             }
+            System.out.println("[DEBUG][TeacherController] ========== GET_TEACHER_INFO_SUCCESS处理完成 ==========");
         });
         
         serverConnection.setMessageListener(MessageType.GET_TEACHER_INFO_FAIL, message -> {

@@ -20,7 +20,7 @@ public class ValidationUtil {
     
     // 学号正则表达式 - 通常为数字或字母数字组合
     private static final Pattern STUDENT_NO_PATTERN = Pattern.compile(
-        "^[A-Za-z0-9]{6,20}$"
+        "^[A-Za-z0-9]{1,50}$"
     );
     
     // 工号正则表达式 - 通常为数字或字母数字组合
@@ -195,7 +195,7 @@ public class ValidationUtil {
         
         // 验证学号
         if (!isValidStudentNo(student.getStudentNo())) {
-            return "学号格式不正确，请输入6-20位字母数字组合";
+            return "学号格式不正确，请输入1-50位字母数字组合";
         }
         
         // 验证姓名

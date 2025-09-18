@@ -1,6 +1,7 @@
 package server.net;
 
 import server.util.DatabaseUtil;
+import server.util.ServerConfigUtil;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -14,7 +15,6 @@ import java.util.concurrent.Executors;
  * 负责启动服务器，监听客户端连接，管理客户端会话
  */
 public class VCampusServer {
-    private static final int DEFAULT_PORT = 8888;
     private final int port;
     private ServerSocket serverSocket;
     private ExecutorService threadPool;
@@ -25,7 +25,7 @@ public class VCampusServer {
     private final ConcurrentHashMap<Socket, ClientHandler> clientHandlers = new ConcurrentHashMap<>();
     
     public VCampusServer() {
-        this(DEFAULT_PORT);
+        this(ServerConfigUtil.getServerPort());
     }
     
     public VCampusServer(int port) {
@@ -232,16 +232,18 @@ public class VCampusServer {
      * 主方法：启动服务器
      */
     public static void main(String[] args) {
-        int port = DEFAULT_PORT;
+        int port = ServerConfigUtil.getServerPort();
         
-        // 解析命令行参数
+        // 解析命令行参数（命令行参数优先级高于配置文件）
         if (args.length > 0) {
             try {
                 port = Integer.parseInt(args[0]);
+                System.out.println("使用命令行参数指定的端口: " + port);
             } catch (NumberFormatException e) {
-                System.err.println("无效的端口号，使用默认端口: " + DEFAULT_PORT);
-                port = DEFAULT_PORT;
+                System.err.println("无效的端口号，使用配置文件中的端口: " + port);
             }
+        } else {
+            System.out.println("使用配置文件中的端口: " + port);
         }
         
         VCampusServer server = new VCampusServer(port);

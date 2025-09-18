@@ -204,23 +204,23 @@ public class StudentManagementPanel extends JPanel {
         
         // 添加按钮
         addButton = new JButton("添加学生");
-        stylePrimaryButton(addButton);
+        styleButton(addButton, ButtonType.PRIMARY);
         addButton.setPreferredSize(new Dimension(110, UITheme.BUTTON_HEIGHT));
         
         editButton = new JButton("编辑学生");
-        styleSecondaryButton(editButton);
+        styleButton(editButton, ButtonType.SECONDARY);
         editButton.setPreferredSize(new Dimension(110, UITheme.BUTTON_HEIGHT));
         
         deleteButton = new JButton("删除学生");
-        styleDangerButton(deleteButton);
+        styleButton(deleteButton, ButtonType.DANGER);
         deleteButton.setPreferredSize(new Dimension(110, UITheme.BUTTON_HEIGHT));
         
         refreshButton = new JButton("刷新数据");
-        styleSecondaryButton(refreshButton);
+        styleButton(refreshButton, ButtonType.SECONDARY);
         refreshButton.setPreferredSize(new Dimension(100, UITheme.BUTTON_HEIGHT));
         
         resetPasswordButton = new JButton("重置密码");
-        styleWarningButton(resetPasswordButton);
+        styleButton(resetPasswordButton, ButtonType.WARNING);
         resetPasswordButton.setPreferredSize(new Dimension(110, UITheme.BUTTON_HEIGHT));
         
         // 初始状态设置
@@ -239,114 +239,45 @@ public class StudentManagementPanel extends JPanel {
     }
     
     /**
-     * 样式化主要按钮
+     * 统一的按钮样式设置方法
      */
-    private void stylePrimaryButton(JButton button) {
+    private void styleButton(JButton button, ButtonType type) {
         button.setFont(UITheme.CONTENT_FONT);
-        button.setBackground(UITheme.PRIMARY_GREEN);
-        button.setForeground(UITheme.WHITE);
-        button.setBorder(BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_LARGE, UITheme.PADDING_SMALL, UITheme.PADDING_LARGE));
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // 添加悬停效果
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                button.setBackground(UITheme.HOVER_GREEN);
-            }
-            
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
+        switch (type) {
+            case PRIMARY:
                 button.setBackground(UITheme.PRIMARY_GREEN);
-            }
-        });
-    }
-    
-    /**
-     * 样式化次要按钮
-     */
-    private void styleSecondaryButton(JButton button) {
-        button.setFont(UITheme.CONTENT_FONT);
-        button.setBackground(UITheme.WHITE);
-        button.setForeground(UITheme.DARK_GRAY);
-        button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
-            BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_LARGE, UITheme.PADDING_SMALL, UITheme.PADDING_LARGE)
-        ));
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // 添加悬停效果
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                button.setBackground(UITheme.VERY_LIGHT_GREEN);
-                button.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(UITheme.LIGHT_GREEN, 1),
-                    BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_LARGE, UITheme.PADDING_SMALL, UITheme.PADDING_LARGE)
-                ));
-            }
-            
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setForeground(UITheme.WHITE);
+                button.setBorder(BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_LARGE, UITheme.PADDING_SMALL, UITheme.PADDING_LARGE));
+                break;
+            case SECONDARY:
                 button.setBackground(UITheme.WHITE);
+                button.setForeground(UITheme.DARK_GRAY);
                 button.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(UITheme.BORDER_COLOR, 1),
                     BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_LARGE, UITheme.PADDING_SMALL, UITheme.PADDING_LARGE)
                 ));
-            }
-        });
-    }
-    
-    /**
-     * 样式化危险按钮
-     */
-    private void styleDangerButton(JButton button) {
-        button.setFont(UITheme.CONTENT_FONT);
-        button.setBackground(UITheme.ERROR_RED);
-        button.setForeground(UITheme.WHITE);
-        button.setBorder(BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_LARGE, UITheme.PADDING_SMALL, UITheme.PADDING_LARGE));
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // 添加悬停效果
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                button.setBackground(new Color(200, 50, 60)); // 稍浅的红色
-            }
-            
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
+                break;
+            case DANGER:
                 button.setBackground(UITheme.ERROR_RED);
-            }
-        });
+                button.setForeground(UITheme.WHITE);
+                button.setBorder(BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_LARGE, UITheme.PADDING_SMALL, UITheme.PADDING_LARGE));
+                break;
+            case WARNING:
+                button.setBackground(new Color(255, 193, 7));
+                button.setForeground(UITheme.WHITE);
+                button.setBorder(BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_LARGE, UITheme.PADDING_SMALL, UITheme.PADDING_LARGE));
+                break;
+        }
     }
     
     /**
-     * 样式化警告按钮
+     * 按钮类型枚举
      */
-    private void styleWarningButton(JButton button) {
-        button.setFont(UITheme.CONTENT_FONT);
-        button.setBackground(new Color(255, 193, 7)); // 橙色
-        button.setForeground(UITheme.WHITE);
-        button.setBorder(BorderFactory.createEmptyBorder(UITheme.PADDING_SMALL, UITheme.PADDING_LARGE, UITheme.PADDING_SMALL, UITheme.PADDING_LARGE));
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // 添加悬停效果
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                button.setBackground(new Color(255, 180, 0)); // 稍深的橙色
-            }
-            
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                button.setBackground(new Color(255, 193, 7));
-            }
-        });
+    private enum ButtonType {
+        PRIMARY, SECONDARY, DANGER, WARNING
     }
 
     private void setupLayout() {
@@ -391,6 +322,7 @@ public class StudentManagementPanel extends JPanel {
             
             connection.setMessageListener(MessageType.GET_ALL_STUDENTS_SUCCESS, message -> {
                 SwingUtilities.invokeLater(() -> {
+                    @SuppressWarnings("unchecked")
                     List<StudentVO> students = (List<StudentVO>) message.getData();
                     if (students != null) {
                         updateStudentTable(students);
@@ -645,7 +577,6 @@ public class StudentManagementPanel extends JPanel {
                     JOptionPane.showMessageDialog(this, "学生信息更新失败: " + message.getData(), "错误", JOptionPane.ERROR_MESSAGE);
                 });
             });
-            
             connection.sendMessage(request);
         } else {
             JOptionPane.showMessageDialog(this, "服务器连接异常", "错误", JOptionPane.ERROR_MESSAGE);

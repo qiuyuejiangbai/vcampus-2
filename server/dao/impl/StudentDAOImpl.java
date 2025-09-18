@@ -120,26 +120,67 @@ public class StudentDAOImpl implements StudentDAO {
     
     @Override
     public boolean update(StudentVO student) {
-        // 只更新允许修改的字段：姓名、出生日期、联系电话、邮箱、家庭住址
-        String sql = "UPDATE students SET name = ?, birth_date = ?, phone = ?, email = ?, address = ? WHERE student_id = ?";
+        System.out.println("[DEBUG][StudentDAOImpl] ========== 开始更新学生信息 ==========");
+        System.out.println("[DEBUG][StudentDAOImpl] 学生ID=" + student.getId() + ", 用户ID=" + student.getUserId());
+        System.out.println("[DEBUG][StudentDAOImpl] 基本信息：name=" + student.getName() + ", phone=" + student.getPhone() + ", email=" + student.getEmail());
+        System.out.println("[DEBUG][StudentDAOImpl] 专业信息：studentNo=" + student.getStudentNo() + ", department=" + student.getDepartment() + ", class=" + student.getClassName() + ", major=" + student.getMajor());
+        
+        // 更新所有必要的字段：姓名、学号、出生日期、联系电话、邮箱、家庭住址、院系、班级、专业、年级、入学年份、账户余额
+        String sql = "UPDATE students SET name = ?, student_no = ?, birth_date = ?, phone = ?, email = ?, address = ?, department = ?, class_name = ?, major = ?, grade = ?, enrollment_year = ?, balance = ?, updated_time = CURRENT_TIMESTAMP WHERE student_id = ?";
         Connection conn = null;
         PreparedStatement pstmt = null;
         
         try {
+            System.out.println("[DEBUG][StudentDAOImpl] 获取数据库连接");
             conn = DatabaseUtil.getConnection();
+            if (conn == null) {
+                System.err.println("[DEBUG][StudentDAOImpl] 数据库连接获取失败");
+                return false;
+            }
+            
+            System.out.println("[DEBUG][StudentDAOImpl] 准备SQL语句：" + sql);
             pstmt = conn.prepareStatement(sql);
             
+            System.out.println("[DEBUG][StudentDAOImpl] 设置SQL参数：");
             pstmt.setString(1, student.getName());
-            pstmt.setDate(2, student.getBirthDate());
-            pstmt.setString(3, student.getPhone());
-            pstmt.setString(4, student.getEmail());
-            pstmt.setString(5, student.getAddress());
-            pstmt.setInt(6, student.getStudentId());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数1 (name): " + student.getName());
+            pstmt.setString(2, student.getStudentNo());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数2 (student_no): " + student.getStudentNo());
+            pstmt.setDate(3, student.getBirthDate());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数3 (birth_date): " + student.getBirthDate());
+            pstmt.setString(4, student.getPhone());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数4 (phone): " + student.getPhone());
+            pstmt.setString(5, student.getEmail());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数5 (email): " + student.getEmail());
+            pstmt.setString(6, student.getAddress());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数6 (address): " + student.getAddress());
+            pstmt.setString(7, student.getDepartment());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数7 (department): " + student.getDepartment());
+            pstmt.setString(8, student.getClassName());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数8 (class_name): " + student.getClassName());
+            pstmt.setString(9, student.getMajor());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数9 (major): " + student.getMajor());
+            pstmt.setString(10, student.getGrade());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数10 (grade): " + student.getGrade());
+            pstmt.setObject(11, student.getEnrollmentYear());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数11 (enrollment_year): " + student.getEnrollmentYear());
+            pstmt.setBigDecimal(12, student.getBalance());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数12 (balance): " + student.getBalance());
+            pstmt.setInt(13, student.getStudentId());
+            System.out.println("[DEBUG][StudentDAOImpl] - 参数13 (student_id): " + student.getStudentId());
             
+            System.out.println("[DEBUG][StudentDAOImpl] 执行SQL更新操作");
             int affectedRows = pstmt.executeUpdate();
-            return affectedRows > 0;
+            System.out.println("[DEBUG][StudentDAOImpl] SQL执行完成，影响行数: " + affectedRows);
+            
+            boolean success = affectedRows > 0;
+            System.out.println("[DEBUG][StudentDAOImpl] 更新结果：" + success);
+            System.out.println("[DEBUG][StudentDAOImpl] ========== 学生信息更新完成 ==========");
+            return success;
         } catch (SQLException e) {
-            System.err.println("更新学生失败: " + e.getMessage());
+            System.err.println("[DEBUG][StudentDAOImpl] 更新学生失败: " + e.getMessage());
+            System.err.println("[DEBUG][StudentDAOImpl] SQL错误代码: " + e.getErrorCode());
+            System.err.println("[DEBUG][StudentDAOImpl] SQL状态: " + e.getSQLState());
             e.printStackTrace();
             return false;
         } finally {

@@ -111,9 +111,13 @@ public class StudentDashboardUI extends JFrame {
     private void initStructure() {
         sideNav.setNavListener(new SideNav.NavListener() {
             @Override public void onNavSelected(String key) {
-                contentHost.showPage(key);
+                // 使用淡入淡出动画切换页面
+                contentHost.showPageAnimated(key, client.ui.dashboard.layout.ContentHost.TransitionType.FADE);
                 client.ui.api.IModuleView m = ModuleRegistry.findByKey(key);
                 if (m != null) appBar.setModuleName(m.getDisplayName());
+                
+                // 页面切换时刷新头像显示，确保从服务器获取最新头像
+                refreshAvatarsOnPageSwitch(key);
             }
         });
         
@@ -127,6 +131,64 @@ public class StudentDashboardUI extends JFrame {
      */
     public void refreshUserInfo() {
         sideNav.refreshAvatar();
+    }
+    
+    /**
+     * 页面切换时刷新头像显示
+     * @param pageKey 页面键值
+     */
+    private void refreshAvatarsOnPageSwitch(String pageKey) {
+        
+        // 延迟执行，确保页面切换完成
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // 刷新侧边栏头像
+                sideNav.refreshAvatar();
+                
+                // 根据页面类型刷新相应的头像
+                if (ModuleKeys.STUDENT_FORUM.equals(pageKey)) {
+                    // 论坛页面：刷新论坛中的头像显示
+                    refreshForumAvatars();
+                } else if (ModuleKeys.STUDENT_PROFILE.equals(pageKey)) {
+                    // 个人信息页面：刷新个人信息中的头像显示
+                    refreshProfileAvatars();
+                }
+                
+            } catch (Exception e) {
+                System.err.println("[StudentDashboardUI] 刷新头像失败: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+    
+    /**
+     * 刷新论坛页面中的头像
+     */
+    private void refreshForumAvatars() {
+        try {
+            // 获取论坛模块并刷新头像
+            client.ui.api.IModuleView forumModule = ModuleRegistry.findByKey(ModuleKeys.STUDENT_FORUM);
+            if (forumModule instanceof client.ui.modules.StudentForumModule) {
+                ((client.ui.modules.StudentForumModule) forumModule).refreshAllAvatars();
+            }
+        } catch (Exception e) {
+            System.err.println("[StudentDashboardUI] 刷新论坛头像失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 刷新个人信息页面中的头像
+     */
+    private void refreshProfileAvatars() {
+        try {
+            // 获取个人信息模块并刷新头像
+            client.ui.api.IModuleView profileModule = ModuleRegistry.findByKey(ModuleKeys.STUDENT_PROFILE);
+            if (profileModule instanceof client.ui.modules.StudentProfileModule) {
+                ((client.ui.modules.StudentProfileModule) profileModule).refreshAvatarDisplay();
+            }
+        } catch (Exception e) {
+            System.err.println("[StudentDashboardUI] 刷新个人信息头像失败: " + e.getMessage());
+        }
     }
 
     private void initModules() {
@@ -162,7 +224,6 @@ public class StudentDashboardUI extends JFrame {
             // 如果模块实现了AvatarUpdateListener接口，注册为头像更新监听器
             if (m instanceof client.ui.dashboard.layout.SideNav.AvatarUpdateListener) {
                 sideNav.addAvatarUpdateListener((client.ui.dashboard.layout.SideNav.AvatarUpdateListener) m);
-                System.out.println("[StudentDashboardUI] 已注册头像更新监听器: " + m.getDisplayName());
             }
         }
         // 默认显示学籍管理模块

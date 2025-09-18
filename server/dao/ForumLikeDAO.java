@@ -107,16 +107,8 @@ public class ForumLikeDAO {
      * @return 点赞数量
      */
     public int getLikeCount(String entityType, int entityId) {
-        String sql;
-        if ("thread".equals(entityType)) {
-            // 从forum_threads表读取like_count字段，这样更可靠
-            sql = "SELECT like_count FROM forum_threads WHERE thread_id = ?";
-        } else if ("post".equals(entityType)) {
-            // 从forum_posts表读取like_count字段
-            sql = "SELECT like_count FROM forum_posts WHERE post_id = ?";
-        } else {
-            return 0;
-        }
+        // 直接从forum_likes表实时计算点赞数量，确保数据一致性
+        String sql = "SELECT COUNT(*) FROM forum_likes WHERE entity_type = ? AND entity_id = ?";
         
         Connection conn = null;
         PreparedStatement ps = null;
@@ -125,12 +117,40 @@ public class ForumLikeDAO {
         try {
             conn = DatabaseUtil.getConnection();
             ps = conn.prepareStatement(sql);
-            ps.setInt(1, entityId);
+            ps.setString(1, entityType);
+            ps.setInt(2, entityId);
             rs = ps.executeQuery();
             
             if (rs.next()) {
                 int count = rs.getInt(1);
                 System.out.println("[Forum][DAO] 获取点赞数量: entityType=" + entityType + ", entityId=" + entityId + ", count=" + count);
+                
+                // 同时查询forum_threads表中的like_count字段进行对比
+                if (entityType.equals("thread")) {
+                    String threadSql = "SELECT like_count FROM forum_threads WHERE thread_id = ?";
+                    try (PreparedStatement threadPs = conn.prepareStatement(threadSql)) {
+                        threadPs.setInt(1, entityId);
+                        try (ResultSet threadRs = threadPs.executeQuery()) {
+                            if (threadRs.next()) {
+                                int threadCount = threadRs.getInt(1);
+                                System.out.println("[Forum][DAO] 对比forum_threads表中的like_count: threadId=" + entityId + ", threadCount=" + threadCount + ", forum_likesCount=" + count);
+                                
+                                // 如果数据不一致，强制同步
+                                if (threadCount != count) {
+                                    System.out.println("[Forum][DAO] 发现数据不一致，强制同步: threadId=" + entityId + ", 将threadCount从" + threadCount + "更新为" + count);
+                                    String syncSql = "UPDATE forum_threads SET like_count = ? WHERE thread_id = ?";
+                                    try (PreparedStatement syncPs = conn.prepareStatement(syncSql)) {
+                                        syncPs.setInt(1, count);
+                                        syncPs.setInt(2, entityId);
+                                        int syncAffected = syncPs.executeUpdate();
+                                        System.out.println("[Forum][DAO] 数据同步完成: affected=" + syncAffected);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 return count;
             }
         } catch (SQLException e) {
@@ -209,6 +229,8 @@ public class ForumLikeDAO {
             conn = DatabaseUtil.getConnection();
             conn.setAutoCommit(false); // 开启事务
             
+            System.out.println("[Forum][DAO] 开始切换点赞状态: entityType=" + entityType + ", entityId=" + entityId + ", userId=" + userId);
+            
             // 在同一个事务中检查是否已点赞，避免死锁
             String checkSql = "SELECT COUNT(*) FROM forum_likes WHERE entity_type = ? AND entity_id = ? AND user_id = ?";
             ps = conn.prepareStatement(checkSql);
@@ -223,43 +245,71 @@ public class ForumLikeDAO {
                 }
             }
             
+            System.out.println("[Forum][DAO] 当前点赞状态: isLiked=" + isLiked);
+            
             if (isLiked) {
                 // 已点赞，执行取消点赞
+                System.out.println("[Forum][DAO] 执行取消点赞操作");
                 String deleteSql = "DELETE FROM forum_likes WHERE entity_type = ? AND entity_id = ? AND user_id = ?";
-                ps = conn.prepareStatement(deleteSql);
-                ps.setString(1, entityType);
-                ps.setInt(2, entityId);
-                ps.setInt(3, userId);
-                
-                int affected = ps.executeUpdate();
-                if (affected > 0) {
-                    // 在同一个事务中更新点赞数量
-                    if ("thread".equals(entityType)) {
-                        updateThreadLikeCountInTransaction(conn, entityId);
-                    } else if ("post".equals(entityType)) {
-                        updatePostLikeCountInTransaction(conn, entityId);
+                try (PreparedStatement deletePs = conn.prepareStatement(deleteSql)) {
+                    deletePs.setString(1, entityType);
+                    deletePs.setInt(2, entityId);
+                    deletePs.setInt(3, userId);
+                    
+                    int affected = deletePs.executeUpdate();
+                    System.out.println("[Forum][DAO] 删除点赞记录: affected=" + affected);
+                    if (affected > 0) {
+                        // 同步更新对应表的like_count字段
+                        if (entityType.equals("thread")) {
+                            updateThreadLikeCountInTransaction(conn, entityId);
+                        } else if (entityType.equals("post")) {
+                            updatePostLikeCountInTransaction(conn, entityId);
+                        }
+                        conn.commit();
+                        System.out.println("[Forum][DAO] 取消点赞成功，事务已提交");
+                        
+                        // 强制刷新数据库连接，确保数据一致性
+                        try {
+                            conn.setAutoCommit(true);
+                            conn.setAutoCommit(false);
+                        } catch (SQLException e) {
+                            System.err.println("刷新数据库连接失败: " + e.getMessage());
+                        }
+                        
+                        return false; // 取消点赞成功
                     }
-                    conn.commit();
-                    return false; // 取消点赞成功
                 }
             } else {
                 // 未点赞，执行点赞
+                System.out.println("[Forum][DAO] 执行点赞操作");
                 String insertSql = "INSERT INTO forum_likes (entity_type, entity_id, user_id, created_time) VALUES (?, ?, ?, NOW())";
-                ps = conn.prepareStatement(insertSql);
-                ps.setString(1, entityType);
-                ps.setInt(2, entityId);
-                ps.setInt(3, userId);
-                
-                int affected = ps.executeUpdate();
-                if (affected > 0) {
-                    // 在同一个事务中更新点赞数量
-                    if ("thread".equals(entityType)) {
-                        updateThreadLikeCountInTransaction(conn, entityId);
-                    } else if ("post".equals(entityType)) {
-                        updatePostLikeCountInTransaction(conn, entityId);
+                try (PreparedStatement insertPs = conn.prepareStatement(insertSql)) {
+                    insertPs.setString(1, entityType);
+                    insertPs.setInt(2, entityId);
+                    insertPs.setInt(3, userId);
+                    
+                    int affected = insertPs.executeUpdate();
+                    System.out.println("[Forum][DAO] 插入点赞记录: affected=" + affected);
+                    if (affected > 0) {
+                        // 同步更新对应表的like_count字段
+                        if (entityType.equals("thread")) {
+                            updateThreadLikeCountInTransaction(conn, entityId);
+                        } else if (entityType.equals("post")) {
+                            updatePostLikeCountInTransaction(conn, entityId);
+                        }
+                        conn.commit();
+                        System.out.println("[Forum][DAO] 点赞成功，事务已提交");
+                        
+                        // 强制刷新数据库连接，确保数据一致性
+                        try {
+                            conn.setAutoCommit(true);
+                            conn.setAutoCommit(false);
+                        } catch (SQLException e) {
+                            System.err.println("刷新数据库连接失败: " + e.getMessage());
+                        }
+                        
+                        return true; // 点赞成功
                     }
-                    conn.commit();
-                    return true; // 点赞成功
                 }
             }
             
@@ -295,13 +345,41 @@ public class ForumLikeDAO {
      * @return true表示成功，false表示失败
      */
     private boolean updateThreadLikeCountInTransaction(Connection conn, int threadId) {
-        String sql = "UPDATE forum_threads SET like_count = (SELECT COUNT(*) FROM forum_likes WHERE entity_type = 'thread' AND entity_id = ?) WHERE thread_id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, threadId);
-            ps.setInt(2, threadId);
-            int affected = ps.executeUpdate();
-            System.out.println("[Forum][DAO] 在事务中更新主题点赞数量: threadId=" + threadId + ", affected=" + affected);
-            return affected > 0;
+        // 先查询当前的点赞数量
+        String countSql = "SELECT COUNT(*) FROM forum_likes WHERE entity_type = 'thread' AND entity_id = ?";
+        try (PreparedStatement countPs = conn.prepareStatement(countSql)) {
+            countPs.setInt(1, threadId);
+            try (ResultSet rs = countPs.executeQuery()) {
+                int likeCount = 0;
+                if (rs.next()) {
+                    likeCount = rs.getInt(1);
+                }
+                
+                System.out.println("[Forum][DAO] 事务中查询到点赞数量: threadId=" + threadId + ", likeCount=" + likeCount);
+                
+                // 更新点赞数量
+                String updateSql = "UPDATE forum_threads SET like_count = ? WHERE thread_id = ?";
+                try (PreparedStatement updatePs = conn.prepareStatement(updateSql)) {
+                    updatePs.setInt(1, likeCount);
+                    updatePs.setInt(2, threadId);
+                    int affected = updatePs.executeUpdate();
+                    System.out.println("[Forum][DAO] 在事务中更新主题点赞数量: threadId=" + threadId + ", likeCount=" + likeCount + ", affected=" + affected);
+                    
+                    // 验证更新后的值
+                    String verifySql = "SELECT like_count FROM forum_threads WHERE thread_id = ?";
+                    try (PreparedStatement verifyPs = conn.prepareStatement(verifySql)) {
+                        verifyPs.setInt(1, threadId);
+                        try (ResultSet verifyRs = verifyPs.executeQuery()) {
+                            if (verifyRs.next()) {
+                                int actualCount = verifyRs.getInt(1);
+                                System.out.println("[Forum][DAO] 验证更新后的点赞数量: threadId=" + threadId + ", actualCount=" + actualCount);
+                            }
+                        }
+                    }
+                    
+                    return affected > 0;
+                }
+            }
         } catch (SQLException e) {
             System.err.println("在事务中更新主题点赞数量失败: " + e.getMessage());
             return false;
@@ -315,12 +393,26 @@ public class ForumLikeDAO {
      * @return true表示成功，false表示失败
      */
     private boolean updatePostLikeCountInTransaction(Connection conn, int postId) {
-        String sql = "UPDATE forum_posts SET like_count = (SELECT COUNT(*) FROM forum_likes WHERE entity_type = 'post' AND entity_id = ?) WHERE post_id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, postId);
-            ps.setInt(2, postId);
-            int affected = ps.executeUpdate();
-            return affected > 0;
+        // 先查询当前的点赞数量
+        String countSql = "SELECT COUNT(*) FROM forum_likes WHERE entity_type = 'post' AND entity_id = ?";
+        try (PreparedStatement countPs = conn.prepareStatement(countSql)) {
+            countPs.setInt(1, postId);
+            try (ResultSet rs = countPs.executeQuery()) {
+                int likeCount = 0;
+                if (rs.next()) {
+                    likeCount = rs.getInt(1);
+                }
+                
+                // 更新点赞数量
+                String updateSql = "UPDATE forum_posts SET like_count = ? WHERE post_id = ?";
+                try (PreparedStatement updatePs = conn.prepareStatement(updateSql)) {
+                    updatePs.setInt(1, likeCount);
+                    updatePs.setInt(2, postId);
+                    int affected = updatePs.executeUpdate();
+                    System.out.println("[Forum][DAO] 在事务中更新回复点赞数量: postId=" + postId + ", likeCount=" + likeCount + ", affected=" + affected);
+                    return affected > 0;
+                }
+            }
         } catch (SQLException e) {
             System.err.println("在事务中更新回复点赞数量失败: " + e.getMessage());
             return false;

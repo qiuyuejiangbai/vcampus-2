@@ -480,4 +480,13 @@ public class UserService {
     public byte[] getAvatarData(String avatarPath) {
         return avatarService.getAvatarData(avatarPath);
     }
+    
+    /**
+     * 下载头像文件数据
+     * @param avatarPath 头像路径
+     * @return 文件数据，失败返回null
+     */
+    public byte[] downloadAvatar(String avatarPath) {
+        return avatarService.getAvatarData(avatarPath);
+    }
 }

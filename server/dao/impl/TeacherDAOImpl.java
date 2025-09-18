@@ -118,8 +118,7 @@ public class TeacherDAOImpl implements TeacherDAO {
         System.out.println("[DEBUG][TeacherDAOImpl] 专业信息：teacherNo=" + teacher.getTeacherNo() + ", title=" + teacher.getTitle() + ", office=" + teacher.getOffice() + ", researchArea=" + teacher.getResearchArea());
         
         Connection conn = null;
-        PreparedStatement pstmt1 = null;
-        PreparedStatement pstmt2 = null;
+        PreparedStatement pstmt = null;
         
         try {
             System.out.println("[DEBUG][TeacherDAOImpl] 获取数据库连接");
@@ -131,40 +130,31 @@ public class TeacherDAOImpl implements TeacherDAO {
             System.out.println("[DEBUG][TeacherDAOImpl] 数据库连接获取成功，开启事务");
             conn.setAutoCommit(false); // 开启事务
             
-            // 更新teachers表的基本信息（name, phone, email字段在teachers表中）
-            String teacherBasicSql = "UPDATE teachers SET name = ?, phone = ?, email = ?, updated_time = CURRENT_TIMESTAMP WHERE teacher_id = ?";
-            System.out.println("[DEBUG][TeacherDAOImpl] 准备teachers表基本信息更新SQL：" + teacherBasicSql);
-            pstmt1 = conn.prepareStatement(teacherBasicSql);
-            pstmt1.setString(1, teacher.getName());
-            pstmt1.setString(2, teacher.getPhone());
-            pstmt1.setString(3, teacher.getEmail());
-            pstmt1.setInt(4, teacher.getId());
-            System.out.println("[DEBUG][TeacherDAOImpl] teachers表基本信息更新参数：name=" + teacher.getName() + ", phone=" + teacher.getPhone() + ", email=" + teacher.getEmail() + ", teacherId=" + teacher.getId());
-            
-            int teacherBasicRows = pstmt1.executeUpdate();
-            System.out.println("[DEBUG][TeacherDAOImpl] teachers表基本信息更新影响行数：" + teacherBasicRows);
-            
-            // 更新teachers表的专业信息
-            String teacherSql = "UPDATE teachers SET teacher_no = ?, title = ?, office = ?, research_area = ?, balance = ?, updated_time = CURRENT_TIMESTAMP WHERE teacher_id = ?";
+            // 一次性更新teachers表的所有字段
+            String teacherSql = "UPDATE teachers SET name = ?, teacher_no = ?, phone = ?, email = ?, department = ?, title = ?, office = ?, research_area = ?, balance = ?, updated_time = CURRENT_TIMESTAMP WHERE teacher_id = ?";
             System.out.println("[DEBUG][TeacherDAOImpl] 准备teachers表更新SQL：" + teacherSql);
-            pstmt2 = conn.prepareStatement(teacherSql);
-            pstmt2.setString(1, teacher.getTeacherNo());
-            pstmt2.setString(2, teacher.getTitle());
-            pstmt2.setString(3, teacher.getOffice());
-            pstmt2.setString(4, teacher.getResearchArea());
-            pstmt2.setBigDecimal(5, teacher.getBalance() != null ? teacher.getBalance() : java.math.BigDecimal.ZERO);
-            pstmt2.setInt(6, teacher.getId());
-            System.out.println("[DEBUG][TeacherDAOImpl] teachers表专业信息更新参数：teacherNo=" + teacher.getTeacherNo() + ", title=" + teacher.getTitle() + ", office=" + teacher.getOffice() + ", researchArea=" + teacher.getResearchArea() + ", balance=" + (teacher.getBalance() != null ? teacher.getBalance() : java.math.BigDecimal.ZERO) + ", teacherId=" + teacher.getId());
+            pstmt = conn.prepareStatement(teacherSql);
+            pstmt.setString(1, teacher.getName());
+            pstmt.setString(2, teacher.getTeacherNo());
+            pstmt.setString(3, teacher.getPhone());
+            pstmt.setString(4, teacher.getEmail());
+            pstmt.setString(5, teacher.getDepartment());
+            pstmt.setString(6, teacher.getTitle());
+            pstmt.setString(7, teacher.getOffice());
+            pstmt.setString(8, teacher.getResearchArea());
+            pstmt.setBigDecimal(9, teacher.getBalance() != null ? teacher.getBalance() : java.math.BigDecimal.ZERO);
+            pstmt.setInt(10, teacher.getId());
+            System.out.println("[DEBUG][TeacherDAOImpl] teachers表更新参数：name=" + teacher.getName() + ", teacherNo=" + teacher.getTeacherNo() + ", phone=" + teacher.getPhone() + ", email=" + teacher.getEmail() + ", department=" + teacher.getDepartment() + ", title=" + teacher.getTitle() + ", office=" + teacher.getOffice() + ", researchArea=" + teacher.getResearchArea() + ", balance=" + (teacher.getBalance() != null ? teacher.getBalance() : java.math.BigDecimal.ZERO) + ", teacherId=" + teacher.getId());
             
-            int teacherRows = pstmt2.executeUpdate();
+            int teacherRows = pstmt.executeUpdate();
             System.out.println("[DEBUG][TeacherDAOImpl] teachers表更新影响行数：" + teacherRows);
             
             // 提交事务
             System.out.println("[DEBUG][TeacherDAOImpl] 提交事务");
             conn.commit();
-            System.out.println("[DEBUG][TeacherDAOImpl] 事务提交成功，teacherBasicRows=" + teacherBasicRows + ", teacherRows=" + teacherRows);
+            System.out.println("[DEBUG][TeacherDAOImpl] 事务提交成功，teacherRows=" + teacherRows);
             
-            boolean success = teacherBasicRows > 0 && teacherRows > 0;
+            boolean success = teacherRows > 0;
             System.out.println("[DEBUG][TeacherDAOImpl] 更新结果：" + success);
             System.out.println("[DEBUG][TeacherDAOImpl] ========== 教师信息更新完成 ==========");
             return success;
@@ -185,15 +175,7 @@ public class TeacherDAOImpl implements TeacherDAO {
             return false;
         } finally {
             System.out.println("[DEBUG][TeacherDAOImpl] 释放数据库资源");
-            DatabaseUtil.closeAll(conn, pstmt1, null);
-            if (pstmt2 != null) {
-                try { 
-                    pstmt2.close(); 
-                    System.out.println("[DEBUG][TeacherDAOImpl] pstmt2已关闭");
-                } catch (SQLException ignored) {
-                    System.err.println("[DEBUG][TeacherDAOImpl] 关闭pstmt2时发生异常");
-                }
-            }
+            DatabaseUtil.closeAll(conn, pstmt, null);
         }
     }
     

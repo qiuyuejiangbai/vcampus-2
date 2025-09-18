@@ -42,7 +42,6 @@ public class AvatarService {
             Path avatarDir = Paths.get(AVATAR_DIR);
             if (!Files.exists(avatarDir)) {
                 Files.createDirectories(avatarDir);
-                System.out.println("创建头像存储目录: " + avatarDir.toAbsolutePath());
             }
         } catch (IOException e) {
             System.err.println("创建头像存储目录失败: " + e.getMessage());
@@ -89,7 +88,6 @@ public class AvatarService {
             boolean updated = userDAO.updateAvatarPath(userId, relativePath);
             
             if (updated) {
-                System.out.println("头像上传成功: " + avatarPath.toAbsolutePath());
                 return relativePath;
             } else {
                 // 如果数据库更新失败，删除已保存的文件
@@ -171,11 +169,9 @@ public class AvatarService {
                 boolean updated = userDAO.updateAvatarPath(user.getUserId(), DEFAULT_AVATAR_PATH);
                 if (updated) {
                     updatedCount++;
-                    System.out.println("为用户 " + user.getLoginId() + " 设置默认头像路径");
                 }
             }
             
-            System.out.println("批量更新完成，共更新 " + updatedCount + " 个用户的头像路径");
             return updatedCount;
         } catch (Exception e) {
             System.err.println("批量更新用户头像路径失败: " + e.getMessage());
@@ -233,17 +229,72 @@ public class AvatarService {
         }
         
         try {
-            Path path = Paths.get(avatarPath);
+            // 处理路径格式问题
+            String normalizedPath = normalizeAvatarPath(avatarPath);
+            
+            Path path = Paths.get(normalizedPath);
             if (Files.exists(path)) {
                 return Files.readAllBytes(path);
             } else {
-                System.err.println("头像文件不存在: " + path.toAbsolutePath());
+                System.err.println("[AvatarService] 头像文件不存在: " + path.toAbsolutePath());
+                
+                // 尝试其他可能的路径格式
+                String[] possiblePaths = generatePossiblePaths(avatarPath);
+                for (String possiblePath : possiblePaths) {
+                    Path testPath = Paths.get(possiblePath);
+                    if (Files.exists(testPath)) {
+                        return Files.readAllBytes(testPath);
+                    }
+                }
+                
+                System.err.println("[AvatarService] 所有可能的头像路径都不存在");
                 return null;
             }
         } catch (IOException e) {
-            System.err.println("读取头像文件失败: " + e.getMessage());
+            System.err.println("[AvatarService] 读取头像文件失败: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
+    }
+    
+    /**
+     * 标准化头像路径
+     * @param avatarPath 原始头像路径
+     * @return 标准化后的路径
+     */
+    private String normalizeAvatarPath(String avatarPath) {
+        // 如果路径已经包含resources/，直接返回
+        if (avatarPath.startsWith("resources/")) {
+            return avatarPath;
+        }
+        
+        // 如果路径以avatars/开头，添加resources/前缀
+        if (avatarPath.startsWith("avatars/")) {
+            return "resources/" + avatarPath;
+        }
+        
+        // 如果路径不包含目录分隔符，假设它在avatars目录下
+        if (!avatarPath.contains("/") && !avatarPath.contains("\\")) {
+            return "resources/avatars/" + avatarPath;
+        }
+        
+        // 其他情况，尝试添加resources/前缀
+        return "resources/" + avatarPath;
+    }
+    
+    /**
+     * 生成可能的头像路径列表
+     * @param avatarPath 原始头像路径
+     * @return 可能的路径数组
+     */
+    private String[] generatePossiblePaths(String avatarPath) {
+        return new String[]{
+            avatarPath,  // 原始路径
+            "resources/" + avatarPath,  // 添加resources前缀
+            avatarPath.replace("avatars/", "resources/avatars/"),  // 确保有resources前缀
+            avatarPath.replace("avatars\\", "resources/avatars/"),  // 处理Windows路径分隔符
+            "resources/avatars/" + avatarPath,  // 假设在avatars目录下
+            "avatars/" + avatarPath,  // 假设在avatars目录下
+        };
     }
 }

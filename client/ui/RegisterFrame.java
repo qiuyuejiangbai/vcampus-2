@@ -113,7 +113,7 @@ public class RegisterFrame extends JFrame {
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
         "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
-    private static final Pattern STUDENT_ID_PATTERN = Pattern.compile("^\\d{8,12}$");
+    private static final Pattern STUDENT_ID_PATTERN = Pattern.compile("^[A-Za-z0-9]{1,50}$");
     
     // ==================== 用户类型选项 ====================
     
@@ -1244,7 +1244,7 @@ public class RegisterFrame extends JFrame {
         if (studentId.isEmpty()) {
             showFieldError(studentIdErrorLabel, "学号/工号不能为空");
         } else if (!STUDENT_ID_PATTERN.matcher(studentId).matches()) {
-            showFieldError(studentIdErrorLabel, "学号/工号应为8-12位数字");
+            showFieldError(studentIdErrorLabel, "学号/工号应为1-50位字母数字组合");
         } else {
             hideFieldError(studentIdErrorLabel);
         }

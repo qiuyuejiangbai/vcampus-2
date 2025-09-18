@@ -1,6 +1,7 @@
 package client.ui.dashboard.layout;
 
 import client.ui.util.FontUtil;
+import client.ui.util.AvatarManager;
 import client.ui.dashboard.components.CircularAvatar;
 import client.controller.StudentController;
 import client.controller.TeacherController;
@@ -17,7 +18,7 @@ import java.awt.event.MouseEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.awt.image.BufferedImage;
-import java.awt.MediaTracker;
+import javax.swing.SwingUtilities;
 import java.awt.RenderingHints;
 import java.awt.LinearGradientPaint;
 import java.awt.AlphaComposite;
@@ -66,6 +67,14 @@ public class SideNav extends JPanel {
         setPreferredSize(new Dimension(expandedWidth, getHeight()));
         this.studentController = new StudentController();
         this.teacherController = new TeacherController();
+    }
+    
+    public SideNav(TeacherController teacherController) {
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setBackground(Color.WHITE); // 改为白色背景
+        setPreferredSize(new Dimension(expandedWidth, getHeight()));
+        this.studentController = new StudentController();
+        this.teacherController = teacherController;
 
         // 使用自定义 Border 在右侧绘制渐变阴影，并通过 Insets 预留空间避免被子组件覆盖
         setBorder(new AbstractBorder() {
@@ -128,7 +137,6 @@ public class SideNav extends JPanel {
      * 通知所有监听器头像已更新
      */
     private void notifyModulesAvatarUpdated(String avatarPath) {
-        System.out.println("[SideNav] 通知模块头像已更新: " + avatarPath);
         for (AvatarUpdateListener listener : avatarUpdateListeners) {
             try {
                 listener.onAvatarUpdated(avatarPath);
@@ -138,6 +146,52 @@ public class SideNav extends JPanel {
             }
         }
     }
+    
+    /**
+     * 刷新所有相关页面的头像显示
+     */
+    private void refreshAllRelatedAvatars() {
+        
+        // 延迟执行，确保头像上传完成
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // 查找父窗口中的TeacherDashboardUI
+                Window parentWindow = SwingUtilities.getWindowAncestor(this);
+                if (parentWindow != null) {
+                    // 通过反射或组件查找来获取TeacherDashboardUI实例
+                    // 这里我们通过查找组件树来找到TeacherDashboardUI
+                    client.ui.dashboard.TeacherDashboardUI dashboardUI = findTeacherDashboardUI(parentWindow);
+                    if (dashboardUI != null) {
+                        // 强制刷新用户信息
+                        dashboardUI.refreshUserInfo();
+                        System.out.println("[SideNav] 已通知TeacherDashboardUI刷新用户信息");
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[SideNav] 刷新相关页面头像失败: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+    
+    /**
+     * 在窗口中查找TeacherDashboardUI组件
+     */
+    private client.ui.dashboard.TeacherDashboardUI findTeacherDashboardUI(Container container) {
+        if (container instanceof client.ui.dashboard.TeacherDashboardUI) {
+            return (client.ui.dashboard.TeacherDashboardUI) container;
+        }
+        
+        for (Component component : container.getComponents()) {
+            if (component instanceof Container) {
+                client.ui.dashboard.TeacherDashboardUI result = findTeacherDashboardUI((Container) component);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
 
     /** 设置顶部需要跳过绘制阴影的像素高度（通常为 AppBar 的高度）。 */
     public void setTopShadowSkipPx(int px) {
@@ -146,16 +200,31 @@ public class SideNav extends JPanel {
     }
     
     public void setCurrentUser(UserVO user) {
+        System.out.println("[DEBUG][SideNav] ========== setCurrentUser被调用 ==========");
+        System.out.println("[DEBUG][SideNav] 传入的user=" + (user != null ? "非null" : "null"));
+        if (user != null) {
+            System.out.println("[DEBUG][SideNav] 用户详情：userId=" + user.getUserId() + 
+                ", loginId=" + user.getLoginId() + ", role=" + user.getRole() + 
+                ", name=" + user.getName() + ", isTeacher=" + user.isTeacher() + 
+                ", isStudent=" + user.isStudent() + ", isAdmin=" + user.isAdmin());
+        }
+        
         this.currentUser = user;
+        System.out.println("[DEBUG][SideNav] 设置currentUser完成，开始初始化用户信息");
         initUserInfo();
         
         // 如果是学生，获取详细信息
         if (user != null && user.isStudent()) {
+            System.out.println("[DEBUG][SideNav] 检测到学生用户，开始加载学生信息");
             loadStudentInfo();
         } else if (user != null && user.isTeacher()) {
             // 教师端：加载教师详细信息
+            System.out.println("[DEBUG][SideNav] 检测到教师用户，开始加载教师信息");
             loadTeacherInfo();
+        } else {
+            System.out.println("[DEBUG][SideNav] 用户角色不是学生或教师，跳过详细信息加载");
         }
+        System.out.println("[DEBUG][SideNav] ========== setCurrentUser完成 ==========");
     }
 
     // 阴影已移至 Border 实现；保持默认背景绘制
@@ -190,15 +259,42 @@ public class SideNav extends JPanel {
             }
             return;
         }
+        
+        System.out.println("[DEBUG][SideNav] 更新学生信息到UI，student=" + (student != null ? "非null" : "null"));
+        if (student != null) {
+            System.out.println("[DEBUG][SideNav] 学生信息详情：姓名=" + student.getName() + 
+                ", 学号=" + student.getStudentNo() + ", 专业=" + student.getMajor());
+        }
+        
         // 姓名以学生档案为准
         if (nameLabel != null && student.getName() != null && !student.getName().trim().isEmpty()) {
             nameLabel.setText(student.getName());
+            System.out.println("[DEBUG][SideNav] 已设置nameLabel为：" + student.getName());
+        } else if (nameLabel != null) {
+            // 如果学生档案中没有姓名，使用学号作为显示
+            String displayName = student.getStudentNo() != null && !student.getStudentNo().trim().isEmpty() 
+                ? student.getStudentNo() : "学生";
+            nameLabel.setText(displayName);
+            System.out.println("[DEBUG][SideNav] 学生档案无姓名，设置nameLabel为：" + displayName);
         }
+        
         // 专业为空则显示"专业未知" [[memory:8117340]]
         if (majorLabel != null) {
             String major = student.getMajor();
             majorLabel.setText(major != null && !major.trim().isEmpty() ? major : "专业未知");
+            System.out.println("[DEBUG][SideNav] 已设置majorLabel为：" + (major != null && !major.trim().isEmpty() ? major : "专业未知"));
         }
+        
+        // 强制重新绘制
+        if (majorLabel != null) {
+            majorLabel.revalidate();
+            majorLabel.repaint();
+        }
+        if (nameLabel != null) {
+            nameLabel.revalidate();
+            nameLabel.repaint();
+        }
+        System.out.println("[DEBUG][SideNav] 学生信息UI更新完成");
     }
     
     private void loadTeacherInfo() {
@@ -220,22 +316,28 @@ public class SideNav extends JPanel {
         teacherController.getTeacherInfo(currentUser.getUserId(), new TeacherController.GetTeacherInfoCallback() {
             @Override
             public void onSuccess(TeacherVO teacher) {
-                System.out.println("[DEBUG][SideNav] 教师信息获取成功，准备更新UI");
+                System.out.println("[DEBUG][SideNav] ========== 教师信息获取成功回调 ==========");
+                System.out.println("[DEBUG][SideNav] 教师数据：" + (teacher != null ? 
+                    ("姓名=" + teacher.getName() + ", 学院=" + teacher.getDepartment() + ", 职称=" + teacher.getTitle()) : "null"));
+                System.out.println("[DEBUG][SideNav] 准备更新UI");
                 SwingUtilities.invokeLater(() -> {
                     updateTeacherInfo(teacher);
                 });
+                System.out.println("[DEBUG][SideNav] ========== 教师信息获取成功回调完成 ==========");
             }
             
             @Override
             public void onFailure(String error) {
                 // 如果获取失败，使用默认信息
-                System.err.println("[DEBUG][SideNav] 获取教师信息失败: " + error);
+                System.err.println("[DEBUG][SideNav] ========== 获取教师信息失败 ==========");
+                System.err.println("[DEBUG][SideNav] 失败原因: " + error);
                 SwingUtilities.invokeLater(() -> {
                     if (majorLabel != null) {
                         majorLabel.setText("教师");
                         System.out.println("[DEBUG][SideNav] 设置默认显示文本：教师");
                     }
                 });
+                System.err.println("[DEBUG][SideNav] ========== 获取教师信息失败处理完成 ==========");
             }
         });
     }
@@ -259,6 +361,12 @@ public class SideNav extends JPanel {
         if (nameLabel != null && teacher.getName() != null && !teacher.getName().trim().isEmpty()) {
             nameLabel.setText(teacher.getName());
             System.out.println("[DEBUG][SideNav] 已设置nameLabel为：" + teacher.getName());
+        } else if (nameLabel != null) {
+            // 如果教师档案中没有姓名，使用工号作为显示
+            String displayName = teacher.getTeacherNo() != null && !teacher.getTeacherNo().trim().isEmpty() 
+                ? teacher.getTeacherNo() : "教师";
+            nameLabel.setText(displayName);
+            System.out.println("[DEBUG][SideNav] 教师档案无姓名，设置nameLabel为：" + displayName);
         }
         
         // 显示学院信息，如果没有学院信息则显示职称或"教师"
@@ -288,6 +396,14 @@ public class SideNav extends JPanel {
     }
 
     private void initUserInfo() {
+        System.out.println("[DEBUG][SideNav] ========== 开始初始化用户信息 ==========");
+        System.out.println("[DEBUG][SideNav] currentUser=" + (currentUser != null ? "非null" : "null"));
+        if (currentUser != null) {
+            System.out.println("[DEBUG][SideNav] 用户信息：userId=" + currentUser.getUserId() + 
+                ", loginId=" + currentUser.getLoginId() + ", role=" + currentUser.getRole() + 
+                ", name=" + currentUser.getName() + ", isTeacher=" + currentUser.isTeacher());
+        }
+        
         // Logo区域 - 固定高度80px
         logoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         logoPanel.setBackground(accentColor);
@@ -318,16 +434,30 @@ public class SideNav extends JPanel {
         avatarLabel.setUploadCallback(new CircularAvatar.AvatarUploadCallback() {
             @Override
             public void onAvatarUploaded(String avatarPath) {
-                // 头像上传成功后，更新头像显示
-                updateAvatarDisplay(avatarPath);
                 
                 // 更新当前用户对象的头像路径
                 if (currentUser != null && avatarPath != null) {
                     currentUser.setAvatarPath(avatarPath);
-                    System.out.println("已更新当前用户头像路径: " + avatarPath);
                     
-                    // 通知相关模块刷新头像显示
-                    notifyModulesAvatarUpdated(avatarPath);
+                    // 延迟一下再更新头像显示，确保文件已保存
+                    SwingUtilities.invokeLater(() -> {
+                        try {
+                            Thread.sleep(500); // 等待500ms确保文件保存完成
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        
+                        SwingUtilities.invokeLater(() -> {
+                            // 立即更新头像显示
+                            updateAvatarDisplay(avatarPath);
+                            
+                            // 通知相关模块刷新头像显示
+                            notifyModulesAvatarUpdated(avatarPath);
+                            
+                            // 强制刷新所有相关页面的头像
+                            refreshAllRelatedAvatars();
+                        });
+                    });
                 }
             }
         });
@@ -344,26 +474,51 @@ public class SideNav extends JPanel {
         textPanel.setBackground(Color.WHITE);
         textPanel.setAlignmentY(Component.CENTER_ALIGNMENT);
         
-        // 姓名
-        String fallbackName = "用户";
+        // 姓名 - 初始显示登录ID，等待异步获取详细信息
+        String initialName = "用户";
         if (currentUser != null && currentUser.getName() != null && !currentUser.getName().trim().isEmpty()) {
-            fallbackName = currentUser.getName();
+            // 优先显示用户档案中的姓名
+            initialName = currentUser.getName();
+            System.out.println("[DEBUG][SideNav] 使用用户档案中的姓名：" + initialName);
+        } else if (currentUser != null && currentUser.getLoginId() != null && !currentUser.getLoginId().trim().isEmpty()) {
+            // 如果没有姓名，显示登录ID
+            initialName = currentUser.getLoginId();
+            System.out.println("[DEBUG][SideNav] 使用登录ID作为初始显示：" + initialName);
+        } else {
+            System.out.println("[DEBUG][SideNav] 使用默认显示文本：" + initialName);
         }
-        nameLabel = new JLabel(fallbackName);
+        nameLabel = new JLabel(initialName);
         nameLabel.setFont(FontUtil.getSourceHanSansFont(Font.BOLD, 15f));
         nameLabel.setForeground(accentColor); // 改为可变强调色
         nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        System.out.println("[DEBUG][SideNav] nameLabel创建完成，显示文本：" + initialName);
         
-        // 第二行：学生为"正在获取专业…"，教师为"正在获取学院…"
+        // 第二行：根据用户角色显示相应信息
         String secondLine = "";
-        if (currentUser != null && currentUser.isStudent()) secondLine = "正在获取专业…";
-        else if (currentUser != null && currentUser.isTeacher()) secondLine = "正在获取学院…";
-        else if (currentUser != null && currentUser.isAdmin()) secondLine = "管理员";
-        else secondLine = "";
+        if (currentUser != null && currentUser.isStudent()) {
+            // 学生显示专业信息，如果没有则显示"学生"
+            if (currentUser.getName() != null && !currentUser.getName().trim().isEmpty()) {
+                secondLine = "学生";
+            } else {
+                secondLine = "正在获取专业…";
+            }
+            System.out.println("[DEBUG][SideNav] 学生用户，第二行显示：" + secondLine);
+        } else if (currentUser != null && currentUser.isTeacher()) {
+            // 教师显示学院信息，如果没有则显示"教师"
+            secondLine = "正在获取学院…";
+            System.out.println("[DEBUG][SideNav] 教师用户，第二行显示：" + secondLine);
+        } else if (currentUser != null && currentUser.isAdmin()) {
+            secondLine = "管理员";
+            System.out.println("[DEBUG][SideNav] 管理员用户，第二行显示：" + secondLine);
+        } else {
+            secondLine = "";
+            System.out.println("[DEBUG][SideNav] 未知用户角色，第二行显示：" + secondLine);
+        }
         majorLabel = new JLabel(secondLine);
         majorLabel.setFont(FontUtil.getSourceHanSansFont(Font.PLAIN, 12f));
         majorLabel.setForeground(accentColor); // 改为可变强调色
         majorLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        System.out.println("[DEBUG][SideNav] majorLabel创建完成，显示文本：" + secondLine);
         
         textPanel.add(nameLabel);
         textPanel.add(Box.createVerticalStrut(4));
@@ -404,8 +559,7 @@ public class SideNav extends JPanel {
             // 如果是默认头像路径，直接加载默认头像图片
             if (currentUser.getAvatarPath().equals("resources/icons/默认头像.png") || 
                 currentUser.getAvatarPath().equals("icons/默认头像.png")) {
-                System.out.println("[SideNav] 用户使用默认头像路径，直接加载默认头像");
-                loadDefaultAvatarImage();
+                setDefaultAvatar();
                 return;
             }
             // 否则尝试加载用户自定义头像
@@ -414,175 +568,99 @@ public class SideNav extends JPanel {
         }
         
         // 没有头像路径，加载默认头像图片
-        System.out.println("[SideNav] 用户没有头像路径，加载默认头像");
-        loadDefaultAvatarImage();
+        setDefaultAvatar();
     }
     
-    /**
-     * 加载默认头像图片
-     */
-    private void loadDefaultAvatarImage() {
-        try {
-            // 尝试多个可能的路径
-            String[] possiblePaths = {
-                "resources/icons/默认头像.png",
-                "icons/默认头像.png",
-                "../resources/icons/默认头像.png",
-                "./resources/icons/默认头像.png"
-            };
-            
-            ImageIcon icon = null;
-            for (String path : possiblePaths) {
-                try {
-                    java.io.File file = new java.io.File(path);
-                    if (file.exists()) {
-                        icon = new ImageIcon(file.getAbsolutePath());
-                        System.out.println("[SideNav] 从文件路径加载默认头像: " + path);
-                        break;
-                    }
-                } catch (Exception e) {
-                    // 继续尝试下一个路径
-                }
-            }
-            
-            // 如果文件路径都失败，尝试从类路径加载
-            if (icon == null) {
-                try {
-                    icon = new ImageIcon(getClass().getClassLoader().getResource("icons/默认头像.png"));
-                    if (icon != null && icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
-                        System.out.println("[SideNav] 从类路径加载默认头像: icons/默认头像.png");
-                    }
-                } catch (Exception e) {
-                    // 尝试其他类路径变体
-                    try {
-                        icon = new ImageIcon(getClass().getClassLoader().getResource("resources/icons/默认头像.png"));
-                        if (icon != null && icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
-                            System.out.println("[SideNav] 从类路径加载默认头像: resources/icons/默认头像.png");
-                        }
-                    } catch (Exception e2) {
-                        // 忽略
-                    }
-                }
-            }
-            
-            if (icon != null && icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
-                Image img = icon.getImage();
-                if (img != null) {
-                    // 与 CircularAvatar(56) 尺寸一致，避免插值裁切
-                    Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
-                    avatarLabel.setAvatarImage(scaledImg);
-                    System.out.println("[SideNav] 成功加载默认头像图片");
-                    return;
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("[SideNav] 加载默认头像图片失败: " + e.getMessage());
-        }
-        
-        // 如果所有方法都失败，使用文字默认头像
-        System.out.println("[SideNav] 使用文字默认头像");
-        avatarLabel.setDefaultText(currentUser != null && currentUser.getName() != null && !currentUser.getName().isEmpty() 
-            ? currentUser.getName().substring(0, 1) : "U");
-    }
     
     /**
      * 更新头像显示
      * @param avatarPath 头像路径
      */
     private void updateAvatarDisplay(String avatarPath) {
-        if (avatarPath == null || avatarPath.trim().isEmpty()) {
-            System.out.println("[SideNav] 头像路径为空，使用默认头像");
-            setDefaultAvatar();
-            return;
-        }
-        
-        // 如果是默认头像路径，直接加载默认头像
-        if (avatarPath.equals("resources/icons/默认头像.png") || 
-            avatarPath.equals("icons/默认头像.png")) {
-            System.out.println("[SideNav] 检测到默认头像路径，直接加载默认头像");
-            loadDefaultAvatarImage();
-            return;
-        }
-        
-        try {
-            // 修复头像路径：如果路径不以resources/开头，则添加resources/前缀
-            String fullAvatarPath = avatarPath;
-            if (!avatarPath.startsWith("resources/")) {
-                fullAvatarPath = "resources/" + avatarPath;
-                System.out.println("[DEBUG][SideNav] 修正头像路径: " + fullAvatarPath);
+        // 使用统一的头像管理器更新头像
+        AvatarManager.updateAvatar(avatarLabel, avatarPath, currentUser != null ? currentUser.getName() : null, new AvatarManager.AvatarUpdateCallback() {
+            @Override
+            public void onAvatarUpdated(Image avatarImage) {
+                // 强制刷新UI
+                avatarLabel.revalidate();
+                avatarLabel.repaint();
             }
             
-            // 尝试加载头像图片
-            java.io.File avatarFile = new java.io.File(fullAvatarPath);
-            if (avatarFile.exists()) {
-                ImageIcon icon = new ImageIcon(avatarFile.getAbsolutePath());
-                Image img = icon.getImage();
-                if (img != null) {
-                    // 缩放图片以适应头像尺寸
-                    Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
-                    avatarLabel.setAvatarImage(scaledImg);
-                    System.out.println("[SideNav] 头像更新成功: " + fullAvatarPath);
-                    return;
-                }
+            @Override
+            public void onUpdateFailed(String errorMessage) {
+                System.err.println("[SideNav] 头像显示更新失败: " + errorMessage);
+                // 强制刷新UI
+                avatarLabel.revalidate();
+                avatarLabel.repaint();
             }
-            
-            // 如果文件不存在或加载失败，尝试其他路径
-            String[] possiblePaths = {
-                avatarPath,
-                "resources/" + avatarPath,
-                "../resources/" + avatarPath,
-                "./resources/" + avatarPath
-            };
-            
-            for (String path : possiblePaths) {
-                java.io.File file = new java.io.File(path);
-                if (file.exists()) {
-                    ImageIcon icon = new ImageIcon(file.getAbsolutePath());
-                    Image img = icon.getImage();
-                    if (img != null) {
-                        Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
-                        avatarLabel.setAvatarImage(scaledImg);
-                        System.out.println("[SideNav] 头像更新成功: " + path);
-                        return;
-                    }
-                }
-            }
-            
-            // 如果所有路径都失败，尝试从类路径加载
-            try {
-                ImageIcon icon = new ImageIcon(getClass().getClassLoader().getResource(avatarPath));
-                if (icon != null && icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
-                    Image img = icon.getImage();
-                    if (img != null) {
-                        Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
-                        avatarLabel.setAvatarImage(scaledImg);
-                        System.out.println("[SideNav] 从类路径加载头像成功: " + avatarPath);
-                        return;
-                    }
-                }
-            } catch (Exception e) {
-                // 忽略类路径加载失败
-            }
-            
-            System.err.println("[SideNav] 无法加载头像文件: " + avatarPath + "，使用默认头像");
-            setDefaultAvatar();
-            
-        } catch (Exception e) {
-            System.err.println("[SideNav] 更新头像显示失败: " + e.getMessage());
-            e.printStackTrace();
-            setDefaultAvatar();
-        }
+        });
     }
+    
+    
     
     /**
      * 刷新头像显示（供外部调用）
      * 当用户信息更新后，可以调用此方法刷新头像显示
      */
     public void refreshAvatar() {
-        if (currentUser != null && currentUser.getAvatarPath() != null && !currentUser.getAvatarPath().trim().isEmpty()) {
-            updateAvatarDisplay(currentUser.getAvatarPath());
-        } else {
-            setDefaultAvatar();
+        
+        String avatarPath = null;
+        String userName = null;
+        
+        if (currentUser != null) {
+            avatarPath = currentUser.getAvatarPath();
+            userName = currentUser.getName();
+        }
+        
+        // 使用统一的头像管理器强制刷新头像
+        AvatarManager.refreshAvatar(avatarLabel, avatarPath, userName, new AvatarManager.AvatarUpdateCallback() {
+            @Override
+            public void onAvatarUpdated(Image avatarImage) {
+                // 强制刷新UI
+                avatarLabel.revalidate();
+                avatarLabel.repaint();
+            }
+            
+            @Override
+            public void onUpdateFailed(String errorMessage) {
+                System.err.println("[SideNav] 头像刷新失败: " + errorMessage);
+                // 强制刷新UI
+                avatarLabel.revalidate();
+                avatarLabel.repaint();
+            }
+        });
+    }
+    
+    /**
+     * 更新当前用户的头像路径（供外部调用）
+     * 当用户头像更新后，可以调用此方法更新侧边栏的头像显示
+     */
+    public void updateUserAvatarPath(String avatarPath) {
+        if (currentUser != null && avatarPath != null) {
+            currentUser.setAvatarPath(avatarPath);
+            updateAvatarDisplay(avatarPath);
+        }
+    }
+    
+    /**
+     * 调试方法：检查头像文件是否存在
+     */
+    private void debugAvatarFile(String avatarPath) {
+        
+        String[] testPaths = {
+            avatarPath,
+            "resources/" + avatarPath,
+            avatarPath.replace("resources/", ""),
+            avatarPath.replace("avatars/", "resources/avatars/"),
+            avatarPath.replace("resources/avatars/", "avatars/"),
+        };
+        
+        for (String path : testPaths) {
+            java.io.File file = new java.io.File(path);
+            System.out.println("[SideNav] 检查路径: " + path + " -> 存在: " + file.exists() + " -> 文件: " + file.isFile());
+            if (file.exists()) {
+                System.out.println("[SideNav] 文件大小: " + file.length() + " bytes");
+            }
         }
     }
 

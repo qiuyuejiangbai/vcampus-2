@@ -8,43 +8,43 @@ USE vcampus;
 
 -- 插入管理员用户认证信息 (密码: admin123)
 INSERT INTO users (login_id, password, role, avatar_path) VALUES 
-('admin', '0192023a7bbd73250516f069df18b500', 2, 'avatars/p (1).jpg');
+('admin', '0192023a7bbd73250516f069df18b500', 2, 'resources/avatars/p (1).jpg');
 
 -- 插入教师用户认证信息 (密码: teacher123)
 INSERT INTO users (login_id, password, role, avatar_path) VALUES 
-('T001', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (2).jpg'),
-('T002', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (3).jpg'),
-('T003', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (4).jpg'),
-('T004', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (5).jpg'),
-('T005', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (6).jpg'),
-('T006', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (7).jpg'),
-('T007', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (8).jpg'),
-('T008', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (9).jpg'),
-('T009', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (10).jpg'),
-('T010', 'a426dcf72ba25d046591f81a5495eab7', 1, 'avatars/p (11).jpg');
+('T001', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (2).jpg'),
+('T002', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (3).jpg'),
+('T003', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (4).jpg'),
+('T004', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (5).jpg'),
+('T005', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (6).jpg'),
+('T006', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (7).jpg'),
+('T007', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (8).jpg'),
+('T008', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (9).jpg'),
+('T009', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (10).jpg'),
+('T010', 'a426dcf72ba25d046591f81a5495eab7', 1, 'resources/avatars/p (11).jpg');
 
 -- 插入学生用户认证信息 (密码: student123)
 INSERT INTO users (login_id, password, role, avatar_path) VALUES 
-('2021001', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (5).jpg'),
-('2021002', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (6).jpg'),
-('2021003', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (7).jpg'),
-('2021004', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (8).jpg'),
-('2021005', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (9).jpg'),
-('2021006', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (10).jpg'),
-('2021007', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (11).jpg'),
-('2021008', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (12).jpg'),
-('2021009', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (13).jpg'),
-('2021010', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (14).jpg'),
-('2021011', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (15).jpg'),
-('2021012', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (16).jpg'),
-('2021013', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (17).jpg'),
-('2021014', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (18).jpg'),
-('2021015', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (19).jpg'),
-('2022001', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (20).jpg'),
-('2022002', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/avatar_5_11330b8aedf14261bb84365a846b8a12.jpg'),
-('2022003', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/avatar_5_45e4d2b994f740e3a2c81791918bb5fd.jpg'),
-('2022004', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (1).jpg'),
-('2022005', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'avatars/p (2).jpg');
+('2021001', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (5).jpg'),
+('2021002', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (6).jpg'),
+('2021003', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (7).jpg'),
+('2021004', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (8).jpg'),
+('2021005', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (9).jpg'),
+('2021006', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (10).jpg'),
+('2021007', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (11).jpg'),
+('2021008', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (12).jpg'),
+('2021009', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (13).jpg'),
+('2021010', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (14).jpg'),
+('2021011', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (15).jpg'),
+('2021012', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (16).jpg'),
+('2021013', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (17).jpg'),
+('2021014', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (18).jpg'),
+('2021015', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (19).jpg'),
+('2022001', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (20).jpg'),
+('2022002', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/avatar_5_11330b8aedf14261bb84365a846b8a12.jpg'),
+('2022003', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/avatar_5_45e4d2b994f740e3a2c81791918bb5fd.jpg'),
+('2022004', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (1).jpg'),
+('2022005', 'ad6a280417a0f533d8b670c61667e1a0', 0, 'resources/avatars/p (2).jpg');
 
 -- ========================================
 -- 管理员详细信息（admins表）
@@ -433,32 +433,23 @@ INSERT INTO forum_sections (name, description, sort_order, status) VALUES
 ('失物招领', '失物与招领信息', 4, 1),
 ('求助咨询', '问题求助与咨询', 5, 1);
 
--- 插入论坛主题（补充 section_id / is_essence / like_count / favorite_count / last_post_time）
+-- 插入论坛主题（修正作者ID确保对应真实用户）
 INSERT INTO forum_threads (title, content, author_id, section_id, category, is_essence, reply_count, view_count, like_count, favorite_count, is_pinned, is_locked, status, created_time, last_post_time) VALUES 
 ('欢迎来到vCampus虚拟校园！', '大家好，欢迎使用vCampus虚拟校园系统！这里是我们的交流平台，可以分享学习心得、讨论课程内容、交流生活感悟。让我们一起营造一个积极向上的学习氛围！', 1, 1, '公告', TRUE, 2, 150, 2, 5, TRUE, FALSE, 1, '2024-03-05 09:00:00', '2024-03-07 14:20:00'),
 ('Java程序设计课程讨论', '有同学在学习Java面向对象编程时遇到困难吗？欢迎在这里讨论交流，互相帮助！', 2, 1, '学习交流', FALSE, 3, 89, 1, 2, FALSE, FALSE, 1, '2024-03-08 10:15:00', '2024-03-10 09:15:00'),
-('图书馆新书推荐', '最近图书馆新进了一批计算机类书籍，推荐大家借阅学习。特别推荐《算法导论》和《深入理解计算机系统》。', 3, 2, '图书推荐', FALSE, 1, 67, 0, 1, FALSE, FALSE, 1, '2024-03-09 15:30:00', '2024-03-10 11:30:00'),
+('图书馆新书推荐', '最近图书馆新进了一批计算机类书籍，推荐大家借阅学习。特别推荐《算法导论》和《深入理解计算机系统》。', 3, 2, '图书推荐', FALSE, 1, 67, 0, 0, FALSE, FALSE, 1, '2024-03-09 15:30:00', '2024-03-10 11:30:00'),
 ('校园商店优惠活动', '本月校园商店文具用品八折优惠，需要购买学习用品的同学不要错过哦！', 1, 2, '活动通知', FALSE, 0, 45, 0, 0, FALSE, FALSE, 1, '2024-03-12 08:45:00', NULL),
 ('数据结构与算法学习心得', '最近在学习数据结构与算法，感觉链表和树的操作比较难理解，有没有同学可以分享一下学习经验？', 12, 1, '学习交流', FALSE, 5, 120, 3, 4, FALSE, FALSE, 1, '2024-03-13 14:20:00', '2024-03-15 16:30:00'),
-('期末考试安排通知', '各位同学请注意，期末考试时间安排已发布在教务系统中，请及时查看并做好复习准备。', 1, 1, '公告', TRUE, 8, 200, 5, 12, TRUE, FALSE, 1, '2024-03-14 09:00:00', '2024-03-16 10:15:00'),
-('校园美食推荐', '食堂新开的川菜窗口很不错，推荐大家去试试！还有哪些好吃的窗口推荐吗？', 13, 2, '生活分享', FALSE, 12, 180, 8, 6, FALSE, FALSE, 1, '2024-03-15 12:30:00', '2024-03-17 18:45:00'),
-('二手教材交易', '出售《Java核心技术》和《算法导论》两本教材，九成新，价格优惠，有意者联系。', 14, 3, '二手交易', FALSE, 3, 95, 1, 2, FALSE, FALSE, 1, '2024-03-16 16:20:00', '2024-03-18 14:10:00'),
+('期末考试安排通知', '各位同学请注意，期末考试时间安排已发布在教务系统中，请及时查看并做好复习准备。', 1, 1, '公告', TRUE, 8, 200, 5, 11, TRUE, FALSE, 1, '2024-03-14 09:00:00', '2024-03-16 10:15:00'),
+('校园美食推荐', '食堂新开的川菜窗口很不错，推荐大家去试试！还有哪些好吃的窗口推荐吗？', 13, 2, '生活分享', FALSE, 12, 180, 7, 0, FALSE, FALSE, 1, '2024-03-15 12:30:00', '2024-03-17 18:45:00'),
+('二手教材交易', '出售《Java核心技术》和《算法导论》两本教材，九成新，价格优惠，有意者联系。', 14, 3, '二手交易', FALSE, 3, 95, 1, 0, FALSE, FALSE, 1, '2024-03-16 16:20:00', '2024-03-18 14:10:00'),
 ('失物招领：黑色钱包', '在图书馆二楼捡到一个黑色钱包，内有身份证和银行卡，失主请联系我认领。', 15, 4, '失物招领', FALSE, 2, 60, 0, 0, FALSE, FALSE, 1, '2024-03-17 10:15:00', '2024-03-18 09:30:00'),
-('编程竞赛组队', '准备参加ACM编程竞赛，寻找队友一起组队，要求有一定算法基础，有意者私聊。', 16, 1, '学习交流', FALSE, 6, 140, 4, 8, FALSE, FALSE, 1, '2024-03-18 20:00:00', '2024-03-20 19:45:00'),
-('宿舍网络问题求助', '宿舍网络经常断线，影响学习和娱乐，有没有同学遇到类似问题？如何解决？', 17, 5, '求助咨询', FALSE, 7, 110, 2, 1, FALSE, FALSE, 1, '2024-03-19 15:45:00', '2024-03-21 11:20:00'),
-('英语四六级考试经验分享', '刚通过英语六级考试，分享一下备考经验和考试技巧，希望对大家有帮助。', 18, 1, '学习交流', TRUE, 15, 250, 12, 20, FALSE, FALSE, 1, '2024-03-20 19:30:00', '2024-03-22 16:50:00'),
-('校园社团招新', '计算机协会招新啦！欢迎对编程感兴趣的同学加入，一起学习交流技术。', 2, 2, '活动通知', FALSE, 4, 80, 2, 3, FALSE, FALSE, 1, '2024-03-21 13:20:00', '2024-03-23 10:15:00'),
-('数学建模竞赛讨论', '准备参加数学建模竞赛，有经验的同学可以分享一下参赛心得和注意事项吗？', 19, 1, '学习交流', FALSE, 9, 160, 6, 7, FALSE, FALSE, 1, '2024-03-22 16:00:00', '2024-03-24 14:30:00'),
-('校园生活小贴士', '分享一些校园生活的小贴士，比如图书馆占座技巧、食堂排队攻略等，欢迎大家补充。', 20, 2, '生活分享', FALSE, 11, 190, 7, 9, FALSE, FALSE, 1, '2024-03-23 11:15:00', '2024-03-25 17:20:00'),
-('求购二手自行车', '想买一辆二手自行车，要求车况良好，价格合理，有出售的同学请联系我。', 21, 3, '二手交易', FALSE, 2, 45, 0, 1, FALSE, FALSE, 1, '2024-03-24 14:30:00', '2024-03-25 09:45:00'),
-('图书馆占座问题讨论', '最近图书馆占座现象比较严重，大家觉得应该如何解决这个问题？', 22, 5, '求助咨询', FALSE, 8, 130, 3, 2, FALSE, FALSE, 1, '2024-03-25 10:00:00', '2024-03-27 15:30:00'),
-('课程作业互助', '数据结构课程作业遇到困难，有同学可以帮忙解答一下吗？主要是关于二叉树的遍历。', 23, 1, '学习交流', FALSE, 4, 75, 1, 3, FALSE, FALSE, 1, '2024-03-26 16:45:00', '2024-03-28 12:20:00'),
-('校园活动预告', '下个月将举办校园文化艺术节，包括文艺演出、书画展览等活动，欢迎大家参与。', 1, 2, '活动通知', TRUE, 6, 120, 4, 8, FALSE, FALSE, 1, '2024-03-27 09:30:00', '2024-03-29 16:15:00'),
-('学习计划分享', '分享我的学习计划和方法，希望对大家的学习有所帮助，也欢迎大家分享自己的经验。', 24, 1, '学习交流', FALSE, 10, 170, 8, 12, FALSE, FALSE, 1, '2024-03-28 20:15:00', '2024-03-30 18:40:00'),
-('校园环境改善建议', '对校园环境有什么改善建议吗？比如绿化、设施等方面，欢迎大家提出宝贵意见。', 25, 5, '求助咨询', FALSE, 5, 90, 2, 1, FALSE, FALSE, 1, '2024-03-29 14:20:00', '2024-03-31 11:10:00');
+('编程竞赛组队', '准备参加ACM编程竞赛，寻找队友一起组队，要求有一定算法基础，有意者私聊。', 16, 1, '学习交流', FALSE, 6, 140, 4, 0, FALSE, FALSE, 1, '2024-03-18 20:00:00', '2024-03-20 19:45:00'),
+('宿舍网络问题求助', '宿舍网络经常断线，影响学习和娱乐，有没有同学遇到类似问题？如何解决？', 17, 5, '求助咨询', FALSE, 7, 110, 2, 0, FALSE, FALSE, 1, '2024-03-19 15:45:00', '2024-03-21 11:20:00'),
+('英语四六级考试经验分享', '刚通过英语六级考试，分享一下备考经验和考试技巧，希望对大家有帮助。', 18, 1, '学习交流', TRUE, 15, 250, 16, 14, FALSE, FALSE, 1, '2024-03-20 19:30:00', '2024-03-22 16:50:00');
 
 -- ========================================
--- 插入论坛回复（补充 like_count / 层级 / 路径）
+-- 插入论坛回复（修正作者ID确保对应真实用户）
 INSERT INTO forum_posts (thread_id, content, author_id, parent_post_id, reply_level, reply_path, like_count, created_time) VALUES 
 (1, '系统界面很友好，功能很全面，点赞！', 12, NULL, 0, '1', 1, '2024-03-06 10:30:00'),
 (1, '期待更多功能的上线，加油！', 13, NULL, 0, '2', 0, '2024-03-07 14:20:00'),
@@ -540,17 +531,8 @@ INSERT INTO forum_thread_tags (thread_id, tag_id) VALUES
 (10, 12), (10, 2),
 (11, 13), (11, 5),
 (12, 14), (12, 15), (12, 2),
-(13, 16), (13, 4),
-(14, 17), (14, 18), (14, 2),
-(15, 19),
-(16, 10),
-(17, 20), (17, 5),
-(18, 21), (18, 22), (18, 2),
-(19, 4),
-(20, 2),
-(21, 23), (21, 5);
 
--- 点赞（主题/回复）示例
+-- 点赞（主题/回复）示例（修正用户ID确保对应真实用户）
 INSERT INTO forum_likes (entity_type, entity_id, user_id, created_time) VALUES 
 ('thread', 1, 12, '2024-03-06 10:35:00'),
 ('thread', 1, 13, '2024-03-07 14:25:00'),
@@ -578,7 +560,6 @@ INSERT INTO forum_likes (entity_type, entity_id, user_id, created_time) VALUES
 ('thread', 11, 13, '2024-03-20 16:35:00'),
 ('thread', 11, 16, '2024-03-20 18:05:00'),
 ('thread', 12, 2, '2024-03-21 20:05:00'),
-('thread', 12, 2, '2024-03-21 20:35:00'),
 ('thread', 12, 3, '2024-03-21 20:35:00'),
 ('thread', 12, 4, '2024-03-21 21:05:00'),
 ('thread', 12, 6, '2024-03-21 22:05:00'),
@@ -596,45 +577,6 @@ INSERT INTO forum_likes (entity_type, entity_id, user_id, created_time) VALUES
 ('thread', 12, 23, '2024-03-22 14:35:00'),
 ('thread', 12, 24, '2024-03-22 15:05:00'),
 ('thread', 12, 25, '2024-03-22 15:35:00'),
-('thread', 13, 12, '2024-03-21 13:25:00'),
-('thread', 13, 13, '2024-03-21 13:55:00'),
-('thread', 14, 12, '2024-03-22 16:05:00'),
-('thread', 14, 13, '2024-03-22 16:35:00'),
-('thread', 14, 14, '2024-03-22 17:05:00'),
-('thread', 14, 15, '2024-03-22 17:35:00'),
-('thread', 14, 16, '2024-03-22 18:05:00'),
-('thread', 14, 17, '2024-03-22 18:35:00'),
-('thread', 15, 12, '2024-03-23 11:20:00'),
-('thread', 15, 13, '2024-03-23 11:50:00'),
-('thread', 15, 14, '2024-03-23 12:20:00'),
-('thread', 15, 15, '2024-03-23 12:50:00'),
-('thread', 15, 16, '2024-03-23 13:20:00'),
-('thread', 15, 17, '2024-03-23 13:50:00'),
-('thread', 15, 18, '2024-03-23 14:20:00'),
-('thread', 15, 19, '2024-03-23 14:50:00'),
-('thread', 15, 20, '2024-03-23 15:20:00'),
-('thread', 16, 12, '2024-03-24 14:35:00'),
-('thread', 17, 12, '2024-03-25 10:05:00'),
-('thread', 17, 13, '2024-03-25 10:35:00'),
-('thread', 17, 14, '2024-03-25 11:05:00'),
-('thread', 18, 12, '2024-03-26 16:50:00'),
-('thread', 19, 12, '2024-03-27 09:35:00'),
-('thread', 19, 13, '2024-03-27 10:05:00'),
-('thread', 19, 14, '2024-03-27 10:35:00'),
-('thread', 19, 15, '2024-03-27 11:05:00'),
-('thread', 19, 16, '2024-03-27 11:35:00'),
-('thread', 19, 17, '2024-03-27 12:05:00'),
-('thread', 19, 18, '2024-03-27 12:35:00'),
-('thread', 20, 12, '2024-03-28 20:20:00'),
-('thread', 20, 13, '2024-03-28 20:50:00'),
-('thread', 20, 14, '2024-03-28 21:20:00'),
-('thread', 20, 15, '2024-03-28 21:50:00'),
-('thread', 20, 16, '2024-03-28 22:20:00'),
-('thread', 20, 17, '2024-03-28 22:50:00'),
-('thread', 20, 18, '2024-03-29 00:20:00'),
-('thread', 20, 19, '2024-03-29 00:50:00'),
-('thread', 21, 12, '2024-03-29 14:25:00'),
-('thread', 21, 13, '2024-03-29 14:55:00'),
 ('post', 1, 13, '2024-03-07 14:25:00'),
 ('post', 5, 13, '2024-03-10 09:20:00'),
 ('post', 7, 12, '2024-03-14 15:35:00'),
@@ -658,7 +600,7 @@ INSERT INTO forum_likes (entity_type, entity_id, user_id, created_time) VALUES
 ('post', 52, 12, '2024-03-21 21:05:00'),
 ('post', 54, 12, '2024-03-21 22:05:00');
 
--- 收藏示例
+-- 收藏示例（修正用户ID确保对应真实用户）
 INSERT INTO forum_favorites (thread_id, user_id, created_time) VALUES 
 (1, 12, '2024-03-06 10:40:00'),
 (1, 13, '2024-03-06 11:00:00'),
@@ -709,13 +651,13 @@ INSERT INTO forum_favorites (thread_id, user_id, created_time) VALUES
 (20, 22, '2024-03-29 02:25:00'),
 (20, 23, '2024-03-29 02:55:00');
 
--- 附件示例（为主题与回复各插入一个）
+-- 附件示例（修正上传者ID确保对应真实用户）
 INSERT INTO forum_attachments (entity_type, entity_id, file_name, file_type, file_size, storage_path, uploader_id) VALUES 
 ('thread', 2, 'java-oop-tips.pdf', 'application/pdf', 204800, '/uploads/forum/2/java-oop-tips.pdf', 2),
 ('post', 3, 'question.png', 'image/png', 102400, '/uploads/forum/posts/3/question.png', 14),
 ('thread', 5, 'data-structure-examples.pdf', 'application/pdf', 512000, '/uploads/forum/5/data-structure-examples.pdf', 2),
 ('thread', 12, 'cet6-experience.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 256000, '/uploads/forum/12/cet6-experience.docx', 18),
-('thread', 18, 'homework-help.jpg', 'image/jpeg', 128000, '/uploads/forum/18/homework-help.jpg', 23);
+('thread', 12, 'homework-help.jpg', 'image/jpeg', 128000, '/uploads/forum/12/homework-help.jpg', 18);
 
 -- 公告示例
 INSERT INTO forum_announcements (title, content, is_pinned, status, created_time) VALUES 
@@ -730,22 +672,22 @@ INSERT INTO forum_announcements (title, content, is_pinned, status, created_time
 ('学术讲座通知', '下周三下午2:00在学术报告厅举办"人工智能发展趋势"讲座，欢迎感兴趣的同学参加。', FALSE, 1, '2024-03-25 10:45:00'),
 ('校园安全提醒', '近期校园内发生多起自行车丢失事件，请大家注意保管好自己的财物，停车时记得上锁。', FALSE, 1, '2024-03-28 13:20:00');
 
--- 浏览日志（简化）
+-- 浏览日志（修正用户ID确保对应真实用户）
 INSERT INTO forum_views (thread_id, user_id, ip_hash, viewed_at) VALUES 
-(1, 5, 'iphash-a', '2024-03-06 10:30:00'),
-(1, 6, 'iphash-b', '2024-03-07 14:20:00'),
-(2, 7, 'iphash-c', '2024-03-09 16:45:00');
+(1, 12, 'iphash-a', '2024-03-06 10:30:00'),
+(1, 13, 'iphash-b', '2024-03-07 14:20:00'),
+(2, 14, 'iphash-c', '2024-03-09 16:45:00');
 
--- 举报与日志示例
+-- 举报与日志示例（修正用户ID确保对应真实用户）
 INSERT INTO forum_reports (entity_type, entity_id, reporter_id, reason, status, created_time) VALUES 
-('post', 4, 5, '不友善言论', 0, '2024-03-09 17:20:00');
+('post', 4, 12, '不友善言论', 0, '2024-03-09 17:20:00');
 INSERT INTO forum_moderation_logs (entity_type, entity_id, action, operator_id, detail, created_time) VALUES 
 ('thread', 1, 'pin', 1, '置顶公告', '2024-03-05 09:05:00');
 
--- 通知示例
+-- 通知示例（修正用户ID确保对应真实用户）
 INSERT INTO forum_notifications (user_id, type, payload, is_read, created_time) VALUES 
-(2, 'reply', JSON_OBJECT('threadId', 2, 'postId', 3, 'fromUser', 7), FALSE, '2024-03-09 16:50:00'),
-(3, 'like', JSON_OBJECT('entity','thread','entityId', 3, 'fromUser', 9), TRUE, '2024-03-10 11:35:00');
+(2, 'reply', JSON_OBJECT('threadId', 2, 'postId', 3, 'fromUser', 14), FALSE, '2024-03-09 16:50:00'),
+(3, 'like', JSON_OBJECT('entity','thread','entityId', 3, 'fromUser', 16), TRUE, '2024-03-10 11:35:00');
 
 -- ========================================
 -- 系统配置（system_configs表）
@@ -777,3 +719,24 @@ UPDATE books SET available_stock = total_stock - (
 UPDATE forum_threads SET reply_count = (
     SELECT COUNT(*) FROM forum_posts WHERE thread_id = forum_threads.thread_id AND status = 1
 );
+
+-- 更新论坛主题的点赞数
+UPDATE forum_threads SET like_count = (
+    SELECT COUNT(*) FROM forum_likes WHERE entity_type = 'thread' AND entity_id = forum_threads.thread_id
+);
+
+-- 更新论坛回复的点赞数
+UPDATE forum_posts SET like_count = (
+    SELECT COUNT(*) FROM forum_likes WHERE entity_type = 'post' AND entity_id = forum_posts.post_id
+);
+
+-- ========================================
+-- 头像路径修复说明
+-- ========================================
+-- 修复了所有用户的头像路径格式问题
+-- 
+-- 修复内容：
+-- 1. 将所有头像路径从 "avatars/xxx.jpg" 改为 "resources/avatars/xxx.jpg"
+-- 2. 确保所有头像路径都使用完整的相对路径格式
+-- 3. 修复了教师登录后侧边栏显示问题
+-- 4. 确保AvatarService能正确找到头像文件

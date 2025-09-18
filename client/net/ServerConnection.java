@@ -221,6 +221,15 @@ public class ServerConnection {
     }
     
     /**
+     * 获取消息监听器
+     * @param messageType 消息类型
+     * @return 监听器，如果不存在返回null
+     */
+    public MessageListener getMessageListener(MessageType messageType) {
+        return messageListeners.get(messageType);
+    }
+    
+    /**
      * 设置默认消息监听器
      * @param listener 默认监听器
      */

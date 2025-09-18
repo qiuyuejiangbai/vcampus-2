@@ -392,6 +392,27 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 ) COMMENT='订单明细表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 购物车表（根据ShoppingCartItemVO类设计）
+CREATE TABLE IF NOT EXISTS shopping_cart (
+    cart_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL COMMENT '用户ID',
+    product_id INT NOT NULL COMMENT '商品ID',
+    quantity INT NOT NULL DEFAULT 1 COMMENT '数量',
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '添加时间',
+    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    
+    -- 外键约束
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
+    
+    -- 唯一约束：同一用户同一商品只能有一条记录
+    UNIQUE KEY uk_user_product (user_id, product_id),
+    
+    -- 索引
+    INDEX idx_user_id (user_id),
+    INDEX idx_product_id (product_id)
+) COMMENT='购物车表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ========================================
 -- 论坛系统表
 -- ========================================

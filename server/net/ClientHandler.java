@@ -17,6 +17,7 @@ import common.vo.ShoppingCartItemVO;
 import common.vo.OrderVO;
 import common.vo.OrderItemVO;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.io.*;
 import java.net.Socket;
@@ -135,6 +136,10 @@ public class ClientHandler implements Runnable {
                     
                 case UPLOAD_AVATAR_REQUEST:
                     handleUploadAvatar(request);
+                    break;
+                    
+                case DOWNLOAD_AVATAR_REQUEST:
+                    handleDownloadAvatar(request);
                     break;
                     
                 case GET_ALL_USERS_REQUEST:
@@ -256,6 +261,38 @@ public class ClientHandler implements Runnable {
                 case GET_ALL_TEACHERS_REQUEST:
                     System.out.println("[Teacher][Server] 收到请求: GET_ALL_TEACHERS_REQUEST");
                     handleGetAllTeachers(request);
+                    break;
+                    
+                // 管理员学生管理
+                case ADD_STUDENT:
+                    System.out.println("[Student][Server] 收到请求: ADD_STUDENT");
+                    handleAddStudent(request);
+                    break;
+                    
+                case UPDATE_STUDENT:
+                    System.out.println("[Student][Server] 收到请求: UPDATE_STUDENT");
+                    handleUpdateStudentAdmin(request);
+                    break;
+                    
+                case DELETE_STUDENT:
+                    System.out.println("[Student][Server] 收到请求: DELETE_STUDENT");
+                    handleDeleteStudent(request);
+                    break;
+                    
+                // 管理员教师管理
+                case ADD_TEACHER:
+                    System.out.println("[Teacher][Server] 收到请求: ADD_TEACHER");
+                    handleAddTeacher(request);
+                    break;
+                    
+                case UPDATE_TEACHER:
+                    System.out.println("[Teacher][Server] 收到请求: UPDATE_TEACHER");
+                    handleUpdateTeacherAdmin(request);
+                    break;
+                    
+                case DELETE_TEACHER:
+                    System.out.println("[Teacher][Server] 收到请求: DELETE_TEACHER");
+                    handleDeleteTeacher(request);
                     break;
                     
                 case HEARTBEAT:
@@ -1280,11 +1317,21 @@ private void handleShipOrder(Message request) {
             }
             System.out.println("[Forum][Server] 处理主题点赞切换: threadId=" + threadId + ", userId=" + currentUserId);
             ForumService forumService = new ForumService();
+            
+            // 先获取点赞前的数量用于对比
+            int beforeLikeCount = forumService.getThreadLikeCount(threadId);
+            System.out.println("[Forum][Server] 点赞前数量: " + beforeLikeCount + " for threadId=" + threadId);
+            
             Boolean result = forumService.toggleThreadLike(threadId, currentUserId);
             if (result != null) {
                 // 返回点赞结果和新的点赞数量
                 int newLikeCount = forumService.getThreadLikeCount(threadId);
-                System.out.println("[Forum][Server] 获取到新的点赞数量: " + newLikeCount + " for threadId=" + threadId);
+                System.out.println("[Forum][Server] 点赞后数量: " + newLikeCount + " for threadId=" + threadId);
+                
+                // 验证数量变化是否符合预期
+                int expectedChange = result ? 1 : -1;
+                int actualChange = newLikeCount - beforeLikeCount;
+                System.out.println("[Forum][Server] 预期变化: " + expectedChange + ", 实际变化: " + actualChange);
                 
                 java.util.Map<String, Object> responseData = new java.util.HashMap<>();
                 responseData.put("isLiked", result);
@@ -1943,7 +1990,6 @@ private void handleShipOrder(Message request) {
                     
                     Message response = new Message(MessageType.UPLOAD_AVATAR_SUCCESS, StatusCode.SUCCESS, avatarPath, "头像上传成功");
                     sendMessage(response);
-                    System.out.println("用户 " + currentUser.getId() + " 头像上传成功: " + avatarPath);
                 } else {
                     Message response = new Message(MessageType.UPLOAD_AVATAR_FAIL, StatusCode.INTERNAL_ERROR, null, "头像上传失败");
                     sendMessage(response);
@@ -1956,6 +2002,56 @@ private void handleShipOrder(Message request) {
             System.err.println("处理头像上传请求时发生异常: " + e.getMessage());
             e.printStackTrace();
             Message response = new Message(MessageType.UPLOAD_AVATAR_FAIL, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理头像下载请求
+     */
+    private void handleDownloadAvatar(Message request) {
+        if (!isLoggedIn()) {
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        try {
+            // 检查请求数据格式
+            if (request.getData() instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) request.getData();
+                
+                String avatarPath = (String) data.get("avatarPath");
+                
+                if (avatarPath == null || avatarPath.trim().isEmpty()) {
+                    Message response = new Message(MessageType.DOWNLOAD_AVATAR_FAIL, StatusCode.BAD_REQUEST, null, "头像路径不能为空");
+                    sendMessage(response);
+                    return;
+                }
+                
+                // 下载头像文件数据
+                byte[] avatarData = userService.downloadAvatar(avatarPath);
+                
+                if (avatarData != null) {
+                    // 创建响应数据
+                    Map<String, Object> responseData = new HashMap<>();
+                    responseData.put("avatarData", avatarData);
+                    responseData.put("avatarPath", avatarPath);
+                    
+                    Message response = new Message(MessageType.DOWNLOAD_AVATAR_SUCCESS, StatusCode.SUCCESS, responseData, "头像下载成功");
+                    sendMessage(response);
+                } else {
+                    Message response = new Message(MessageType.DOWNLOAD_AVATAR_FAIL, StatusCode.NOT_FOUND, null, "头像文件不存在");
+                    sendMessage(response);
+                }
+            } else {
+                Message response = new Message(MessageType.DOWNLOAD_AVATAR_FAIL, StatusCode.BAD_REQUEST, null, "无效的头像下载数据格式");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("处理头像下载请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.DOWNLOAD_AVATAR_FAIL, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
             sendMessage(response);
         }
     }
@@ -2857,6 +2953,318 @@ private void handleShipOrder(Message request) {
             System.err.println("[Teacher][Server] 处理获取所有教师请求时发生异常: " + e.getMessage());
             e.printStackTrace();
             Message response = new Message(MessageType.GET_ALL_TEACHERS_FAILURE, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理添加学生请求（管理员功能）
+     */
+    private void handleAddStudent(Message request) {
+        System.out.println("[Student][Server] 开始处理添加学生请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[Student][Server] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查管理员权限
+        if (!currentUser.isAdmin()) {
+            System.err.println("[Student][Server] 用户不是管理员，拒绝请求");
+            Message response = new Message(MessageType.ADD_STUDENT_FAILURE, StatusCode.FORBIDDEN, null, "需要管理员权限");
+            sendMessage(response);
+            return;
+        }
+        
+        try {
+            common.vo.StudentVO student = (common.vo.StudentVO) request.getData();
+            if (student == null) {
+                System.err.println("[Student][Server] 学生数据为空");
+                Message response = new Message(MessageType.ADD_STUDENT_FAILURE, StatusCode.BAD_REQUEST, null, "学生数据不能为空");
+                sendMessage(response);
+                return;
+            }
+            
+            System.out.println("[Student][Server] 管理员权限验证通过，开始添加学生: " + student.getName());
+            
+            // 调用学生服务添加学生
+            server.service.StudentService studentService = new server.service.StudentService();
+            boolean success = studentService.addStudent(student);
+            
+            if (success) {
+                System.out.println("[Student][Server] 学生添加成功");
+                Message response = new Message(MessageType.ADD_STUDENT_SUCCESS, StatusCode.SUCCESS, null, "学生添加成功");
+                sendMessage(response);
+            } else {
+                System.err.println("[Student][Server] 学生添加失败");
+                Message response = new Message(MessageType.ADD_STUDENT_FAILURE, StatusCode.INTERNAL_ERROR, null, "学生添加失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("[Student][Server] 处理添加学生请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.ADD_STUDENT_FAILURE, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理更新学生请求（管理员功能）
+     */
+    private void handleUpdateStudentAdmin(Message request) {
+        System.out.println("[Student][Server] 开始处理管理员更新学生请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[Student][Server] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查管理员权限
+        if (!currentUser.isAdmin()) {
+            System.err.println("[Student][Server] 用户不是管理员，拒绝请求");
+            Message response = new Message(MessageType.UPDATE_STUDENT_FAILURE, StatusCode.FORBIDDEN, null, "需要管理员权限");
+            sendMessage(response);
+            return;
+        }
+        
+        try {
+            common.vo.StudentVO student = (common.vo.StudentVO) request.getData();
+            if (student == null) {
+                System.err.println("[Student][Server] 学生数据为空");
+                Message response = new Message(MessageType.UPDATE_STUDENT_FAILURE, StatusCode.BAD_REQUEST, null, "学生数据不能为空");
+                sendMessage(response);
+                return;
+            }
+            
+            System.out.println("[Student][Server] 管理员权限验证通过，开始更新学生: " + student.getName());
+            
+            // 调用学生服务更新学生
+            server.service.StudentService studentService = new server.service.StudentService();
+            boolean success = studentService.updateStudent(student);
+            
+            if (success) {
+                System.out.println("[Student][Server] 学生更新成功");
+                Message response = new Message(MessageType.UPDATE_STUDENT_SUCCESS, StatusCode.SUCCESS, null, "学生信息更新成功");
+                sendMessage(response);
+            } else {
+                System.err.println("[Student][Server] 学生更新失败");
+                Message response = new Message(MessageType.UPDATE_STUDENT_FAILURE, StatusCode.INTERNAL_ERROR, null, "学生信息更新失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("[Student][Server] 处理更新学生请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.UPDATE_STUDENT_FAILURE, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理删除学生请求（管理员功能）
+     */
+    private void handleDeleteStudent(Message request) {
+        System.out.println("[Student][Server] 开始处理删除学生请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[Student][Server] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查管理员权限
+        if (!currentUser.isAdmin()) {
+            System.err.println("[Student][Server] 用户不是管理员，拒绝请求");
+            Message response = new Message(MessageType.DELETE_STUDENT_FAILURE, StatusCode.FORBIDDEN, null, "需要管理员权限");
+            sendMessage(response);
+            return;
+        }
+        
+        try {
+            Integer studentId = (Integer) request.getData();
+            if (studentId == null) {
+                System.err.println("[Student][Server] 学生ID为空");
+                Message response = new Message(MessageType.DELETE_STUDENT_FAILURE, StatusCode.BAD_REQUEST, null, "学生ID不能为空");
+                sendMessage(response);
+                return;
+            }
+            
+            System.out.println("[Student][Server] 管理员权限验证通过，开始删除学生ID: " + studentId);
+            
+            // 调用学生服务删除学生
+            server.service.StudentService studentService = new server.service.StudentService();
+            boolean success = studentService.deleteStudent(studentId);
+            
+            if (success) {
+                System.out.println("[Student][Server] 学生删除成功");
+                Message response = new Message(MessageType.DELETE_STUDENT_SUCCESS, StatusCode.SUCCESS, null, "学生删除成功");
+                sendMessage(response);
+            } else {
+                System.err.println("[Student][Server] 学生删除失败");
+                Message response = new Message(MessageType.DELETE_STUDENT_FAILURE, StatusCode.INTERNAL_ERROR, null, "学生删除失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("[Student][Server] 处理删除学生请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.DELETE_STUDENT_FAILURE, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理添加教师请求（管理员功能）
+     */
+    private void handleAddTeacher(Message request) {
+        System.out.println("[Teacher][Server] 开始处理添加教师请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[Teacher][Server] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查管理员权限
+        if (!currentUser.isAdmin()) {
+            System.err.println("[Teacher][Server] 用户不是管理员，拒绝请求");
+            Message response = new Message(MessageType.ADD_TEACHER_FAILURE, StatusCode.FORBIDDEN, null, "需要管理员权限");
+            sendMessage(response);
+            return;
+        }
+        
+        try {
+            common.vo.TeacherVO teacher = (common.vo.TeacherVO) request.getData();
+            if (teacher == null) {
+                System.err.println("[Teacher][Server] 教师数据为空");
+                Message response = new Message(MessageType.ADD_TEACHER_FAILURE, StatusCode.BAD_REQUEST, null, "教师数据不能为空");
+                sendMessage(response);
+                return;
+            }
+            
+            System.out.println("[Teacher][Server] 管理员权限验证通过，开始添加教师: " + teacher.getName());
+            
+            // 调用教师服务添加教师
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            boolean success = teacherService.addTeacher(teacher);
+            
+            if (success) {
+                System.out.println("[Teacher][Server] 教师添加成功");
+                Message response = new Message(MessageType.ADD_TEACHER_SUCCESS, StatusCode.SUCCESS, null, "教师添加成功");
+                sendMessage(response);
+            } else {
+                System.err.println("[Teacher][Server] 教师添加失败");
+                Message response = new Message(MessageType.ADD_TEACHER_FAILURE, StatusCode.INTERNAL_ERROR, null, "教师添加失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("[Teacher][Server] 处理添加教师请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.ADD_TEACHER_FAILURE, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理更新教师请求（管理员功能）
+     */
+    private void handleUpdateTeacherAdmin(Message request) {
+        System.out.println("[Teacher][Server] 开始处理管理员更新教师请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[Teacher][Server] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查管理员权限
+        if (!currentUser.isAdmin()) {
+            System.err.println("[Teacher][Server] 用户不是管理员，拒绝请求");
+            Message response = new Message(MessageType.UPDATE_TEACHER_FAILURE, StatusCode.FORBIDDEN, null, "需要管理员权限");
+            sendMessage(response);
+            return;
+        }
+        
+        try {
+            common.vo.TeacherVO teacher = (common.vo.TeacherVO) request.getData();
+            if (teacher == null) {
+                System.err.println("[Teacher][Server] 教师数据为空");
+                Message response = new Message(MessageType.UPDATE_TEACHER_FAILURE, StatusCode.BAD_REQUEST, null, "教师数据不能为空");
+                sendMessage(response);
+                return;
+            }
+            
+            System.out.println("[Teacher][Server] 管理员权限验证通过，开始更新教师: " + teacher.getName());
+            
+            // 调用教师服务更新教师
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            boolean success = teacherService.updateTeacher(teacher);
+            
+            if (success) {
+                System.out.println("[Teacher][Server] 教师更新成功");
+                Message response = new Message(MessageType.UPDATE_TEACHER_SUCCESS, StatusCode.SUCCESS, null, "教师信息更新成功");
+                sendMessage(response);
+            } else {
+                System.err.println("[Teacher][Server] 教师更新失败");
+                Message response = new Message(MessageType.UPDATE_TEACHER_FAILURE, StatusCode.INTERNAL_ERROR, null, "教师信息更新失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("[Teacher][Server] 处理更新教师请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.UPDATE_TEACHER_FAILURE, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理删除教师请求（管理员功能）
+     */
+    private void handleDeleteTeacher(Message request) {
+        System.out.println("[Teacher][Server] 开始处理删除教师请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[Teacher][Server] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查管理员权限
+        if (!currentUser.isAdmin()) {
+            System.err.println("[Teacher][Server] 用户不是管理员，拒绝请求");
+            Message response = new Message(MessageType.DELETE_TEACHER_FAILURE, StatusCode.FORBIDDEN, null, "需要管理员权限");
+            sendMessage(response);
+            return;
+        }
+        
+        try {
+            Integer teacherId = (Integer) request.getData();
+            if (teacherId == null) {
+                System.err.println("[Teacher][Server] 教师ID为空");
+                Message response = new Message(MessageType.DELETE_TEACHER_FAILURE, StatusCode.BAD_REQUEST, null, "教师ID不能为空");
+                sendMessage(response);
+                return;
+            }
+            
+            System.out.println("[Teacher][Server] 管理员权限验证通过，开始删除教师ID: " + teacherId);
+            
+            // 调用教师服务删除教师
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            boolean success = teacherService.deleteTeacher(teacherId);
+            
+            if (success) {
+                System.out.println("[Teacher][Server] 教师删除成功");
+                Message response = new Message(MessageType.DELETE_TEACHER_SUCCESS, StatusCode.SUCCESS, null, "教师删除成功");
+                sendMessage(response);
+            } else {
+                System.err.println("[Teacher][Server] 教师删除失败");
+                Message response = new Message(MessageType.DELETE_TEACHER_FAILURE, StatusCode.INTERNAL_ERROR, null, "教师删除失败");
+                sendMessage(response);
+            }
+        } catch (Exception e) {
+            System.err.println("[Teacher][Server] 处理删除教师请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.DELETE_TEACHER_FAILURE, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
             sendMessage(response);
         }
     }

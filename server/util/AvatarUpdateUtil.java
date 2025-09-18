@@ -18,9 +18,7 @@ public class AvatarUpdateUtil {
             int updatedCount = avatarService.updateUsersWithoutAvatar();
             
             if (updatedCount > 0) {
-                System.out.println("成功为 " + updatedCount + " 个用户设置默认头像路径");
             } else {
-                System.out.println("没有需要更新头像路径的用户");
             }
             
             return updatedCount;
@@ -35,7 +33,6 @@ public class AvatarUpdateUtil {
      * 主方法，用于直接运行批量更新
      */
     public static void main(String[] args) {
-        System.out.println("开始批量更新用户头像路径...");
         int updatedCount = updateUsersWithoutAvatar();
         System.out.println("批量更新完成，共更新 " + updatedCount + " 个用户");
     }
