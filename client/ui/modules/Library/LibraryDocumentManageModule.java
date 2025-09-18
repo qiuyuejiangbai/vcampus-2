@@ -136,6 +136,13 @@ public class LibraryDocumentManageModule extends JPanel {
         subjectWrapper.add(subjectPanel);
         topContainer.add(subjectWrapper);
 
+        // —— 主题分隔线（介于学科与类别复选框之间）——
+        JPanel sepWrap = new JPanel(new BorderLayout());
+        sepWrap.setOpaque(false);
+        sepWrap.setBorder(BorderFactory.createEmptyBorder(6, 24, 6, 24)); // 左右留白与顶部风格一致
+        sepWrap.add(new LibraryDocumentManageModule.ThemedSeparator(new Color(0, 100, 0), new Color(234, 247, 238)), BorderLayout.CENTER);
+        topContainer.add(sepWrap);
+
         String[] categories = {
                 "期刊","会议","教材","报告","专利",
                 "标准","学位论文","技术文档","白皮书","数据集"
@@ -213,6 +220,50 @@ public class LibraryDocumentManageModule extends JPanel {
         JLabel lab = new JLabel(new ImageIcon(scaled));
         lab.setBorder(BorderFactory.createEmptyBorder(0, padLR, 0, padLR));
         return lab;
+    }
+
+    class ThemedSeparator extends JComponent {
+        private final Color line;
+        private final Color bg;
+
+        public ThemedSeparator(Color line, Color bg) {
+            this.line = line;
+            this.bg = bg;
+            setOpaque(false);
+            setPreferredSize(new Dimension(1, 1)); // 总高度：含上下留白
+            setMinimumSize(new Dimension(1, 1));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int midY = getHeight() / 2;
+
+            // 轻微阴影（上浅下深），显得更“浮”
+            g2.setColor(new Color(0, 0, 0, 20));
+            g2.drawLine(0, midY + 1, w, midY + 1);
+
+            // 主线：主题绿
+            g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.setColor(line);
+            g2.drawLine(0, midY, w, midY);
+
+            // 两端做一点点渐隐，避免太硬
+            GradientPaint leftFade = new GradientPaint(0, midY, new Color(line.getRed(), line.getGreen(), line.getBlue(), 0),
+                    Math.min(28, w / 6), midY, line);
+            g2.setPaint(leftFade);
+            g2.drawLine(0, midY, Math.min(28, w / 6), midY);
+
+            GradientPaint rightFade = new GradientPaint(w - Math.min(28, w / 6), midY, line,
+                    w, midY, new Color(line.getRed(), line.getGreen(), line.getBlue(), 0));
+            g2.setPaint(rightFade);
+            g2.drawLine(w - Math.min(28, w / 6), midY, w, midY);
+
+            g2.dispose();
+        }
     }
 
     /** 实心主色按钮（与 documentsearch 一致） */
