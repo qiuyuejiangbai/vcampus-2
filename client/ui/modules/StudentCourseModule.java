@@ -1,4 +1,4 @@
- package client.ui.modules;
+package client.ui.modules;
 
 import client.net.ServerConnection;
 import client.ui.api.IModuleView;
@@ -6,6 +6,7 @@ import client.ui.integration.ModuleKeys;
 import client.ui.integration.ModuleRegistry;
 import client.ui.modules.course.CourseTablePanel;
 import client.ui.modules.course.StudentEnrollmentTablePanel;
+import client.ui.modules.course.StudentGradeTablePanel;
 import client.ui.modules.course.UITheme;
 import common.vo.UserVO;
 
@@ -17,6 +18,7 @@ public class StudentCourseModule implements IModuleView {
     private JPanel root;
     private common.vo.UserVO currentUser;
     private client.net.ServerConnection connection;
+    private StudentGradeTablePanel gradeTablePanel; // 成绩表格面板实例
 
 
     public StudentCourseModule() { 
@@ -30,7 +32,7 @@ public class StudentCourseModule implements IModuleView {
         root = new JPanel(new BorderLayout());
         root.setOpaque(true);
         root.setBackground(UITheme.BACKGROUND_GRAY);
-        root.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE));
+        root.setBorder(null); // 移除边距，让选项卡占满整个灰色背景
 
         root.add(createTabbedPane(), BorderLayout.CENTER);
 
@@ -95,6 +97,10 @@ public class StudentCourseModule implements IModuleView {
         // 选课记录选项卡
         JPanel enrollmentManagementPanel = createEnrollmentManagementPanel();
         tabbedPane.addTab("选课记录", enrollmentManagementPanel);
+
+        // 成绩查看选项卡
+        JPanel gradeViewPanel = createGradeViewPanel();
+        tabbedPane.addTab("成绩查看", gradeViewPanel);
 
         return tabbedPane;
     }
@@ -200,11 +206,8 @@ public class StudentCourseModule implements IModuleView {
         statusLabel.setFont(UITheme.CONTENT_FONT);
         statusLabel.setForeground(UITheme.MEDIUM_GRAY);
         
-        // 更新状态标签
-        SwingUtilities.invokeLater(() -> {
-            int courseCount = courseTablePanel.getCourseTable().getRowCount();
-            statusLabel.setText("课程总数: " + courseCount);
-        });
+        // 设置课程表格面板的统计标签引用，用于后续更新
+        courseTablePanel.setStatusLabel(statusLabel);
         
         rightPanel.add(statusLabel);
         
@@ -245,6 +248,13 @@ public class StudentCourseModule implements IModuleView {
         UITheme.styleButton(refreshButton);
         refreshButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
         
+        // 课程表按钮
+        JButton scheduleButton = new JButton("课程表");
+        UITheme.styleButton(scheduleButton);
+        scheduleButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        scheduleButton.setBackground(UITheme.PRIMARY_GREEN);
+        scheduleButton.setForeground(UITheme.WHITE);
+        
         // 添加事件监听器
         searchButton.addActionListener(e -> {
             String searchText = searchField.getText().trim();
@@ -260,6 +270,103 @@ public class StudentCourseModule implements IModuleView {
             searchField.setText("");
         });
         
+        // 课程表按钮事件
+        scheduleButton.addActionListener(e -> {
+            showScheduleDialog();
+        });
+        
+        // 添加到左侧面板
+        leftPanel.add(searchLabel);
+        leftPanel.add(searchField);
+        leftPanel.add(searchButton);
+        leftPanel.add(refreshButton);
+        leftPanel.add(scheduleButton);
+        
+        // 右侧状态区域
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, UITheme.PADDING_MEDIUM, 0));
+        rightPanel.setBackground(UITheme.WHITE);
+        
+        // 状态标签
+        JLabel statusLabel = new JLabel("选课记录总数: 0");
+        statusLabel.setFont(UITheme.CONTENT_FONT);
+        statusLabel.setForeground(UITheme.MEDIUM_GRAY);
+        
+        // 设置选课记录表格面板的统计标签引用，用于后续更新
+        enrollmentTablePanel.setStatusLabel(statusLabel);
+        
+        rightPanel.add(statusLabel);
+        
+        // 添加到搜索面板
+        searchPanel.add(leftPanel, BorderLayout.WEST);
+        searchPanel.add(rightPanel, BorderLayout.EAST);
+        
+        return searchPanel;
+    }
+
+    //创建成绩查看选项卡
+    private JPanel createGradeViewPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(UITheme.WHITE);
+        panel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE));
+        
+        // 创建学生成绩查看表格面板
+        gradeTablePanel = new StudentGradeTablePanel();
+        
+        // 创建搜索面板
+        JPanel searchPanel = createGradeSearchPanel(gradeTablePanel);
+        
+        // 设置布局
+        panel.add(searchPanel, BorderLayout.NORTH);
+        panel.add(gradeTablePanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
+
+    // 创建成绩查看搜索面板
+    private JPanel createGradeSearchPanel(StudentGradeTablePanel gradeTablePanel) {
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setBackground(UITheme.WHITE);
+        searchPanel.setBorder(UITheme.createEmptyBorder(0, 0, UITheme.PADDING_LARGE, 0));
+        
+        // 左侧搜索区域
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, UITheme.PADDING_MEDIUM, 0));
+        leftPanel.setBackground(UITheme.WHITE);
+        
+        // 搜索标签
+        JLabel searchLabel = new JLabel("搜索成绩记录:");
+        searchLabel.setFont(UITheme.CONTENT_FONT);
+        searchLabel.setForeground(UITheme.DARK_GRAY);
+        
+        // 搜索输入框
+        JTextField searchField = new JTextField(25);
+        UITheme.styleTextField(searchField);
+        searchField.setPreferredSize(new Dimension(300, UITheme.INPUT_HEIGHT));
+        
+        // 搜索按钮
+        JButton searchButton = new JButton("搜索");
+        UITheme.styleButton(searchButton);
+        searchButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        
+        // 刷新按钮
+        JButton refreshButton = new JButton("刷新");
+        UITheme.styleButton(refreshButton);
+        refreshButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        
+        // 添加事件监听器
+        searchButton.addActionListener(e -> {
+            String searchText = searchField.getText().trim();
+            if (!searchText.isEmpty()) {
+                gradeTablePanel.searchByCourseName(searchText);
+            } else {
+                gradeTablePanel.refreshData();
+            }
+        });
+        
+        refreshButton.addActionListener(e -> {
+            gradeTablePanel.refreshData();
+            searchField.setText("");
+        });
+        
         // 添加到左侧面板
         leftPanel.add(searchLabel);
         leftPanel.add(searchField);
@@ -271,15 +378,12 @@ public class StudentCourseModule implements IModuleView {
         rightPanel.setBackground(UITheme.WHITE);
         
         // 状态标签
-        JLabel statusLabel = new JLabel("选课记录总数: 0");
+        JLabel statusLabel = new JLabel("成绩记录总数: 0");
         statusLabel.setFont(UITheme.CONTENT_FONT);
         statusLabel.setForeground(UITheme.MEDIUM_GRAY);
         
-        // 更新状态标签
-        SwingUtilities.invokeLater(() -> {
-            int enrollmentCount = enrollmentTablePanel.getEnrollmentTable().getRowCount();
-            statusLabel.setText("选课记录总数: " + enrollmentCount);
-        });
+        // 设置成绩表格面板的统计标签引用，用于后续更新
+        gradeTablePanel.setStatusLabel(statusLabel);
         
         rightPanel.add(statusLabel);
         
@@ -289,7 +393,6 @@ public class StudentCourseModule implements IModuleView {
         
         return searchPanel;
     }
-
 
     private void setupLayout() {
     }
@@ -330,6 +433,9 @@ public class StudentCourseModule implements IModuleView {
         // 更新课程表格面板的用户信息
         updateCourseTablePanelUser();
         
+        // 更新成绩查看面板的用户信息
+        updateGradeTablePanelUser();
+        
         // 设置选课成功和失败的消息监听器，用于刷新选课记录表格
         setupEnrollmentMessageListeners();
     }
@@ -350,6 +456,19 @@ public class StudentCourseModule implements IModuleView {
     }
     
     /**
+     * 更新成绩查看面板的用户信息
+     */
+    private void updateGradeTablePanelUser() {
+        System.out.println("StudentCourseModule: 更新成绩查看面板用户信息");
+        if (gradeTablePanel != null) {
+            System.out.println("StudentCourseModule: 成绩表格面板存在，设置用户");
+            gradeTablePanel.setCurrentUser(currentUser);
+        } else {
+            System.out.println("StudentCourseModule: 成绩表格面板为空！");
+        }
+    }
+    
+    /**
      * 在面板中查找课程表格面板
      */
     private CourseTablePanel findCourseTablePanel(Container container) {
@@ -358,6 +477,23 @@ public class StudentCourseModule implements IModuleView {
                 return (CourseTablePanel) component;
             } else if (component instanceof Container) {
                 CourseTablePanel result = findCourseTablePanel((Container) component);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 在面板中查找成绩表格面板
+     */
+    private StudentGradeTablePanel findGradeTablePanel(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof StudentGradeTablePanel) {
+                return (StudentGradeTablePanel) component;
+            } else if (component instanceof Container) {
+                StudentGradeTablePanel result = findGradeTablePanel((Container) component);
                 if (result != null) {
                     return result;
                 }
@@ -504,5 +640,78 @@ public class StudentCourseModule implements IModuleView {
 
     public ServerConnection getConnection() {
         return connection;
+    }
+    
+    /**
+     * 显示课程表对话框
+     */
+    private void showScheduleDialog() {
+        // 获取选课记录表格面板
+        StudentEnrollmentTablePanel enrollmentTablePanel = getEnrollmentTablePanel();
+        
+        // 创建课程表面板
+        client.ui.modules.course.StudentSchedulePanel schedulePanel = new client.ui.modules.course.StudentSchedulePanel(enrollmentTablePanel);
+        
+        // 创建对话框
+        JDialog scheduleDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(root), "我的课程表", true);
+        scheduleDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        scheduleDialog.setSize(1000, 700);
+        scheduleDialog.setLocationRelativeTo(root);
+        scheduleDialog.setResizable(true);
+        
+        // 设置对话框布局
+        scheduleDialog.setLayout(new BorderLayout());
+        scheduleDialog.add(schedulePanel, BorderLayout.CENTER);
+        
+        // 添加底部按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(UITheme.WHITE);
+        buttonPanel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_MEDIUM, 0, UITheme.PADDING_MEDIUM, 0));
+        
+        JButton refreshButton = new JButton("刷新");
+        UITheme.styleButton(refreshButton);
+        refreshButton.addActionListener(e -> schedulePanel.refreshData());
+        
+        JButton closeButton = new JButton("关闭");
+        UITheme.styleButton(closeButton);
+        closeButton.addActionListener(e -> scheduleDialog.dispose());
+        
+        buttonPanel.add(refreshButton);
+        buttonPanel.add(closeButton);
+        
+        scheduleDialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        // 显示对话框
+        scheduleDialog.setVisible(true);
+    }
+    
+    /**
+     * 获取选课记录表格面板
+     */
+    private StudentEnrollmentTablePanel getEnrollmentTablePanel() {
+        // 查找选课记录选项卡中的表格面板
+        JTabbedPane tabbedPane = (JTabbedPane) root.getComponent(0);
+        if (tabbedPane.getTabCount() > 1) {
+            JPanel enrollmentPanel = (JPanel) tabbedPane.getComponentAt(1);
+            return findEnrollmentTablePanel(enrollmentPanel);
+        }
+        return null;
+    }
+    
+    /**
+     * 在面板中查找选课记录表格面板
+     */
+    private StudentEnrollmentTablePanel findEnrollmentTablePanel(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof StudentEnrollmentTablePanel) {
+                return (StudentEnrollmentTablePanel) component;
+            } else if (component instanceof Container) {
+                StudentEnrollmentTablePanel result = findEnrollmentTablePanel((Container) component);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 }

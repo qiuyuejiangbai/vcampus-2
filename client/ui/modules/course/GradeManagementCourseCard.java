@@ -10,12 +10,12 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * 教师课程卡片组件
- * 用于显示单个课程的详细信息，点击后跳转到学生名单界面
+ * 成绩管理课程卡片组件
+ * 用于显示单个课程的详细信息，点击后跳转到成绩管理界面
  */
-public class TeacherCourseCard extends JPanel {
+public class GradeManagementCourseCard extends JPanel {
     private CourseVO course;
-    private TeacherCourseCardPanel parentPanel;
+    private GradeManagementCardPanel parentPanel;
     private JLabel courseNameLabel;
     private JLabel courseCodeLabel;
     private JLabel creditsLabel;
@@ -26,9 +26,9 @@ public class TeacherCourseCard extends JPanel {
     private JLabel capacityLabel;
     private JLabel enrolledCountLabel;
     private JLabel statusLabel;
-    private JButton viewStudentsButton;
+    private JButton gradeManagementButton;
 
-    public TeacherCourseCard(CourseVO course, TeacherCourseCardPanel parentPanel, UserVO currentUser, ServerConnection connection) {
+    public GradeManagementCourseCard(CourseVO course, GradeManagementCardPanel parentPanel, UserVO currentUser, ServerConnection connection) {
         this.course = course;
         this.parentPanel = parentPanel;
         
@@ -58,13 +58,13 @@ public class TeacherCourseCard extends JPanel {
         enrolledCountLabel = new JLabel();
         statusLabel = new JLabel();
         
-        // 创建查看学生名单按钮
-        viewStudentsButton = new JButton("查看学生名单");
-        UITheme.styleButton(viewStudentsButton);
-        viewStudentsButton.setPreferredSize(new Dimension(120, 32));
-        viewStudentsButton.setBackground(UITheme.PRIMARY_GREEN);
-        viewStudentsButton.setForeground(UITheme.WHITE);
-        viewStudentsButton.setFont(UITheme.CONTENT_FONT);
+        // 创建成绩管理按钮
+        gradeManagementButton = new JButton("成绩管理");
+        UITheme.styleButton(gradeManagementButton);
+        gradeManagementButton.setPreferredSize(new Dimension(120, 32));
+        gradeManagementButton.setBackground(UITheme.PRIMARY_GREEN);
+        gradeManagementButton.setForeground(UITheme.WHITE);
+        gradeManagementButton.setFont(UITheme.CONTENT_FONT);
         
         // 设置字体和颜色
         courseNameLabel.setFont(UITheme.SUBTITLE_FONT);
@@ -166,7 +166,7 @@ public class TeacherCourseCard extends JPanel {
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         buttonPanel.setBackground(UITheme.WHITE);
-        buttonPanel.add(viewStudentsButton);
+        buttonPanel.add(gradeManagementButton);
         contentPanel.add(buttonPanel);
         
         add(contentPanel, BorderLayout.CENTER);
@@ -183,9 +183,9 @@ public class TeacherCourseCard extends JPanel {
             }
         });
         
-        // 查看学生名单按钮点击事件
-        viewStudentsButton.addActionListener(e -> {
-            System.out.println("=== 查看学生名单按钮被点击 ===");
+        // 成绩管理按钮点击事件
+        gradeManagementButton.addActionListener(e -> {
+            System.out.println("=== 成绩管理按钮被点击 ===");
             System.out.println("课程: " + (course != null ? course.getCourseName() : "null"));
             System.out.println("父面板: " + (parentPanel != null ? "存在" : "null"));
             

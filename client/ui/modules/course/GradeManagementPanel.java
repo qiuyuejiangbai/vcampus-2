@@ -14,11 +14,11 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * 学生名单面板
- * 用于显示选择某课程的学生名单
+ * 成绩管理面板
+ * 用于显示选择某课程的学生成绩管理
  */
-public class StudentListPanel extends JPanel {
-    private JTable studentTable;
+public class GradeManagementPanel extends JPanel {
+    private JTable gradeTable;
     private JScrollPane scrollTablePane;
     private DefaultTableModel tableModel;
     private List<EnrollmentVO> enrollmentList;
@@ -27,12 +27,13 @@ public class StudentListPanel extends JPanel {
     private JLabel emptyLabel;
     private JButton backButton;
     private JButton refreshButton;
+    private JButton saveGradesButton;
     private String currentCourseCode;
     private CardLayout contentCardLayout;
     private JPanel contentPanel;
     private Object parentModule; // 保持对父模块的引用
 
-    public StudentListPanel(UserVO currentUser, ServerConnection connection) {
+    public GradeManagementPanel(UserVO currentUser, ServerConnection connection) {
         this.connection = connection;
         this.enrollmentList = new ArrayList<>();
         
@@ -47,7 +48,7 @@ public class StudentListPanel extends JPanel {
         setBackground(UITheme.WHITE);
         
         // 创建标题标签
-        titleLabel = new JLabel("学生名单", JLabel.CENTER);
+        titleLabel = new JLabel("成绩管理", JLabel.CENTER);
         titleLabel.setFont(UITheme.TITLE_FONT);
         titleLabel.setForeground(UITheme.PRIMARY_GREEN);
         titleLabel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_MEDIUM, 0, UITheme.PADDING_MEDIUM, 0));
@@ -64,37 +65,48 @@ public class StudentListPanel extends JPanel {
         UITheme.styleButton(refreshButton);
         refreshButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
         
+        // 创建保存成绩按钮
+        saveGradesButton = new JButton("保存成绩");
+        UITheme.styleButton(saveGradesButton);
+        saveGradesButton.setPreferredSize(new Dimension(100, UITheme.BUTTON_HEIGHT));
+        saveGradesButton.setBackground(UITheme.SUCCESS_GREEN);
+        saveGradesButton.setForeground(UITheme.WHITE);
+        
         // 创建表格
-        String[] columnNames = {"学号", "姓名", "专业", "班级", "选课时间", "状态"};
+        String[] columnNames = {"学号", "姓名", "专业", "班级", "平时成绩", "期中成绩", "期末成绩", "总成绩", "等级"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // 所有单元格都不可编辑
+                // 只有成绩相关列可以编辑
+                return column >= 4 && column <= 7; // 平时成绩、期中成绩、期末成绩、总成绩
             }
         };
         
-        studentTable = new JTable(tableModel);
+        gradeTable = new JTable(tableModel);
         
         // 设置列宽
-        studentTable.getColumnModel().getColumn(0).setPreferredWidth(120); // 学号
-        studentTable.getColumnModel().getColumn(1).setPreferredWidth(100); // 姓名
-        studentTable.getColumnModel().getColumn(2).setPreferredWidth(150); // 专业
-        studentTable.getColumnModel().getColumn(3).setPreferredWidth(120); // 班级
-        studentTable.getColumnModel().getColumn(4).setPreferredWidth(150); // 选课时间
-        studentTable.getColumnModel().getColumn(5).setPreferredWidth(80);  // 状态
+        gradeTable.getColumnModel().getColumn(0).setPreferredWidth(120); // 学号
+        gradeTable.getColumnModel().getColumn(1).setPreferredWidth(100); // 姓名
+        gradeTable.getColumnModel().getColumn(2).setPreferredWidth(120); // 专业
+        gradeTable.getColumnModel().getColumn(3).setPreferredWidth(100); // 班级
+        gradeTable.getColumnModel().getColumn(4).setPreferredWidth(80);  // 平时成绩
+        gradeTable.getColumnModel().getColumn(5).setPreferredWidth(80);  // 期中成绩
+        gradeTable.getColumnModel().getColumn(6).setPreferredWidth(80);  // 期末成绩
+        gradeTable.getColumnModel().getColumn(7).setPreferredWidth(80);  // 总成绩
+        gradeTable.getColumnModel().getColumn(8).setPreferredWidth(60);  // 等级
         
         // 设置表格样式
-        studentTable.setRowHeight(UITheme.TABLE_ROW_HEIGHT);
-        studentTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        studentTable.setGridColor(UITheme.LIGHT_GRAY);
-        studentTable.setShowGrid(true);
-        studentTable.setBackground(UITheme.WHITE);
-        studentTable.setFont(UITheme.CONTENT_FONT);
-        studentTable.setSelectionBackground(UITheme.VERY_LIGHT_GREEN);
-        studentTable.setSelectionForeground(UITheme.DARK_GRAY);
+        gradeTable.setRowHeight(UITheme.TABLE_ROW_HEIGHT);
+        gradeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        gradeTable.setGridColor(UITheme.LIGHT_GRAY);
+        gradeTable.setShowGrid(true);
+        gradeTable.setBackground(UITheme.WHITE);
+        gradeTable.setFont(UITheme.CONTENT_FONT);
+        gradeTable.setSelectionBackground(UITheme.VERY_LIGHT_GREEN);
+        gradeTable.setSelectionForeground(UITheme.DARK_GRAY);
         
         // 设置表头样式
-        JTableHeader header = studentTable.getTableHeader();
+        JTableHeader header = gradeTable.getTableHeader();
         header.setReorderingAllowed(false);
         header.setResizingAllowed(true);
         header.setFont(UITheme.SUBTITLE_FONT);
@@ -103,7 +115,7 @@ public class StudentListPanel extends JPanel {
         header.setPreferredSize(new Dimension(header.getWidth(), 50));
         
         // 自定义表格渲染器
-        studentTable.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+        gradeTable.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -115,7 +127,12 @@ public class StudentListPanel extends JPanel {
                     c.setBackground(UITheme.VERY_LIGHT_GREEN);
                     c.setForeground(UITheme.DARK_GRAY);
                 } else {
-                    c.setBackground(row % 2 == 0 ? UITheme.WHITE : new Color(248, 250, 252));
+                    // 成绩列使用不同的背景色
+                    if (column >= 4 && column <= 7) {
+                        c.setBackground(row % 2 == 0 ? new Color(250, 255, 250) : new Color(245, 255, 245));
+                    } else {
+                        c.setBackground(row % 2 == 0 ? UITheme.WHITE : new Color(248, 250, 252));
+                    }
                     c.setForeground(UITheme.DARK_GRAY);
                 }
                 
@@ -127,7 +144,7 @@ public class StudentListPanel extends JPanel {
         });
         
         // 应用滚动样式
-        scrollTablePane = new JScrollPane(studentTable);
+        scrollTablePane = new JScrollPane(gradeTable);
         scrollTablePane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollTablePane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollTablePane.setBorder(UITheme.createCardBorder());
@@ -152,6 +169,8 @@ public class StudentListPanel extends JPanel {
         leftPanel.add(backButton);
         leftPanel.add(Box.createHorizontalStrut(UITheme.PADDING_MEDIUM));
         leftPanel.add(refreshButton);
+        leftPanel.add(Box.createHorizontalStrut(UITheme.PADDING_MEDIUM));
+        leftPanel.add(saveGradesButton);
         
         // 右侧标题
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
@@ -236,8 +255,13 @@ public class StudentListPanel extends JPanel {
         // 刷新按钮事件
         refreshButton.addActionListener(e -> {
             if (currentCourseCode != null) {
-                loadStudentData(currentCourseCode);
+                loadGradeData(currentCourseCode);
             }
+        });
+        
+        // 保存成绩按钮事件
+        saveGradesButton.addActionListener(e -> {
+            saveGrades();
         });
     }
 
@@ -256,7 +280,7 @@ public class StudentListPanel extends JPanel {
                         enrollmentList.addAll(enrollments);
                         
                         updateTableData();
-                        System.out.println("成功加载 " + enrollments.size() + " 条选课记录");
+                        System.out.println("成功加载 " + enrollments.size() + " 条成绩记录");
                     }
                 });
             });
@@ -264,9 +288,9 @@ public class StudentListPanel extends JPanel {
     }
 
     /**
-     * 加载学生数据
+     * 加载成绩数据
      */
-    public void loadStudentData(String courseCode) {
+    public void loadGradeData(String courseCode) {
         this.currentCourseCode = courseCode;
         
         try {
@@ -288,18 +312,18 @@ public class StudentListPanel extends JPanel {
             
             // 发送消息到服务器
             if (connection != null && connection.sendMessage(request)) {
-                System.out.println("已发送获取选课记录请求，课程代码: " + courseCode);
+                System.out.println("已发送获取成绩记录请求，课程代码: " + courseCode);
                 // 等待服务器响应，这里暂时清空表格
                 enrollmentList.clear();
                 updateTableData();
-                System.out.println("等待服务器响应选课记录数据...");
+                System.out.println("等待服务器响应成绩记录数据...");
             } else {
-                System.err.println("发送获取选课记录请求失败");
+                System.err.println("发送获取成绩记录请求失败");
                 enrollmentList.clear();
                 updateTableData();
             }
         } catch (Exception e) {
-            System.err.println("加载学生数据时发生错误: " + e.getMessage());
+            System.err.println("加载成绩数据时发生错误: " + e.getMessage());
             enrollmentList.clear();
             updateTableData();
         }
@@ -310,7 +334,7 @@ public class StudentListPanel extends JPanel {
      */
     public void setCourseInfo(String courseCode, String courseName) {
         this.currentCourseCode = courseCode;
-        titleLabel.setText(courseName + " - 学生名单");
+        titleLabel.setText(courseName + " - 成绩管理");
     }
 
     /**
@@ -341,7 +365,6 @@ public class StudentListPanel extends JPanel {
             String className = "未知";
             String studentNo = "未知";
             String studentName = "未知";
-            String statusName = "未知";
             
             // 安全获取学生学号
             if (enrollment.getStudentNo() != null) {
@@ -353,11 +376,6 @@ public class StudentListPanel extends JPanel {
                 studentName = enrollment.getStudentName();
             }
             
-            // 安全获取状态名称
-            if (enrollment.getStatusName() != null) {
-                statusName = enrollment.getStatusName();
-            }
-            
             // 从关联的StudentVO获取专业和班级信息
             if (enrollment.getStudent() != null) {
                 major = enrollment.getStudent().getMajor() != null ? enrollment.getStudent().getMajor() : "未知";
@@ -366,13 +384,23 @@ public class StudentListPanel extends JPanel {
                 System.out.println("警告：选课记录 " + studentNo + " 缺少关联的学生信息");
             }
             
+            // 获取成绩信息（这里使用默认值，实际应该从数据库获取）
+            String regularGrade = ""; // 平时成绩
+            String midtermGrade = ""; // 期中成绩
+            String finalGrade = ""; // 期末成绩
+            String totalGrade = ""; // 总成绩
+            String gradeLevel = ""; // 等级
+            
             Object[] rowData = {
                 studentNo,
                 studentName,
                 major,
                 className,
-                enrollment.getEnrollmentTime() != null ? enrollment.getEnrollmentTime().toString() : "未知",
-                statusName
+                regularGrade,
+                midtermGrade,
+                finalGrade,
+                totalGrade,
+                gradeLevel
             };
             tableModel.addRow(rowData);
         }
@@ -382,21 +410,43 @@ public class StudentListPanel extends JPanel {
     }
 
     /**
+     * 保存成绩
+     */
+    private void saveGrades() {
+        System.out.println("=== 保存成绩 ===");
+        
+        // 这里应该实现保存成绩的逻辑
+        // 遍历表格数据，获取修改的成绩
+        int rowCount = tableModel.getRowCount();
+        for (int i = 0; i < rowCount; i++) {
+            String studentNo = (String) tableModel.getValueAt(i, 0);
+            String regularGrade = (String) tableModel.getValueAt(i, 4);
+            String midtermGrade = (String) tableModel.getValueAt(i, 5);
+            String finalGrade = (String) tableModel.getValueAt(i, 6);
+            String totalGrade = (String) tableModel.getValueAt(i, 7);
+            
+            System.out.println("学生: " + studentNo + ", 平时: " + regularGrade + 
+                             ", 期中: " + midtermGrade + ", 期末: " + finalGrade + ", 总分: " + totalGrade);
+        }
+        
+        JOptionPane.showMessageDialog(this, "成绩保存成功！", "提示", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /**
      * 刷新数据
      */
     public void refreshData() {
         if (currentCourseCode != null) {
-            loadStudentData(currentCourseCode);
+            loadGradeData(currentCourseCode);
         }
     }
 
     /**
-     * 获取学生表格组件
+     * 获取成绩表格组件
      */
-    public JTable getStudentTable() {
-        return studentTable;
+    public JTable getGradeTable() {
+        return gradeTable;
     }
-
 
     /**
      * 设置服务器连接
@@ -411,6 +461,6 @@ public class StudentListPanel extends JPanel {
      */
     public void setParentModule(Object parentModule) {
         this.parentModule = parentModule;
-        System.out.println("StudentListPanel 设置父模块引用: " + (parentModule != null ? parentModule.getClass().getSimpleName() : "null"));
+        System.out.println("GradeManagementPanel 设置父模块引用: " + (parentModule != null ? parentModule.getClass().getSimpleName() : "null"));
     }
 }

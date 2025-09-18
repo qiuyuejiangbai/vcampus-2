@@ -28,11 +28,15 @@ public class CourseClassCard extends JPanel {
     private JButton dropButton;
     private CourseClassCardPanel parentPanel;
     private boolean isEnrolled = false; // 是否已选课
+    private boolean isConflictClass = false; // 是否为冲突课程（额外添加的教学班）
+    private JLabel conflictBadge; // 课程冲突标识
     
     public CourseClassCard(CourseVO course, CourseClassCardPanel parentPanel, UserVO currentUser) {
         this.course = course;
         this.parentPanel = parentPanel;
         this.currentUser = currentUser;
+        // 检测是否为冲突课程（额外添加的教学班，ID为999）
+        this.isConflictClass = (course.getCourseId() != null && course.getCourseId() == 999);
         initComponents();
         setupLayout();
         updateCardContent();
@@ -55,6 +59,28 @@ public class CourseClassCard extends JPanel {
         locationLabel = new JLabel();
         capacityLabel = new JLabel();
         enrolledCountLabel = new JLabel();
+        
+        // 创建课程冲突标识
+        conflictBadge = new JLabel("课程冲突") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // 绘制圆角背景
+                g2d.setColor(new Color(220, 53, 69)); // 红色背景
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                
+                g2d.dispose();
+                super.paintComponent(g);
+            }
+        };
+        conflictBadge.setFont(new Font(UITheme.CONTENT_FONT.getFamily(), Font.BOLD, 10));
+        conflictBadge.setForeground(Color.WHITE);
+        conflictBadge.setOpaque(false); // 不绘制默认背景
+        conflictBadge.setHorizontalAlignment(SwingConstants.CENTER);
+        conflictBadge.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
+        conflictBadge.setVisible(isConflictClass); // 只有冲突课程才显示
         
         // 根据用户身份创建不同的按钮
         if (currentUser != null && currentUser.isAdmin()) {
@@ -111,11 +137,25 @@ public class CourseClassCard extends JPanel {
     private void setupLayout() {
         setLayout(new BorderLayout(0, UITheme.PADDING_MEDIUM));
         
-        // 顶部：教学班信息
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        // 顶部：教学班信息和冲突标识
+        JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
         topPanel.setBorder(UITheme.createEmptyBorder(0, 0, UITheme.PADDING_SMALL, 0));
-        topPanel.add(classInfoLabel);
+        
+        // 左侧：教学班信息
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        leftPanel.setOpaque(false);
+        leftPanel.add(classInfoLabel);
+        
+        // 右侧：冲突标识（仅对学生显示）
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        rightPanel.setOpaque(false);
+        if (currentUser != null && currentUser.isStudent() && isConflictClass) {
+            rightPanel.add(conflictBadge);
+        }
+        
+        topPanel.add(leftPanel, BorderLayout.WEST);
+        topPanel.add(rightPanel, BorderLayout.EAST);
         
         // 中间：详细信息
         JPanel detailPanel = new JPanel(new GridLayout(2, 2, UITheme.PADDING_MEDIUM, UITheme.PADDING_SMALL));
@@ -163,7 +203,7 @@ public class CourseClassCard extends JPanel {
         addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
-                setBorder(UITheme.createRoundedBorder(UITheme.PRIMARY_GREEN, 2, UITheme.RADIUS_MEDIUM));
+                setBorder(UITheme.createRoundedCardBorder(UITheme.PRIMARY_GREEN, 2, UITheme.RADIUS_XXLARGE));
                 setBackground(UITheme.VERY_LIGHT_GREEN);
                 repaint();
             }
@@ -351,16 +391,63 @@ public class CourseClassCard extends JPanel {
      * 显示删除确认对话框
      */
     private void showDeleteConfirmation() {
+        String message;
+        message = "确定要删除这个教学班吗？\n删除后无法恢复！";
+        
         int result = JOptionPane.showConfirmDialog(
             this,
-            "确定要删除这个教学班吗？\n删除后无法恢复！",
+            message,
             "确认删除",
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
         );
         
         if (result == JOptionPane.YES_OPTION) {
-            deleteCourse();
+            if (isConflictClass) {
+                // 对于冲突课程，直接从面板中移除
+                removeConflictClass();
+            } else {
+                // 对于正常课程，调用服务器删除
+                deleteCourse();
+            }
+        }
+    }
+    
+    /**
+     * 移除冲突课程卡片
+     */
+    private void removeConflictClass() {
+        if (parentPanel != null) {
+            // 发送删除冲突课程的消息给服务器
+            sendDeleteConflictClassMessage();
+            
+            // 通知父面板移除这个卡片
+            parentPanel.removeConflictClassCard(this);
+        }
+    }
+    
+    /**
+     * 发送删除冲突课程的消息
+     */
+    private void sendDeleteConflictClassMessage() {
+        try {
+            ServerConnection connection = ServerConnection.getInstance();
+            if (connection.isConnected()) {
+                // 创建删除冲突课程的消息
+                Message message = new Message(
+                    MessageType.DELETE_CONFLICT_CLASS_REQUEST,
+                    course.getCourseId() // 发送课程ID
+                );
+                
+                // 发送消息
+                connection.sendMessage(message);
+                
+                System.out.println("已发送删除冲突课程消息: " + course.getCourseId());
+            } else {
+                System.err.println("无法连接到服务器，无法发送删除冲突课程消息");
+            }
+        } catch (Exception e) {
+            System.err.println("发送删除冲突课程消息时出错: " + e.getMessage());
         }
     }
     

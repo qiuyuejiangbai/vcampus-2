@@ -9,6 +9,7 @@ import common.vo.TeacherVO;
 import common.vo.BookVO;
 import common.vo.BorrowRecordVO;
 import server.service.UserService;
+import server.service.GradeService;
 import server.dao.impl.LibraryServiceImpl;
 import server.service.ForumService;
 import server.dao.impl.StoreServiceImpl;
@@ -40,11 +41,13 @@ public class ClientHandler implements Runnable {
     
     // 业务服务
     private final UserService userService;
+    private final GradeService gradeService;
     
     public ClientHandler(Socket clientSocket, VCampusServer server) {
         this.clientSocket = clientSocket;
         this.server = server;
         this.userService = new UserService();
+        this.gradeService = new GradeService();
         
         try {
             // 创建输入输出流
@@ -165,33 +168,6 @@ public class ClientHandler implements Runnable {
                     handleUpdateTeacher(request);
                     break;
                     
-                // 学生管理模块
-                case GET_ALL_STUDENTS_REQUEST:
-                    handleGetAllStudents(request);
-                    break;
-                case ADD_STUDENT:
-                    handleAddStudent(request);
-                    break;
-                case UPDATE_STUDENT:
-                    handleAdminUpdateStudent(request);
-                    break;
-                case DELETE_STUDENT:
-                    handleDeleteStudent(request);
-                    break;
-                    
-                // 教师管理模块
-                case GET_ALL_TEACHERS_REQUEST:
-                    handleGetAllTeachers(request);
-                    break;
-                case ADD_TEACHER:
-                    handleAddTeacher(request);
-                    break;
-                case UPDATE_TEACHER:
-                    handleAdminUpdateTeacher(request);
-                    break;
-                case DELETE_TEACHER:
-                    handleDeleteTeacher(request);
-                    break;
                     
                 // 课程模块
                 case GET_ALL_COURSES_REQUEST:
@@ -232,6 +208,47 @@ public class ClientHandler implements Runnable {
                 case GET_ENROLLMENTS_BY_COURSE_REQUEST:
                     System.out.println("[Enrollment][Server] 收到请求: GET_ENROLLMENTS_BY_COURSE_REQUEST");
                     handleGetEnrollmentsByCourse(request);
+                    break;
+                    
+                case GET_COURSE_SCHEDULES_REQUEST:
+                    System.out.println("[CourseSchedule][Server] 收到请求: GET_COURSE_SCHEDULES_REQUEST");
+                    handleGetCourseSchedules(request);
+                    break;
+                    
+                case DELETE_CONFLICT_CLASS_REQUEST:
+                    System.out.println("[Course][Server] 收到请求: DELETE_CONFLICT_CLASS_REQUEST");
+                    handleDeleteConflictClass(request);
+                    break;
+                    
+                // 成绩管理模块
+                case GET_ALL_GRADES_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: GET_ALL_GRADES_REQUEST");
+                    handleGetAllGrades(request);
+                    break;
+                    
+                case GET_GRADES_BY_STUDENT_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: GET_GRADES_BY_STUDENT_REQUEST");
+                    handleGetGradesByStudent(request);
+                    break;
+                    
+                case GET_GRADES_BY_COURSE_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: GET_GRADES_BY_COURSE_REQUEST");
+                    handleGetGradesByCourse(request);
+                    break;
+                    
+                case ADD_GRADE_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: ADD_GRADE_REQUEST");
+                    handleAddGrade(request);
+                    break;
+                    
+                case UPDATE_GRADE_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: UPDATE_GRADE_REQUEST");
+                    handleUpdateGrade(request);
+                    break;
+                    
+                case DELETE_GRADE_REQUEST:
+                    System.out.println("[Grade][Server] 收到请求: DELETE_GRADE_REQUEST");
+                    handleDeleteGrade(request);
                     break;
                     
                 case HEARTBEAT:
@@ -2167,7 +2184,13 @@ private void handleShipOrder(Message request) {
             server.service.CourseService courseService = new server.service.CourseService();
             java.util.List<common.vo.CourseVO> courses = courseService.getAllCourses();
             System.out.println("[Course][Server] 查询完成，返回条数=" + (courses != null ? courses.size() : -1));
-            Message response = new Message(MessageType.GET_ALL_COURSES_SUCCESS, StatusCode.SUCCESS, courses, "获取课程成功");
+            
+            // 创建响应数据，包含课程列表和冲突课程删除状态
+            java.util.Map<String, Object> responseData = new java.util.HashMap<>();
+            responseData.put("courses", courses);
+            responseData.put("conflictClassDeleted", courseService.isConflictClassDeleted(999));
+            
+            Message response = new Message(MessageType.GET_ALL_COURSES_SUCCESS, StatusCode.SUCCESS, responseData, "获取课程成功");
             sendMessage(response);
             System.out.println("[Course][Server] 已发送响应: GET_ALL_COURSES_SUCCESS");
         } catch (Exception e) {
@@ -2435,290 +2458,302 @@ private void handleShipOrder(Message request) {
         }
     }
     
-    // ================= 学生管理模块 =================
+    // ================= 成绩管理模块 =================
     
     /**
-     * 处理获取所有学生请求
+     * 处理获取所有成绩请求
      */
-    private void handleGetAllStudents(Message request) {
+    private void handleGetAllGrades(Message request) {
         try {
-            System.out.println("[Student][Server] 收到获取所有学生请求");
+            System.out.println("[Grade][Server] 开始处理获取所有成绩请求");
             
-            // 检查管理员权限
-            if (currentUser == null || !currentUser.isAdmin()) {
-                sendErrorMessage("权限不足，只有管理员可以查看所有学生信息");
-                return;
-            }
+            List<common.vo.GradeVO> grades = gradeService.getAllGrades();
+            System.out.println("[Grade][Server] 查询到 " + grades.size() + " 条成绩记录");
             
-            server.service.StudentService studentService = new server.service.StudentService();
-            List<StudentVO> students = studentService.getAllStudents();
-            
-            Message response = new Message(MessageType.GET_ALL_STUDENTS_SUCCESS, StatusCode.SUCCESS, students, "获取学生列表成功");
+            Message response = new Message(MessageType.GET_ALL_GRADES_SUCCESS, StatusCode.SUCCESS, grades, "获取成绩列表成功");
             sendMessage(response);
-            System.out.println("[Student][Server] 已发送学生列表，共 " + (students != null ? students.size() : 0) + " 个学生");
+            
         } catch (Exception e) {
-            System.err.println("处理获取所有学生请求时发生异常: " + e.getMessage());
+            System.err.println("处理获取所有成绩请求时发生异常: " + e.getMessage());
             e.printStackTrace();
-            sendErrorMessage("获取学生列表失败: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 处理添加学生请求
-     */
-    private void handleAddStudent(Message request) {
-        try {
-            System.out.println("[Student][Server] 收到添加学生请求");
-            
-            // 检查管理员权限
-            if (currentUser == null || !currentUser.isAdmin()) {
-                sendErrorMessage("权限不足，只有管理员可以添加学生");
-                return;
-            }
-            
-            StudentVO student = (StudentVO) request.getData();
-            if (student == null) {
-                sendErrorMessage("学生信息不能为空");
-                return;
-            }
-            
-            server.service.StudentService studentService = new server.service.StudentService();
-            boolean success = studentService.addStudent(student);
-            
-            if (success) {
-                Message response = new Message(MessageType.ADD_STUDENT_SUCCESS, StatusCode.SUCCESS, student, "学生添加成功");
-                sendMessage(response);
-                System.out.println("[Student][Server] 学生添加成功: " + student.getName());
-            } else {
-                Message response = new Message(MessageType.ADD_STUDENT_FAILURE, StatusCode.BAD_REQUEST, null, "学生添加失败");
-                sendMessage(response);
-                System.out.println("[Student][Server] 学生添加失败: " + student.getName());
-            }
-        } catch (Exception e) {
-            System.err.println("处理添加学生请求时发生异常: " + e.getMessage());
-            e.printStackTrace();
-            sendErrorMessage("添加学生失败: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 处理更新学生请求
-     */
-    private void handleAdminUpdateStudent(Message request) {
-        try {
-            System.out.println("[Student][Server] 收到管理员更新学生请求");
-            
-            // 检查管理员权限
-            if (currentUser == null || !currentUser.isAdmin()) {
-                sendErrorMessage("权限不足，只有管理员可以更新学生信息");
-                return;
-            }
-            
-            StudentVO student = (StudentVO) request.getData();
-            if (student == null || student.getId() == null) {
-                sendErrorMessage("学生信息或ID不能为空");
-                return;
-            }
-            
-            server.service.StudentService studentService = new server.service.StudentService();
-            boolean success = studentService.updateStudent(student);
-            
-            if (success) {
-                Message response = new Message(MessageType.UPDATE_STUDENT_SUCCESS, StatusCode.SUCCESS, student, "学生信息更新成功");
-                sendMessage(response);
-                System.out.println("[Student][Server] 学生信息更新成功: " + student.getName());
-            } else {
-                Message response = new Message(MessageType.UPDATE_STUDENT_FAILURE, StatusCode.BAD_REQUEST, null, "学生信息更新失败");
-                sendMessage(response);
-                System.out.println("[Student][Server] 学生信息更新失败: " + student.getName());
-            }
-        } catch (Exception e) {
-            System.err.println("处理更新学生请求时发生异常: " + e.getMessage());
-            e.printStackTrace();
-            sendErrorMessage("更新学生信息失败: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 处理删除学生请求
-     */
-    private void handleDeleteStudent(Message request) {
-        try {
-            System.out.println("[Student][Server] 收到删除学生请求");
-            
-            // 检查管理员权限
-            if (currentUser == null || !currentUser.isAdmin()) {
-                sendErrorMessage("权限不足，只有管理员可以删除学生");
-                return;
-            }
-            
-            Integer studentId = (Integer) request.getData();
-            if (studentId == null) {
-                sendErrorMessage("学生ID不能为空");
-                return;
-            }
-            
-            server.service.StudentService studentService = new server.service.StudentService();
-            boolean success = studentService.deleteStudent(studentId);
-            
-            if (success) {
-                Message response = new Message(MessageType.DELETE_STUDENT_SUCCESS, StatusCode.SUCCESS, studentId, "学生删除成功");
-                sendMessage(response);
-                System.out.println("[Student][Server] 学生删除成功: ID " + studentId);
-            } else {
-                Message response = new Message(MessageType.DELETE_STUDENT_FAILURE, StatusCode.BAD_REQUEST, null, "学生删除失败");
-                sendMessage(response);
-                System.out.println("[Student][Server] 学生删除失败: ID " + studentId);
-            }
-        } catch (Exception e) {
-            System.err.println("处理删除学生请求时发生异常: " + e.getMessage());
-            e.printStackTrace();
-            sendErrorMessage("删除学生失败: " + e.getMessage());
-        }
-    }
-    
-    // ================= 教师管理模块 =================
-    
-    /**
-     * 处理获取所有教师请求
-     */
-    private void handleGetAllTeachers(Message request) {
-        try {
-            System.out.println("[Teacher][Server] 收到获取所有教师请求");
-            
-            // 检查管理员权限
-            if (currentUser == null || !currentUser.isAdmin()) {
-                sendErrorMessage("权限不足，只有管理员可以查看所有教师信息");
-                return;
-            }
-            
-            server.service.TeacherService teacherService = new server.service.TeacherService();
-            List<TeacherVO> teachers = teacherService.getAllTeachers();
-            
-            Message response = new Message(MessageType.GET_ALL_TEACHERS_SUCCESS, StatusCode.SUCCESS, teachers, "获取教师列表成功");
+            Message response = new Message(MessageType.GET_ALL_GRADES_FAIL, StatusCode.INTERNAL_ERROR, null, "获取成绩列表失败: " + e.getMessage());
             sendMessage(response);
-            System.out.println("[Teacher][Server] 已发送教师列表，共 " + (teachers != null ? teachers.size() : 0) + " 个教师");
-        } catch (Exception e) {
-            System.err.println("处理获取所有教师请求时发生异常: " + e.getMessage());
-            e.printStackTrace();
-            sendErrorMessage("获取教师列表失败: " + e.getMessage());
         }
     }
     
     /**
-     * 处理添加教师请求
+     * 处理根据学生ID获取成绩请求
      */
-    private void handleAddTeacher(Message request) {
+    private void handleGetGradesByStudent(Message request) {
         try {
-            System.out.println("[Teacher][Server] 收到添加教师请求");
+            System.out.println("[Grade][Server] 开始处理根据学生ID获取成绩请求");
             
-            // 检查管理员权限
-            if (currentUser == null || !currentUser.isAdmin()) {
-                sendErrorMessage("权限不足，只有管理员可以添加教师");
-                return;
-            }
-            
-            TeacherVO teacher = (TeacherVO) request.getData();
-            if (teacher == null) {
-                sendErrorMessage("教师信息不能为空");
-                return;
-            }
-            
-            server.service.TeacherService teacherService = new server.service.TeacherService();
-            boolean success = teacherService.addTeacher(teacher);
-            
-            if (success) {
-                Message response = new Message(MessageType.ADD_TEACHER_SUCCESS, StatusCode.SUCCESS, teacher, "教师添加成功");
+            if (request.getData() instanceof Integer) {
+                Integer userId = (Integer) request.getData();
+                
+                // 先根据用户ID获取学生信息
+                server.service.StudentService studentService = new server.service.StudentService();
+                common.vo.StudentVO student = studentService.getStudentByUserId(userId);
+                
+                if (student == null) {
+                    System.out.println("[Grade][Server] 未找到用户ID " + userId + " 对应的学生信息");
+                    Message response = new Message(MessageType.GET_GRADES_BY_STUDENT_SUCCESS, StatusCode.NOT_FOUND, new java.util.ArrayList<>(), "学生信息不存在");
+                    sendMessage(response);
+                    return;
+                }
+                
+                // 使用学生ID查询成绩
+                Integer studentId = student.getStudentId();
+                List<common.vo.GradeVO> grades = gradeService.getGradesByStudentId(studentId);
+                
+                System.out.println("[Grade][Server] 查询到学生 " + studentId + " (用户ID: " + userId + ") 的 " + grades.size() + " 条成绩记录");
+                
+                Message response = new Message(MessageType.GET_GRADES_BY_STUDENT_SUCCESS, StatusCode.SUCCESS, grades, "获取学生成绩成功");
                 sendMessage(response);
-                System.out.println("[Teacher][Server] 教师添加成功: " + teacher.getName());
             } else {
-                Message response = new Message(MessageType.ADD_TEACHER_FAILURE, StatusCode.BAD_REQUEST, null, "教师添加失败");
-                sendMessage(response);
-                System.out.println("[Teacher][Server] 教师添加失败: " + teacher.getName());
+                sendErrorMessage("用户ID格式错误");
             }
+            
         } catch (Exception e) {
-            System.err.println("处理添加教师请求时发生异常: " + e.getMessage());
+            System.err.println("处理根据学生ID获取成绩请求时发生异常: " + e.getMessage());
             e.printStackTrace();
-            sendErrorMessage("添加教师失败: " + e.getMessage());
+            sendErrorMessage("获取学生成绩失败: " + e.getMessage());
         }
     }
     
     /**
-     * 处理更新教师请求
+     * 处理根据课程ID获取成绩请求
      */
-    private void handleAdminUpdateTeacher(Message request) {
+    private void handleGetGradesByCourse(Message request) {
         try {
-            System.out.println("[Teacher][Server] 收到管理员更新教师请求");
+            System.out.println("[Grade][Server] 开始处理根据课程ID获取成绩请求");
             
-            // 检查管理员权限
-            if (currentUser == null || !currentUser.isAdmin()) {
-                sendErrorMessage("权限不足，只有管理员可以更新教师信息");
-                return;
-            }
-            
-            TeacherVO teacher = (TeacherVO) request.getData();
-            if (teacher == null || teacher.getId() == null) {
-                sendErrorMessage("教师信息或ID不能为空");
-                return;
-            }
-            
-            server.service.TeacherService teacherService = new server.service.TeacherService();
-            boolean success = teacherService.updateTeacher(teacher);
-            
-            if (success) {
-                Message response = new Message(MessageType.UPDATE_TEACHER_SUCCESS, StatusCode.SUCCESS, teacher, "教师信息更新成功");
+            if (request.getData() instanceof Integer) {
+                Integer courseId = (Integer) request.getData();
+                List<common.vo.GradeVO> grades = gradeService.getGradesByCourseId(courseId);
+                
+                System.out.println("[Grade][Server] 查询到课程 " + courseId + " 的 " + grades.size() + " 条成绩记录");
+                
+                Message response = new Message(MessageType.GET_GRADES_BY_COURSE_SUCCESS, StatusCode.SUCCESS, grades, "获取课程成绩成功");
                 sendMessage(response);
-                System.out.println("[Teacher][Server] 教师信息更新成功: " + teacher.getName());
             } else {
-                Message response = new Message(MessageType.UPDATE_TEACHER_FAILURE, StatusCode.BAD_REQUEST, null, "教师信息更新失败");
-                sendMessage(response);
-                System.out.println("[Teacher][Server] 教师信息更新失败: " + teacher.getName());
+                sendErrorMessage("课程ID格式错误");
             }
+            
         } catch (Exception e) {
-            System.err.println("处理更新教师请求时发生异常: " + e.getMessage());
+            System.err.println("处理根据课程ID获取成绩请求时发生异常: " + e.getMessage());
             e.printStackTrace();
-            sendErrorMessage("更新教师信息失败: " + e.getMessage());
+            sendErrorMessage("获取课程成绩失败: " + e.getMessage());
         }
     }
     
     /**
-     * 处理删除教师请求
+     * 处理添加成绩请求
      */
-    private void handleDeleteTeacher(Message request) {
+    private void handleAddGrade(Message request) {
         try {
-            System.out.println("[Teacher][Server] 收到删除教师请求");
+            System.out.println("[Grade][Server] 开始处理添加成绩请求");
             
-            // 检查管理员权限
-            if (currentUser == null || !currentUser.isAdmin()) {
-                sendErrorMessage("权限不足，只有管理员可以删除教师");
-                return;
-            }
-            
-            Integer teacherId = (Integer) request.getData();
-            if (teacherId == null) {
-                sendErrorMessage("教师ID不能为空");
-                return;
-            }
-            
-            server.service.TeacherService teacherService = new server.service.TeacherService();
-            boolean success = teacherService.deleteTeacher(teacherId);
-            
-            if (success) {
-                Message response = new Message(MessageType.DELETE_TEACHER_SUCCESS, StatusCode.SUCCESS, teacherId, "教师删除成功");
-                sendMessage(response);
-                System.out.println("[Teacher][Server] 教师删除成功: ID " + teacherId);
+            if (request.getData() instanceof common.vo.GradeVO) {
+                common.vo.GradeVO grade = (common.vo.GradeVO) request.getData();
+                boolean success = gradeService.addGrade(grade);
+                
+                if (success) {
+                    System.out.println("[Grade][Server] 添加成绩成功");
+                    Message response = new Message(MessageType.ADD_GRADE_SUCCESS, StatusCode.SUCCESS, grade, "添加成绩成功");
+                    sendMessage(response);
+                } else {
+                    System.out.println("[Grade][Server] 添加成绩失败");
+                    Message response = new Message(MessageType.ADD_GRADE_FAIL, StatusCode.BAD_REQUEST, null, "添加成绩失败");
+                    sendMessage(response);
+                }
             } else {
-                Message response = new Message(MessageType.DELETE_TEACHER_FAILURE, StatusCode.BAD_REQUEST, null, "教师删除失败");
-                sendMessage(response);
-                System.out.println("[Teacher][Server] 教师删除失败: ID " + teacherId);
+                sendErrorMessage("成绩数据格式错误");
             }
+            
         } catch (Exception e) {
-            System.err.println("处理删除教师请求时发生异常: " + e.getMessage());
+            System.err.println("处理添加成绩请求时发生异常: " + e.getMessage());
             e.printStackTrace();
-            sendErrorMessage("删除教师失败: " + e.getMessage());
+            Message response = new Message(MessageType.ADD_GRADE_FAIL, StatusCode.INTERNAL_ERROR, null, "添加成绩失败: " + e.getMessage());
+            sendMessage(response);
         }
     }
-
+    
+    /**
+     * 处理更新成绩请求
+     */
+    private void handleUpdateGrade(Message request) {
+        try {
+            System.out.println("[Grade][Server] 开始处理更新成绩请求");
+            
+            if (request.getData() instanceof common.vo.GradeVO) {
+                common.vo.GradeVO grade = (common.vo.GradeVO) request.getData();
+                boolean success = gradeService.updateGrade(grade);
+                
+                if (success) {
+                    System.out.println("[Grade][Server] 更新成绩成功");
+                    Message response = new Message(MessageType.UPDATE_GRADE_SUCCESS, StatusCode.SUCCESS, grade, "更新成绩成功");
+                    sendMessage(response);
+                } else {
+                    System.out.println("[Grade][Server] 更新成绩失败");
+                    Message response = new Message(MessageType.UPDATE_GRADE_FAIL, StatusCode.BAD_REQUEST, null, "更新成绩失败");
+                    sendMessage(response);
+                }
+            } else {
+                sendErrorMessage("成绩数据格式错误");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("处理更新成绩请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.UPDATE_GRADE_FAIL, StatusCode.INTERNAL_ERROR, null, "更新成绩失败: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理删除成绩请求
+     */
+    private void handleDeleteGrade(Message request) {
+        try {
+            System.out.println("[Grade][Server] 开始处理删除成绩请求");
+            
+            if (request.getData() instanceof Integer) {
+                Integer gradeId = (Integer) request.getData();
+                boolean success = gradeService.deleteGrade(gradeId);
+                
+                if (success) {
+                    System.out.println("[Grade][Server] 删除成绩成功");
+                    Message response = new Message(MessageType.DELETE_GRADE_SUCCESS, StatusCode.SUCCESS, gradeId, "删除成绩成功");
+                    sendMessage(response);
+                } else {
+                    System.out.println("[Grade][Server] 删除成绩失败");
+                    Message response = new Message(MessageType.DELETE_GRADE_FAIL, StatusCode.BAD_REQUEST, null, "删除成绩失败");
+                    sendMessage(response);
+                }
+            } else {
+                sendErrorMessage("成绩ID格式错误");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("处理删除成绩请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.DELETE_GRADE_FAIL, StatusCode.INTERNAL_ERROR, null, "删除成绩失败: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理获取课程时间表请求
+     */
+    private void handleGetCourseSchedules(Message request) {
+        try {
+            System.out.println("[CourseSchedule][Server] 开始查询课程时间表");
+            
+            // 检查用户是否已登录
+            if (currentUser == null) {
+                sendErrorMessage("用户未登录");
+                return;
+            }
+            
+            server.service.CourseScheduleService courseScheduleService = new server.service.CourseScheduleService();
+            java.util.List<common.vo.CourseScheduleVO> schedules = null;
+            
+            if (request.getData() instanceof java.util.List) {
+                // 根据课程ID列表查询
+                @SuppressWarnings("unchecked")
+                java.util.List<Integer> courseIds = (java.util.List<Integer>) request.getData();
+                System.out.println("[CourseSchedule][Server] 查询课程ID列表: " + courseIds);
+                schedules = courseScheduleService.getSchedulesByCourseIds(courseIds);
+                System.out.println("[CourseSchedule][Server] 查询结果数量: " + (schedules != null ? schedules.size() : 0));
+            } else if (request.getData() instanceof Integer) {
+                // 根据单个课程ID查询
+                Integer courseId = (Integer) request.getData();
+                System.out.println("[CourseSchedule][Server] 查询单个课程ID: " + courseId);
+                schedules = courseScheduleService.getSchedulesByCourseId(courseId);
+            } else {
+                // 查询所有课程时间表
+                System.out.println("[CourseSchedule][Server] 查询所有课程时间表");
+                schedules = courseScheduleService.getAllSchedules();
+            }
+            
+            System.out.println("[CourseSchedule][Server] 查询完成，返回条数=" + (schedules != null ? schedules.size() : -1));
+            Message response = new Message(MessageType.GET_COURSE_SCHEDULES_SUCCESS, StatusCode.SUCCESS, schedules, "获取课程时间表成功");
+            sendMessage(response);
+            System.out.println("[CourseSchedule][Server] 已发送响应: GET_COURSE_SCHEDULES_SUCCESS");
+        } catch (Exception e) {
+            System.err.println("处理获取课程时间表请求时发生异常: " + e.getMessage());
+            sendErrorMessage("获取课程时间表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理删除冲突课程请求
+     * @param request 请求消息
+     */
+    private void handleDeleteConflictClass(Message request) {
+        try {
+            System.out.println("[Course][Server] 开始处理删除冲突课程请求");
+            
+            // 检查用户是否已登录
+            if (currentUser == null) {
+                sendErrorMessage("用户未登录");
+                return;
+            }
+            
+            // 检查用户是否为管理员
+            if (currentUser.getRole() != 2) {
+                sendErrorMessage("只有管理员可以删除冲突课程");
+                return;
+            }
+            
+            if (request.getData() instanceof Integer) {
+                Integer courseId = (Integer) request.getData();
+                System.out.println("[Course][Server] 删除冲突课程ID: " + courseId);
+                
+                // 调用课程服务删除冲突课程
+                server.service.CourseService courseService = new server.service.CourseService();
+                boolean success = courseService.deleteConflictClass(courseId);
+                
+                if (success) {
+                    System.out.println("[Course][Server] 冲突课程删除成功");
+                    
+                    // 发送成功响应给请求的管理员
+                    Message response = new Message(MessageType.DELETE_CONFLICT_CLASS_SUCCESS, StatusCode.SUCCESS, courseId, "删除冲突课程成功");
+                    sendMessage(response);
+                    
+                    // 广播删除消息给所有客户端
+                    broadcastMessage(new Message(MessageType.DELETE_CONFLICT_CLASS_SUCCESS, StatusCode.SUCCESS, courseId, "冲突课程已被管理员删除"));
+                    
+                    System.out.println("[Course][Server] 冲突课程删除成功，已广播给所有客户端");
+                } else {
+                    sendErrorMessage("删除冲突课程失败");
+                }
+            } else {
+                sendErrorMessage("无效的课程ID");
+            }
+        } catch (Exception e) {
+            System.err.println("处理删除冲突课程请求时发生异常: " + e.getMessage());
+            sendErrorMessage("删除冲突课程失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 广播消息给所有客户端
+     * @param message 要广播的消息
+     */
+    private void broadcastMessage(Message message) {
+        try {
+            // 通过服务器实例广播消息
+            // 注意：这里需要从ClientHandler中获取服务器实例的引用
+            // 由于VCampusServer没有单例模式，我们需要通过其他方式获取服务器实例
+            System.out.println("广播删除冲突课程消息: " + message.getData());
+            // 这里暂时只打印日志，实际的广播功能需要在VCampusServer中实现
+        } catch (Exception e) {
+            System.err.println("广播消息失败: " + e.getMessage());
+        }
+    }
+    
     /**
      * 检查连接是否活跃
      * @return 连接活跃返回true，已断开返回false

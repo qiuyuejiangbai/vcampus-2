@@ -5,7 +5,6 @@ import common.vo.UserVO;
 import client.net.ServerConnection;
 import common.protocol.Message;
 import common.protocol.MessageType;
-import client.ui.modules.TeacherCourseModule;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,21 +14,21 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * 教师课程卡片面板
- * 用于显示教师教授的所有课程（教学班）信息，以卡片的形式布局
+ * 成绩管理课程卡片面板
+ * 用于显示教师教授的所有课程（教学班）信息，以卡片的形式布局，用于成绩管理
  */
-public class TeacherCourseCardPanel extends JPanel {
+public class GradeManagementCardPanel extends JPanel {
     private JPanel cardContainer;
     private JScrollPane scrollPane;
     private List<CourseVO> courseList;
-    private List<TeacherCourseCard> courseCards;
+    private List<GradeManagementCourseCard> courseCards;
     private Map<String, List<CourseVO>> coursesByCode;
     private UserVO currentUser;
     private ServerConnection connection;
     private JLabel emptyLabel;
     private Object parentModule; // 保持对父模块的引用
 
-    public TeacherCourseCardPanel(UserVO currentUser, ServerConnection connection) {
+    public GradeManagementCardPanel(UserVO currentUser, ServerConnection connection) {
         this.currentUser = currentUser;
         this.connection = connection;
         this.courseList = new ArrayList<>();
@@ -45,6 +44,9 @@ public class TeacherCourseCardPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             loadCourseData();
         });
+        
+        // 添加一个测试卡片，确保界面能够显示
+        addTestCard();
     }
 
     private void initComponents() {
@@ -80,10 +82,10 @@ public class TeacherCourseCardPanel extends JPanel {
     }
 
     /**
-     * 创建测试卡片，确保界面能够显示
+     * 添加测试卡片，确保界面能够显示
      */
-    private TeacherCourseCard createTestCard() {
-        System.out.println("=== 创建测试卡片 ===");
+    private void addTestCard() {
+        System.out.println("=== 添加成绩管理测试卡片 ===");
         
         // 创建一个测试课程
         CourseVO testCourse = new CourseVO();
@@ -104,10 +106,14 @@ public class TeacherCourseCardPanel extends JPanel {
         testCourse.setDescription("这是一个测试课程");
         
         // 创建测试卡片
-        TeacherCourseCard testCard = new TeacherCourseCard(testCourse, this, currentUser, connection);
+        GradeManagementCourseCard testCard = new GradeManagementCourseCard(testCourse, this, currentUser, connection);
+        cardContainer.add(testCard);
         
-        System.out.println("测试卡片创建完成");
-        return testCard;
+        // 刷新界面
+        cardContainer.revalidate();
+        cardContainer.repaint();
+        
+        System.out.println("成绩管理测试卡片已添加");
     }
     
     /**
@@ -115,11 +121,11 @@ public class TeacherCourseCardPanel extends JPanel {
      */
     private void setupMessageListener() {
         if (connection != null) {
-            System.out.println("设置教师课程消息监听器");
+            System.out.println("设置成绩管理课程消息监听器");
             // 设置课程列表响应监听器
             connection.setMessageListener(MessageType.GET_ALL_COURSES_SUCCESS, message -> {
                 SwingUtilities.invokeLater(() -> {
-                    System.out.println("收到课程列表响应消息");
+                    System.out.println("成绩管理收到课程列表响应消息");
                     if (message.getData() instanceof Map) {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> responseData = (Map<String, Object>) message.getData();
@@ -135,13 +141,7 @@ public class TeacherCourseCardPanel extends JPanel {
                             groupCoursesByCode(courses);
                             
                             refreshCards();
-                            System.out.println("教师成功加载 " + courses.size() + " 门课程");
-                            
-                            // 同时更新成绩管理面板的数据
-                            updateGradeCardPanelData(courses);
-                            
-                            // 通知父模块更新状态标签
-                            notifyParentModuleUpdateStatus();
+                            System.out.println("成绩管理成功加载 " + courses.size() + " 门课程");
                         }
                     } else if (message.getData() instanceof List) {
                         // 兼容旧的响应格式
@@ -154,20 +154,14 @@ public class TeacherCourseCardPanel extends JPanel {
                         groupCoursesByCode(courses);
                         
                         refreshCards();
-                        System.out.println("教师成功加载 " + courses.size() + " 门课程");
-                        
-                        // 同时更新成绩管理面板的数据
-                        updateGradeCardPanelData(courses);
-                        
-                        // 通知父模块更新状态标签
-                        notifyParentModuleUpdateStatus();
+                        System.out.println("成绩管理成功加载 " + courses.size() + " 门课程");
                     } else {
-                        System.out.println("课程数据格式错误: " + message.getData());
+                        System.out.println("成绩管理课程数据格式错误: " + message.getData());
                     }
                 });
             });
         } else {
-            System.out.println("连接为空，无法设置消息监听器");
+            System.out.println("连接为空，无法设置成绩管理消息监听器");
         }
     }
 
@@ -176,11 +170,11 @@ public class TeacherCourseCardPanel extends JPanel {
      */
     public void groupCoursesByCode(List<CourseVO> courses) {
         coursesByCode.clear();
-        System.out.println("开始分组课程数据，当前用户ID: " + (currentUser != null ? currentUser.getUserId() : "null"));
+        System.out.println("开始分组成绩管理课程数据，当前用户ID: " + (currentUser != null ? currentUser.getUserId() : "null"));
         System.out.println("课程总数: " + courses.size());
         
         for (CourseVO course : courses) {
-            System.out.println("处理课程: " + course.getCourseName() + 
+            System.out.println("处理成绩管理课程: " + course.getCourseName() + 
                              ", teacher_id: " + course.getTeacherId() + 
                              ", teacher_name: " + course.getTeacherName());
         }
@@ -190,18 +184,18 @@ public class TeacherCourseCardPanel extends JPanel {
             if (currentUser != null && course.getTeacherId() != null) {
                 // 根据用户ID获取对应的teacher_id
                 Integer teacherId = getTeacherIdByUserId(currentUser.getUserId());
-                System.out.println("课程: " + course.getCourseName() + ", 课程teacher_id: " + course.getTeacherId() + 
+                System.out.println("成绩管理课程: " + course.getCourseName() + ", 课程teacher_id: " + course.getTeacherId() + 
                                  ", 当前用户teacher_id: " + teacherId);
                 
                 if (teacherId != null && course.getTeacherId().equals(teacherId)) {
                     String courseCode = course.getCourseCode();
                     coursesByCode.computeIfAbsent(courseCode, k -> new ArrayList<>()).add(course);
-                    System.out.println("添加课程到分组: " + course.getCourseName());
+                    System.out.println("添加成绩管理课程到分组: " + course.getCourseName());
                 }
             }
         }
         
-        System.out.println("分组完成，共 " + coursesByCode.size() + " 个课程组");
+        System.out.println("成绩管理分组完成，共 " + coursesByCode.size() + " 个课程组");
     }
     
     /**
@@ -224,14 +218,14 @@ public class TeacherCourseCardPanel extends JPanel {
      * 加载课程数据
      */
     private void loadCourseData() {
-        System.out.println("=== 开始加载课程数据 ===");
+        System.out.println("=== 开始加载成绩管理课程数据 ===");
         System.out.println("连接状态: " + (connection != null ? "已连接" : "未连接"));
         System.out.println("当前用户: " + (currentUser != null ? currentUser.getLoginId() : "null"));
         System.out.println("用户ID: " + (currentUser != null ? currentUser.getUserId() : "null"));
         
         try {
             if (connection == null) {
-                System.err.println("连接为空，无法加载课程数据");
+                System.err.println("连接为空，无法加载成绩管理课程数据");
                 courseList.clear();
                 refreshCards();
                 return;
@@ -255,30 +249,30 @@ public class TeacherCourseCardPanel extends JPanel {
             
             // 发送消息到服务器
             if (connection.sendMessage(request)) {
-                System.out.println("已发送获取课程列表请求");
+                System.out.println("已发送获取成绩管理课程列表请求");
                 // 等待服务器响应，这里暂时清空卡片
                 courseList.clear();
                 refreshCards();
-                System.out.println("等待服务器响应课程数据...");
+                System.out.println("等待服务器响应成绩管理课程数据...");
             } else {
-                System.err.println("发送获取课程数据请求失败");
+                System.err.println("发送获取成绩管理课程数据请求失败");
                 courseList.clear();
                 refreshCards();
             }
         } catch (Exception e) {
-            System.err.println("加载课程数据时发生错误: " + e.getMessage());
+            System.err.println("加载成绩管理课程数据时发生错误: " + e.getMessage());
             e.printStackTrace();
             courseList.clear();
             refreshCards();
         }
-        System.out.println("=== 课程数据加载完成 ===");
+        System.out.println("=== 成绩管理课程数据加载完成 ===");
     }
 
     /**
      * 刷新卡片显示
      */
-    public void  refreshCards() {
-        System.out.println("=== 刷新卡片显示 ===");
+    public void refreshCards() {
+        System.out.println("=== 刷新成绩管理卡片显示 ===");
         System.out.println("课程组数量: " + coursesByCode.size());
         System.out.println("当前用户: " + (currentUser != null ? currentUser.getLoginId() : "null"));
         System.out.println("连接状态: " + (connection != null ? "已连接" : "未连接"));
@@ -288,23 +282,17 @@ public class TeacherCourseCardPanel extends JPanel {
         courseCards.clear();
         
         if (coursesByCode.isEmpty()) {
-            System.out.println("没有课程数据，保持测试卡片显示");
-            // 确保滚动面板可见
-            remove(emptyLabel);
-            add(scrollPane, BorderLayout.CENTER);
-            emptyLabel.setVisible(false);
-            scrollPane.setVisible(true);
-            
-            // 重新添加测试卡片
-            TeacherCourseCard testCard = createTestCard();
-            cardContainer.add(testCard);
-            courseCards.add(testCard);
+            System.out.println("没有成绩管理课程数据，显示空状态");
+            // 移除滚动面板，添加空状态标签
+            remove(scrollPane);
+            add(emptyLabel, BorderLayout.CENTER);
+            emptyLabel.setVisible(true);
             revalidate();
             repaint();
             return;
         }
         
-        System.out.println("开始创建课程卡片");
+        System.out.println("开始创建成绩管理课程卡片");
         // 移除空状态标签，添加滚动面板
         remove(emptyLabel);
         add(scrollPane, BorderLayout.CENTER);
@@ -317,22 +305,22 @@ public class TeacherCourseCardPanel extends JPanel {
             
             // 使用第一个课程作为代表（因为同一课程代码的课程信息基本相同）
             CourseVO representativeCourse = courses.get(0);
-            System.out.println("创建课程卡片: " + representativeCourse.getCourseName() + 
+            System.out.println("创建成绩管理课程卡片: " + representativeCourse.getCourseName() + 
                              " (teacher_id: " + representativeCourse.getTeacherId() + ")");
             
-            // 创建教师课程卡片
-            TeacherCourseCard card = new TeacherCourseCard(representativeCourse, this, currentUser, connection);
+            // 创建成绩管理课程卡片
+            GradeManagementCourseCard card = new GradeManagementCourseCard(representativeCourse, this, currentUser, connection);
             courseCards.add(card);
             cardContainer.add(card);
         }
         
-        System.out.println("创建了 " + courseCards.size() + " 个课程卡片");
+        System.out.println("创建了 " + courseCards.size() + " 个成绩管理课程卡片");
         
         // 刷新布局
         cardContainer.revalidate();
         cardContainer.repaint();
         
-        System.out.println("=== 卡片刷新完成 ===");
+        System.out.println("=== 成绩管理卡片刷新完成 ===");
     }
 
     /**
@@ -372,7 +360,7 @@ public class TeacherCourseCardPanel extends JPanel {
             
             if (matches) {
                 CourseVO representativeCourse = courses.get(0);
-                TeacherCourseCard card = new TeacherCourseCard(representativeCourse, this, currentUser, connection);
+                GradeManagementCourseCard card = new GradeManagementCourseCard(representativeCourse, this, currentUser, connection);
                 courseCards.add(card);
                 cardContainer.add(card);
             }
@@ -420,67 +408,33 @@ public class TeacherCourseCardPanel extends JPanel {
      */
     public void setParentModule(Object parentModule) {
         this.parentModule = parentModule;
-        System.out.println("设置父模块引用: " + (parentModule != null ? parentModule.getClass().getSimpleName() : "null"));
+        System.out.println("成绩管理设置父模块引用: " + (parentModule != null ? parentModule.getClass().getSimpleName() : "null"));
     }
 
     /**
      * 获取课程卡片列表
      */
-    public List<TeacherCourseCard> getCourseCards() {
+    public List<GradeManagementCourseCard> getCourseCards() {
         return courseCards;
-    }
-    
-    /**
-     * 通知父模块更新状态标签
-     */
-    private void notifyParentModuleUpdateStatus() {
-        if (parentModule != null && parentModule instanceof TeacherCourseModule) {
-            TeacherCourseModule module = (TeacherCourseModule) parentModule;
-            module.updateStatusLabels();
-        }
-    }
-
-    /**
-     * 更新成绩管理面板的数据
-     */
-    private void updateGradeCardPanelData(List<CourseVO> courses) {
-        if (parentModule != null) {
-            try {
-                // 通过反射获取成绩管理面板并更新数据
-                java.lang.reflect.Field gradeCardPanelField = parentModule.getClass().getDeclaredField("gradeCardPanel");
-                gradeCardPanelField.setAccessible(true);
-                Object gradeCardPanel = gradeCardPanelField.get(parentModule);
-                
-                if (gradeCardPanel != null) {
-                    // 调用成绩管理面板的数据更新方法
-                    java.lang.reflect.Method setCourseDataMethod = gradeCardPanel.getClass().getMethod("setCourseData", List.class);
-                    setCourseDataMethod.invoke(gradeCardPanel, courses);
-                    
-                    System.out.println("成绩管理面板数据已同步更新");
-                }
-            } catch (Exception e) {
-                System.err.println("更新成绩管理面板数据失败: " + e.getMessage());
-            }
-        }
     }
 
     /**
      * 处理课程卡片点击事件
      */
     public void onCourseCardClicked(CourseVO course) {
-        System.out.println("=== TeacherCourseCardPanel.onCourseCardClicked 被调用 ===");
-        System.out.println("点击了课程卡片: " + (course != null ? course.getCourseName() : "null"));
+        System.out.println("=== GradeManagementCardPanel.onCourseCardClicked 被调用 ===");
+        System.out.println("点击了成绩管理课程卡片: " + (course != null ? course.getCourseName() : "null"));
         
         // 使用直接引用调用父模块方法
         if (parentModule != null) {
             System.out.println("使用直接引用调用父模块: " + parentModule.getClass().getSimpleName());
             try {
-                java.lang.reflect.Method method = parentModule.getClass().getMethod("showStudentList", CourseVO.class);
+                java.lang.reflect.Method method = parentModule.getClass().getMethod("showGradeManagement", CourseVO.class);
                 method.invoke(parentModule, course);
-                System.out.println("成功通过直接引用调用 showStudentList 方法");
+                System.out.println("成功通过直接引用调用 showGradeManagement 方法");
                 return;
             } catch (Exception ex) {
-                System.err.println("通过直接引用调用showStudentList方法失败: " + ex.getMessage());
+                System.err.println("通过直接引用调用showGradeManagement方法失败: " + ex.getMessage());
                 ex.printStackTrace();
             }
         }
@@ -494,13 +448,13 @@ public class TeacherCourseCardPanel extends JPanel {
                 System.out.println("查找父容器 [" + level + "]: " + parent.getClass().getName());
                 
                 if (parent.getClass().getName().equals("client.ui.modules.TeacherCourseModule")) {
-                    System.out.println("找到 TeacherCourseModule，准备调用 showStudentList");
+                    System.out.println("找到 TeacherCourseModule，准备调用 showGradeManagement");
                     try {
-                        java.lang.reflect.Method method = parent.getClass().getMethod("showStudentList", CourseVO.class);
+                        java.lang.reflect.Method method = parent.getClass().getMethod("showGradeManagement", CourseVO.class);
                         method.invoke(parent, course);
-                        System.out.println("成功调用 showStudentList 方法");
+                        System.out.println("成功调用 showGradeManagement 方法");
                     } catch (Exception ex) {
-                        System.err.println("无法调用showStudentList方法: " + ex.getMessage());
+                        System.err.println("无法调用showGradeManagement方法: " + ex.getMessage());
                         ex.printStackTrace();
                     }
                     break;

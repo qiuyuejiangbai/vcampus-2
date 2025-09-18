@@ -6,6 +6,8 @@ import server.dao.impl.CourseDAOImpl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 课程服务类
@@ -13,6 +15,9 @@ import java.util.List;
  */
 public class CourseService {
     private final CourseDAO courseDAO;
+    
+    // 存储被删除的冲突课程ID（ID为999的软件工程额外教学班）
+    private static final Set<Integer> deletedConflictClasses = ConcurrentHashMap.newKeySet();
     
     public CourseService() {
         this.courseDAO = new CourseDAOImpl();
@@ -178,5 +183,41 @@ public class CourseService {
         CourseVO course = getCourseById(courseId);
         if (course == null) return 0;
         return course.getAvailableCapacity();
+    }
+    
+    /**
+     * 删除冲突课程（虚拟课程，ID为999）
+     * @param courseId 课程ID
+     * @return 删除成功返回true，失败返回false
+     */
+    public boolean deleteConflictClass(Integer courseId) {
+        if (courseId == null) return false;
+        
+        // 只有ID为999的冲突课程才能被删除
+        if (courseId == 999) {
+            deletedConflictClasses.add(courseId);
+            System.out.println("冲突课程已标记为删除: " + courseId);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 检查冲突课程是否已被删除
+     * @param courseId 课程ID
+     * @return 已被删除返回true，否则返回false
+     */
+    public boolean isConflictClassDeleted(Integer courseId) {
+        if (courseId == null) return false;
+        return deletedConflictClasses.contains(courseId);
+    }
+    
+    /**
+     * 获取所有被删除的冲突课程ID
+     * @return 被删除的冲突课程ID集合
+     */
+    public Set<Integer> getDeletedConflictClasses() {
+        return ConcurrentHashMap.newKeySet();
     }
 }

@@ -6,6 +6,7 @@ import client.ui.integration.ModuleKeys;
 import client.ui.integration.ModuleRegistry;
 import client.ui.modules.course.CourseTablePanel;
 import client.ui.modules.course.EnrollmentTablePanel;
+import client.ui.modules.course.GradeTablePanel;
 import client.ui.modules.course.UITheme;
 import common.vo.UserVO;
 
@@ -28,7 +29,7 @@ public class AdminCourseModule implements IModuleView {
         root = new JPanel(new BorderLayout());
         root.setOpaque(true);
         root.setBackground(UITheme.BACKGROUND_GRAY);
-        root.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE));
+        root.setBorder(null); // 移除边距，让选项卡占满整个灰色背景
 
         root.add(createTabbedPane(), BorderLayout.CENTER);
 
@@ -92,6 +93,10 @@ public class AdminCourseModule implements IModuleView {
         // 选课记录选项卡
         JPanel enrollmentManagementPanel = createEnrollmentManagementPanel();
         tabbedPane.addTab("选课记录", enrollmentManagementPanel);
+
+        // 成绩管理选项卡
+        JPanel gradeManagementPanel = createGradeManagementPanel();
+        tabbedPane.addTab("成绩管理", gradeManagementPanel);
 
         return tabbedPane;
     }
@@ -194,11 +199,8 @@ public class AdminCourseModule implements IModuleView {
         statusLabel.setFont(UITheme.CONTENT_FONT);
         statusLabel.setForeground(UITheme.MEDIUM_GRAY);
         
-        // 更新状态标签
-        SwingUtilities.invokeLater(() -> {
-            int courseCount = courseTablePanel.getCourseTable().getRowCount();
-            statusLabel.setText("课程总数: " + courseCount);
-        });
+        // 设置课程表格面板的统计标签引用，用于后续更新
+        courseTablePanel.setStatusLabel(statusLabel);
         
         rightPanel.add(statusLabel);
         
@@ -270,11 +272,103 @@ public class AdminCourseModule implements IModuleView {
         statusLabel.setFont(UITheme.CONTENT_FONT);
         statusLabel.setForeground(UITheme.MEDIUM_GRAY);
         
-        // 更新状态标签
-        SwingUtilities.invokeLater(() -> {
-            int enrollmentCount = enrollmentTablePanel.getEnrollmentTable().getRowCount();
-            statusLabel.setText("选课记录总数: " + enrollmentCount);
+        // 设置选课记录表格面板的统计标签引用，用于后续更新
+        enrollmentTablePanel.setStatusLabel(statusLabel);
+        
+        rightPanel.add(statusLabel);
+        
+        // 添加到搜索面板
+        searchPanel.add(leftPanel, BorderLayout.WEST);
+        searchPanel.add(rightPanel, BorderLayout.EAST);
+        
+        return searchPanel;
+    }
+
+    //创建成绩管理选项卡
+    private JPanel createGradeManagementPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(UITheme.WHITE);
+        panel.setBorder(UITheme.createEmptyBorder(UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE, UITheme.PADDING_LARGE));
+        
+        // 创建成绩管理表格面板
+        GradeTablePanel gradeTablePanel = new GradeTablePanel();
+        
+        // 创建搜索面板
+        JPanel searchPanel = createGradeSearchPanel(gradeTablePanel);
+        
+        // 设置布局
+        panel.add(searchPanel, BorderLayout.NORTH);
+        panel.add(gradeTablePanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
+
+    // 创建成绩管理搜索面板
+    private JPanel createGradeSearchPanel(GradeTablePanel gradeTablePanel) {
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setBackground(UITheme.WHITE);
+        searchPanel.setBorder(UITheme.createEmptyBorder(0, 0, UITheme.PADDING_LARGE, 0));
+        
+        // 左侧搜索区域
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, UITheme.PADDING_MEDIUM, 0));
+        leftPanel.setBackground(UITheme.WHITE);
+        
+        // 搜索标签
+        JLabel searchLabel = new JLabel("搜索成绩记录:");
+        searchLabel.setFont(UITheme.CONTENT_FONT);
+        searchLabel.setForeground(UITheme.DARK_GRAY);
+        
+        // 搜索输入框
+        JTextField searchField = new JTextField(25);
+        UITheme.styleTextField(searchField);
+        searchField.setPreferredSize(new Dimension(300, UITheme.INPUT_HEIGHT));
+        
+        // 搜索按钮
+        JButton searchButton = new JButton("搜索");
+        UITheme.styleButton(searchButton);
+        searchButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        
+        // 刷新按钮
+        JButton refreshButton = new JButton("刷新");
+        UITheme.styleButton(refreshButton);
+        refreshButton.setPreferredSize(new Dimension(80, UITheme.BUTTON_HEIGHT));
+        
+        // 添加事件监听器
+        searchButton.addActionListener(e -> {
+            String searchText = searchField.getText().trim();
+            if (!searchText.isEmpty()) {
+                // 先尝试按学生姓名搜索，再按课程名称搜索
+                gradeTablePanel.searchByStudentName(searchText);
+                if (gradeTablePanel.getGradeTable().getRowCount() == 0) {
+                    gradeTablePanel.searchByCourseName(searchText);
+                }
+            } else {
+                gradeTablePanel.refreshData();
+            }
         });
+        
+        refreshButton.addActionListener(e -> {
+            gradeTablePanel.refreshData();
+            searchField.setText("");
+        });
+        
+        // 添加到左侧面板
+        leftPanel.add(searchLabel);
+        leftPanel.add(searchField);
+        leftPanel.add(searchButton);
+        leftPanel.add(refreshButton);
+        
+        // 右侧状态区域
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, UITheme.PADDING_MEDIUM, 0));
+        rightPanel.setBackground(UITheme.WHITE);
+        
+        // 状态标签
+        JLabel statusLabel = new JLabel("成绩记录总数: 0");
+        statusLabel.setFont(UITheme.CONTENT_FONT);
+        statusLabel.setForeground(UITheme.MEDIUM_GRAY);
+        
+        // 设置成绩表格面板的统计标签引用，用于后续更新
+        gradeTablePanel.setStatusLabel(statusLabel);
         
         rightPanel.add(statusLabel);
         
