@@ -401,7 +401,7 @@ public class AdminCourseModule implements IModuleView {
     
     @Override 
     public String getIconPath() { 
-        return null;
+        return "resources/icons/课程管理.png";
     }
     
     @Override 

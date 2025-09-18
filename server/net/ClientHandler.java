@@ -251,6 +251,16 @@ public class ClientHandler implements Runnable {
                     handleDeleteGrade(request);
                     break;
                     
+                case GET_ALL_STUDENTS_REQUEST:
+                    System.out.println("[Student][Server] 收到请求: GET_ALL_STUDENTS_REQUEST");
+                    handleGetAllStudents(request);
+                    break;
+                    
+                case GET_ALL_TEACHERS_REQUEST:
+                    System.out.println("[Teacher][Server] 收到请求: GET_ALL_TEACHERS_REQUEST");
+                    handleGetAllTeachers(request);
+                    break;
+                    
                 case HEARTBEAT:
                     handleHeartbeat(request);
                     break;
@@ -2760,5 +2770,97 @@ private void handleShipOrder(Message request) {
      */
     public boolean isConnected() {
         return isConnected && clientSocket != null && !clientSocket.isClosed();
+    }
+    
+    /**
+     * 处理获取所有学生请求（管理员功能）
+     */
+    private void handleGetAllStudents(Message request) {
+        System.out.println("[Student][Server] 开始处理获取所有学生请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[Student][Server] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查管理员权限
+        if (!currentUser.isAdmin()) {
+            System.err.println("[Student][Server] 用户不是管理员，拒绝请求");
+            Message response = new Message(MessageType.GET_ALL_STUDENTS_FAILURE, StatusCode.FORBIDDEN, null, "需要管理员权限");
+            sendMessage(response);
+            return;
+        }
+        
+        try {
+            System.out.println("[Student][Server] 管理员权限验证通过，开始查询学生数据");
+            
+            // 调用学生服务获取所有学生信息
+            server.service.StudentService studentService = new server.service.StudentService();
+            List<common.vo.StudentVO> students = studentService.getAllStudents();
+            
+            System.out.println("[Student][Server] 查询完成，找到 " + students.size() + " 个学生");
+            
+            if (students != null) {
+                Message response = new Message(MessageType.GET_ALL_STUDENTS_SUCCESS, StatusCode.SUCCESS, students, "获取学生信息成功");
+                sendMessage(response);
+                System.out.println("[Student][Server] 成功响应已发送");
+            } else {
+                Message response = new Message(MessageType.GET_ALL_STUDENTS_FAILURE, StatusCode.INTERNAL_ERROR, null, "获取学生信息失败");
+                sendMessage(response);
+                System.err.println("[Student][Server] 学生数据为空");
+            }
+        } catch (Exception e) {
+            System.err.println("[Student][Server] 处理获取所有学生请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.GET_ALL_STUDENTS_FAILURE, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
+        }
+    }
+    
+    /**
+     * 处理获取所有教师请求（管理员功能）
+     */
+    private void handleGetAllTeachers(Message request) {
+        System.out.println("[Teacher][Server] 开始处理获取所有教师请求");
+        
+        if (!isLoggedIn()) {
+            System.err.println("[Teacher][Server] 用户未登录，拒绝请求");
+            sendUnauthorizedMessage();
+            return;
+        }
+        
+        // 检查管理员权限
+        if (!currentUser.isAdmin()) {
+            System.err.println("[Teacher][Server] 用户不是管理员，拒绝请求");
+            Message response = new Message(MessageType.GET_ALL_TEACHERS_FAILURE, StatusCode.FORBIDDEN, null, "需要管理员权限");
+            sendMessage(response);
+            return;
+        }
+        
+        try {
+            System.out.println("[Teacher][Server] 管理员权限验证通过，开始查询教师数据");
+            
+            // 调用教师服务获取所有教师信息
+            server.service.TeacherService teacherService = new server.service.TeacherService();
+            List<common.vo.TeacherVO> teachers = teacherService.getAllTeachers();
+            
+            System.out.println("[Teacher][Server] 查询完成，找到 " + teachers.size() + " 个教师");
+            
+            if (teachers != null) {
+                Message response = new Message(MessageType.GET_ALL_TEACHERS_SUCCESS, StatusCode.SUCCESS, teachers, "获取教师信息成功");
+                sendMessage(response);
+                System.out.println("[Teacher][Server] 成功响应已发送");
+            } else {
+                Message response = new Message(MessageType.GET_ALL_TEACHERS_FAILURE, StatusCode.INTERNAL_ERROR, null, "获取教师信息失败");
+                sendMessage(response);
+                System.err.println("[Teacher][Server] 教师数据为空");
+            }
+        } catch (Exception e) {
+            System.err.println("[Teacher][Server] 处理获取所有教师请求时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            Message response = new Message(MessageType.GET_ALL_TEACHERS_FAILURE, StatusCode.INTERNAL_ERROR, null, "服务器内部错误: " + e.getMessage());
+            sendMessage(response);
+        }
     }
 }

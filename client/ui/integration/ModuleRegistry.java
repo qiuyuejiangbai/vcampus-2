@@ -44,6 +44,14 @@ public final class ModuleRegistry {
         }
         return null;
     }
+    
+    /**
+     * 清理所有已注册的模块
+     * 在用户登出时调用，确保下次登录时不会显示之前的模块
+     */
+    public static void clearAll() {
+        MODULES.clear();
+    }
 }
 
 

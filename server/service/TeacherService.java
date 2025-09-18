@@ -5,6 +5,9 @@ import server.dao.TeacherDAO;
 import server.dao.impl.TeacherDAOImpl;
 import server.util.ValidationUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 教师业务服务类
  * 处理教师管理相关的业务逻辑

@@ -127,6 +127,9 @@ public class AdminDashboardUI extends JFrame {
     }
 
     private void initModules() {
+        // 注册信息管理模块（学籍管理）- 优先注册，确保在第一项
+        client.ui.modules.AdminInfoManagementModule.registerTo(ModuleRegistry.class);
+
         // 管理员论坛
         client.ui.modules.AdminForumModule.registerTo(ModuleRegistry.class);
 
@@ -143,12 +146,9 @@ public class AdminDashboardUI extends JFrame {
         // 注册商店模块
         ModuleRegistry.register(
                 new client.ui.modules.StoreModule(
-                        ModuleKeys.ADMIN_STORE, "校园商店", null//"icons/module/store.png"
+                        ModuleKeys.ADMIN_STORE, "校园商店", "resources/icons/店铺.png"
                 )
         );
-
-        // 注册信息管理模块
-        client.ui.modules.AdminInfoManagementModule.registerTo(ModuleRegistry.class);
 
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
@@ -156,8 +156,8 @@ public class AdminDashboardUI extends JFrame {
             Icon icon = loadIcon(m.getIconPath());
             sideNav.addItem(m.getKey(), m.getDisplayName(), icon);
         }
-        // 默认显示论坛模块
-        String defaultModuleKey = "admin_forum";
+        // 默认显示信息管理模块（学籍管理）
+        String defaultModuleKey = ModuleKeys.ADMIN_INFO_MANAGEMENT;
         contentHost.showPage(defaultModuleKey);
         sideNav.selectKey(defaultModuleKey);
         IModuleView home = ModuleRegistry.findByKey(defaultModuleKey);
@@ -211,6 +211,9 @@ public class AdminDashboardUI extends JFrame {
             );
             
             if (result == JOptionPane.YES_OPTION) {
+                // 清理模块注册表，确保下次登录时不会显示之前的模块
+                client.ui.integration.ModuleRegistry.clearAll();
+                
                 // 关闭当前窗口
                 dispose();
                 

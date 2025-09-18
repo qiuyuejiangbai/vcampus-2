@@ -130,6 +130,9 @@ public class StudentDashboardUI extends JFrame {
     }
 
     private void initModules() {
+        // 注册学籍管理模块 - 优先注册，确保在第一项
+        ModuleRegistry.register(new client.ui.modules.StudentProfileModule());
+
         // 注册学生版论坛
         ModuleRegistry.register(new client.ui.modules.StudentForumModule());
 
@@ -146,12 +149,9 @@ public class StudentDashboardUI extends JFrame {
         // 注册商店模块
         ModuleRegistry.register(
                 new client.ui.modules.StoreModule(
-                        ModuleKeys.STUDENT_STORE, "校园商店", null//"icons/module/store.png"
+                        ModuleKeys.STUDENT_STORE, "校园商店", "resources/icons/店铺.png"
                  )
          );
-
-        // 注册学籍管理模块
-        ModuleRegistry.register(new client.ui.modules.StudentProfileModule());
 
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
@@ -159,8 +159,8 @@ public class StudentDashboardUI extends JFrame {
             Icon icon = loadIcon(m.getIconPath());
             sideNav.addItem(m.getKey(), m.getDisplayName(), icon);
         }
-        // 默认显示论坛模块
-        String defaultModuleKey = "student_forum";
+        // 默认显示学籍管理模块
+        String defaultModuleKey = ModuleKeys.STUDENT_PROFILE;
         contentHost.showPage(defaultModuleKey);
         sideNav.selectKey(defaultModuleKey);
         // 初始化 AppBar 显示当前模块名
@@ -218,6 +218,9 @@ public class StudentDashboardUI extends JFrame {
             );
             
             if (result == JOptionPane.YES_OPTION) {
+                // 清理模块注册表，确保下次登录时不会显示之前的模块
+                client.ui.integration.ModuleRegistry.clearAll();
+                
                 // 关闭当前窗口
                 dispose();
                 
