@@ -8,6 +8,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -153,6 +154,33 @@ public class AvatarService {
             System.err.println("删除头像文件失败: " + e.getMessage());
             e.printStackTrace();
             return false;
+        }
+    }
+    
+    /**
+     * 批量更新现有没有头像的用户，设置默认头像路径
+     * @return 更新的用户数量
+     */
+    public int updateUsersWithoutAvatar() {
+        try {
+            // 获取所有没有头像的用户
+            List<UserVO> usersWithoutAvatar = userDAO.findUsersWithoutAvatar();
+            int updatedCount = 0;
+            
+            for (UserVO user : usersWithoutAvatar) {
+                boolean updated = userDAO.updateAvatarPath(user.getUserId(), DEFAULT_AVATAR_PATH);
+                if (updated) {
+                    updatedCount++;
+                    System.out.println("为用户 " + user.getLoginId() + " 设置默认头像路径");
+                }
+            }
+            
+            System.out.println("批量更新完成，共更新 " + updatedCount + " 个用户的头像路径");
+            return updatedCount;
+        } catch (Exception e) {
+            System.err.println("批量更新用户头像路径失败: " + e.getMessage());
+            e.printStackTrace();
+            return 0;
         }
     }
     

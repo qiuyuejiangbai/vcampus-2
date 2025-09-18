@@ -105,22 +105,15 @@ public class SideNav extends JPanel {
     }
     
     public void setCurrentUser(UserVO user) {
-        System.out.println("[DEBUG][SideNav] 设置当前用户：" + (user != null ? 
-            ("loginId=" + user.getLoginId() + ", userId=" + user.getUserId() + ", role=" + user.getRoleName()) : "null"));
-        
         this.currentUser = user;
         initUserInfo();
         
         // 如果是学生，获取详细信息
         if (user != null && user.isStudent()) {
-            System.out.println("[DEBUG][SideNav] 检测到学生用户，开始加载学生信息");
             loadStudentInfo();
         } else if (user != null && user.isTeacher()) {
             // 教师端：加载教师详细信息
-            System.out.println("[DEBUG][SideNav] 检测到教师用户，开始加载教师信息");
             loadTeacherInfo();
-        } else {
-            System.out.println("[DEBUG][SideNav] 其他类型用户或用户为null，跳过详细信息加载");
         }
     }
 
@@ -362,13 +355,29 @@ public class SideNav extends JPanel {
     private JPanel navPanel; // 导航菜单面板
     
     private void setDefaultAvatar() {
-        // 首先尝试加载用户自定义头像
+        // 首先尝试加载用户自定义头像（但排除默认头像路径）
         if (currentUser != null && currentUser.getAvatarPath() != null && !currentUser.getAvatarPath().trim().isEmpty()) {
+            // 如果是默认头像路径，直接加载默认头像图片
+            if (currentUser.getAvatarPath().equals("resources/icons/默认头像.png") || 
+                currentUser.getAvatarPath().equals("icons/默认头像.png")) {
+                System.out.println("[SideNav] 用户使用默认头像路径，直接加载默认头像");
+                loadDefaultAvatarImage();
+                return;
+            }
+            // 否则尝试加载用户自定义头像
             updateAvatarDisplay(currentUser.getAvatarPath());
             return;
         }
         
-        // 尝试加载默认头像图片
+        // 没有头像路径，加载默认头像图片
+        System.out.println("[SideNav] 用户没有头像路径，加载默认头像");
+        loadDefaultAvatarImage();
+    }
+    
+    /**
+     * 加载默认头像图片
+     */
+    private void loadDefaultAvatarImage() {
         try {
             // 尝试多个可能的路径
             String[] possiblePaths = {
@@ -384,6 +393,7 @@ public class SideNav extends JPanel {
                     java.io.File file = new java.io.File(path);
                     if (file.exists()) {
                         icon = new ImageIcon(file.getAbsolutePath());
+                        System.out.println("[SideNav] 从文件路径加载默认头像: " + path);
                         break;
                     }
                 } catch (Exception e) {
@@ -393,7 +403,22 @@ public class SideNav extends JPanel {
             
             // 如果文件路径都失败，尝试从类路径加载
             if (icon == null) {
-                icon = new ImageIcon(getClass().getClassLoader().getResource("icons/默认头像.png"));
+                try {
+                    icon = new ImageIcon(getClass().getClassLoader().getResource("icons/默认头像.png"));
+                    if (icon != null && icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
+                        System.out.println("[SideNav] 从类路径加载默认头像: icons/默认头像.png");
+                    }
+                } catch (Exception e) {
+                    // 尝试其他类路径变体
+                    try {
+                        icon = new ImageIcon(getClass().getClassLoader().getResource("resources/icons/默认头像.png"));
+                        if (icon != null && icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
+                            System.out.println("[SideNav] 从类路径加载默认头像: resources/icons/默认头像.png");
+                        }
+                    } catch (Exception e2) {
+                        // 忽略
+                    }
+                }
             }
             
             if (icon != null && icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
@@ -402,14 +427,16 @@ public class SideNav extends JPanel {
                     // 与 CircularAvatar(56) 尺寸一致，避免插值裁切
                     Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
                     avatarLabel.setAvatarImage(scaledImg);
+                    System.out.println("[SideNav] 成功加载默认头像图片");
                     return;
                 }
             }
         } catch (Exception e) {
-            System.err.println("加载头像图片失败: " + e.getMessage());
+            System.err.println("[SideNav] 加载默认头像图片失败: " + e.getMessage());
         }
         
-        // 如果所有方法都失败，使用默认头像
+        // 如果所有方法都失败，使用文字默认头像
+        System.out.println("[SideNav] 使用文字默认头像");
         avatarLabel.setDefaultText(currentUser != null && currentUser.getName() != null && !currentUser.getName().isEmpty() 
             ? currentUser.getName().substring(0, 1) : "U");
     }
@@ -420,12 +447,29 @@ public class SideNav extends JPanel {
      */
     private void updateAvatarDisplay(String avatarPath) {
         if (avatarPath == null || avatarPath.trim().isEmpty()) {
+            System.out.println("[SideNav] 头像路径为空，使用默认头像");
+            setDefaultAvatar();
+            return;
+        }
+        
+        // 如果是默认头像路径，直接加载默认头像
+        if (avatarPath.equals("resources/icons/默认头像.png") || 
+            avatarPath.equals("icons/默认头像.png")) {
+            System.out.println("[SideNav] 检测到默认头像路径，直接加载默认头像");
+            loadDefaultAvatarImage();
             return;
         }
         
         try {
+            // 修复头像路径：如果路径不以resources/开头，则添加resources/前缀
+            String fullAvatarPath = avatarPath;
+            if (!avatarPath.startsWith("resources/")) {
+                fullAvatarPath = "resources/" + avatarPath;
+                System.out.println("[DEBUG][SideNav] 修正头像路径: " + fullAvatarPath);
+            }
+            
             // 尝试加载头像图片
-            java.io.File avatarFile = new java.io.File(avatarPath);
+            java.io.File avatarFile = new java.io.File(fullAvatarPath);
             if (avatarFile.exists()) {
                 ImageIcon icon = new ImageIcon(avatarFile.getAbsolutePath());
                 Image img = icon.getImage();
@@ -433,7 +477,7 @@ public class SideNav extends JPanel {
                     // 缩放图片以适应头像尺寸
                     Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
                     avatarLabel.setAvatarImage(scaledImg);
-                    System.out.println("头像更新成功: " + avatarPath);
+                    System.out.println("[SideNav] 头像更新成功: " + fullAvatarPath);
                     return;
                 }
             }
@@ -454,17 +498,35 @@ public class SideNav extends JPanel {
                     if (img != null) {
                         Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
                         avatarLabel.setAvatarImage(scaledImg);
-                        System.out.println("头像更新成功: " + path);
+                        System.out.println("[SideNav] 头像更新成功: " + path);
                         return;
                     }
                 }
             }
             
-            System.err.println("无法加载头像文件: " + avatarPath);
+            // 如果所有路径都失败，尝试从类路径加载
+            try {
+                ImageIcon icon = new ImageIcon(getClass().getClassLoader().getResource(avatarPath));
+                if (icon != null && icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
+                    Image img = icon.getImage();
+                    if (img != null) {
+                        Image scaledImg = img.getScaledInstance(56, 56, Image.SCALE_SMOOTH);
+                        avatarLabel.setAvatarImage(scaledImg);
+                        System.out.println("[SideNav] 从类路径加载头像成功: " + avatarPath);
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                // 忽略类路径加载失败
+            }
+            
+            System.err.println("[SideNav] 无法加载头像文件: " + avatarPath + "，使用默认头像");
+            setDefaultAvatar();
             
         } catch (Exception e) {
-            System.err.println("更新头像显示失败: " + e.getMessage());
+            System.err.println("[SideNav] 更新头像显示失败: " + e.getMessage());
             e.printStackTrace();
+            setDefaultAvatar();
         }
     }
     

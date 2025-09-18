@@ -32,6 +32,10 @@ public class UITheme {
     public static final Color ERROR_RED = new Color(220, 53, 69);         // #DC3545 - 错误红
     public static final Color INFO_BLUE = new Color(59, 130, 246);        // #3B82F6 - 信息蓝
     
+    // 表格交互效果色
+    public static final Color TABLE_HOVER = new Color(245, 250, 247);     // #F5FAF7 - 表格悬浮色
+    public static final Color TABLE_SELECTED = new Color(230, 245, 235);  // #E6F5EB - 表格选中色
+    
     // 边框和阴影
     public static final Color BORDER_COLOR = new Color(229, 231, 235);    // #E5E7EB
     public static final Color CARD_BORDER = new Color(209, 213, 219);     // #D1D5DB

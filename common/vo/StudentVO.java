@@ -17,7 +17,7 @@ public class StudentVO implements Serializable {
     private Integer userId;         // 关联User表的id
     private String name;            // 姓名
     private String studentNo;       // 学号
-    private String gender;          // 性别：male, female, other
+    private String gender;          // 性别：male, female
     private Date birthDate;         // 出生日期
     private String phone;           // 联系方式
     private String email;           // 邮箱
@@ -313,12 +313,11 @@ public class StudentVO implements Serializable {
      * @return 性别中文名称
      */
     public String getGenderName() {
-        if (gender == null) return "未知";
+        if (gender == null) return "男"; // 默认为男性
         switch (gender) {
             case "male": return "男";
             case "female": return "女";
-            case "other": return "其他";
-            default: return "未知";
+            default: return "男"; // 默认为男性
         }
     }
     

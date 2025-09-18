@@ -24,12 +24,13 @@ public class UserDAOImpl implements UserDAO {
             conn = DatabaseUtil.getConnection();
             pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             
-            pstmt.setString(1, user.getId()); // 使用id作为login_id
+            pstmt.setString(1, user.getLoginId()); // 使用login_id
             pstmt.setString(2, user.getPassword());
             pstmt.setInt(3, user.getRole() != null ? user.getRole() : 0);
             
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
+             
                 rs = pstmt.getGeneratedKeys();
                 if (rs.next()) {
                     Integer userId = rs.getInt(1);
@@ -77,7 +78,7 @@ public class UserDAOImpl implements UserDAO {
             conn = DatabaseUtil.getConnection();
             pstmt = conn.prepareStatement(sql);
             
-            pstmt.setString(1, user.getId());
+            pstmt.setString(1, user.getLoginId());
             pstmt.setString(2, user.getPassword());
             pstmt.setInt(3, user.getRole() != null ? user.getRole() : 0);
             pstmt.setString(4, user.getAvatarPath());
@@ -424,6 +425,33 @@ public class UserDAOImpl implements UserDAO {
         } finally {
             DatabaseUtil.closeAll(conn, pstmt, null);
         }
+    }
+    
+    @Override
+    public List<UserVO> findUsersWithoutAvatar() {
+        String sql = "SELECT * FROM users WHERE avatar_path IS NULL OR avatar_path = ''";
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<UserVO> users = new ArrayList<>();
+        
+        try {
+            conn = DatabaseUtil.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                UserVO user = mapResultSetToUserVO(rs);
+                users.add(user);
+            }
+        } catch (SQLException e) {
+            System.err.println("查找没有头像的用户失败: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            DatabaseUtil.closeAll(conn, pstmt, rs);
+        }
+        
+        return users;
     }
     
     /**

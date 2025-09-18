@@ -19,7 +19,7 @@ public class CircularAvatar extends JPanel {
     private Color backgroundColor;
     private Color textColor;
     // 新增：可配置边框
-    private float borderWidth = 2f;
+    private float borderWidth = 0f; // 默认无边框
     private Color borderColor = new Color(0x2C, 0x4F, 0x3D);
     
     // 头像上传功能
@@ -32,8 +32,8 @@ public class CircularAvatar extends JPanel {
     
     public CircularAvatar(int size) {
         this.size = size;
-        this.backgroundColor = new Color(0x4A, 0x90, 0xE2);
-        this.textColor = Color.WHITE;
+        this.backgroundColor = new Color(0xE0, 0xE0, 0xE0); // 改为浅灰色，避免蓝色闪烁
+        this.textColor = new Color(0x66, 0x66, 0x66); // 改为深灰色文字
         this.defaultText = "U";
         setPreferredSize(new Dimension(size, size));
         setMaximumSize(new Dimension(size, size));
@@ -137,10 +137,14 @@ public class CircularAvatar extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g.create();
+        // 启用所有抗锯齿和高质量渲染设置
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
         
         int x = (getWidth() - size) / 2;
         int y = (getHeight() - size) / 2;
@@ -159,11 +163,14 @@ public class CircularAvatar extends JPanel {
     private void drawCircularImage(Graphics2D g2d, Image image, int x, int y, int size) {
         float w = borderWidth;
         float inset = w / 2f;
-        Ellipse2D.Double circle = new Ellipse2D.Double(x + inset, y + inset, size - w, size - w);
+        // 使用浮点坐标以获得更平滑的边缘
+        Ellipse2D.Float circle = new Ellipse2D.Float(x + inset, y + inset, size - w, size - w);
         
         Shape oldClip = g2d.getClip();
         g2d.setClip(circle);
         
+        // 使用高质量图像渲染
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
         g2d.drawImage(image,
                 Math.round(x + inset), Math.round(y + inset),
                 Math.round(size - w), Math.round(size - w),
@@ -181,7 +188,8 @@ public class CircularAvatar extends JPanel {
     private void drawDefaultAvatar(Graphics2D g2d, int x, int y, int size) {
         float w = borderWidth;
         float inset = w / 2f;
-        Ellipse2D.Double circle = new Ellipse2D.Double(x + inset, y + inset, size - w, size - w);
+        // 使用浮点坐标以获得更平滑的边缘
+        Ellipse2D.Float circle = new Ellipse2D.Float(x + inset, y + inset, size - w, size - w);
         g2d.setColor(backgroundColor);
         g2d.fill(circle);
         

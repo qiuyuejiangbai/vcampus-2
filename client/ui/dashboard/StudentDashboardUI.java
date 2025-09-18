@@ -24,7 +24,6 @@ public class StudentDashboardUI extends JFrame {
     private final AppBar appBar = new AppBar();
     private AppTitleBar titleBar;
 
-    private boolean useGrayTheme = false; // false=墨绿主题, true=灰色主题
     
 
     public StudentDashboardUI(common.vo.UserVO user, client.net.ServerConnection conn) {
@@ -54,7 +53,10 @@ public class StudentDashboardUI extends JFrame {
                 setExtendedState((getExtendedState() & Frame.MAXIMIZED_BOTH) == 0 ? Frame.MAXIMIZED_BOTH : Frame.NORMAL);
             }
             @Override public void close() { dispose(); }
-            @Override public void toggleTheme() { toggleThemeImpl(); }
+            @Override public void logout() { logoutImpl(); }
+            @Override public void changePassword() { 
+                new client.ui.dialog.ChangePasswordDialog(StudentDashboardUI.this, connection, currentUser.getUserId()).setVisible(true);
+            }
         });
 
         JPanel root = new JPanel(new BorderLayout());
@@ -148,6 +150,9 @@ public class StudentDashboardUI extends JFrame {
                  )
          );
 
+        // 注册学籍管理模块
+        ModuleRegistry.register(new client.ui.modules.StudentProfileModule());
+
         for (IModuleView m : ModuleRegistry.getAll()) {
             m.initContext(currentUser, connection);
             contentHost.addPage(m.getKey(), m.getComponent());
@@ -201,22 +206,30 @@ public class StudentDashboardUI extends JFrame {
         return null;
     }
 
-    private void toggleThemeImpl() {
+    private void logoutImpl() {
         try {
-            useGrayTheme = !useGrayTheme;
-            if (sideNav != null) {
-                if (useGrayTheme) sideNav.applyGrayTheme();
-                else sideNav.applyGreenTheme();
-            }
-            if (titleBar != null) {
-                if (useGrayTheme) {
-                    titleBar.setBarBackground(new Color(0x33, 0x33, 0x33)); // 深灰
-                } else {
-                    titleBar.resetBarBackground(); // 恢复墨绿
-                }
+            // 确认登出
+            int result = JOptionPane.showConfirmDialog(
+                this,
+                "确定要登出吗？",
+                "确认登出",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+            );
+            
+            if (result == JOptionPane.YES_OPTION) {
+                // 关闭当前窗口
+                dispose();
+                
+                // 显示登录窗口
+                SwingUtilities.invokeLater(() -> {
+                    client.ui.LoginFrame loginFrame = new client.ui.LoginFrame();
+                    loginFrame.setVisible(true);
+                });
             }
         } catch (Exception e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "登出时发生错误: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
 

@@ -28,12 +28,20 @@ public enum MessageType {
     DELETE_USER_SUCCESS,        // 删除用户成功
     GET_ALL_USERS_REQUEST,      // 获取所有用户请求
     GET_ALL_USERS_SUCCESS,      // 获取所有用户成功
+    RESET_PASSWORD_REQUEST,      // 重置密码请求
+    RESET_PASSWORD_SUCCESS,      // 重置密码成功
+    RESET_PASSWORD_FAILURE,      // 重置密码失败
+    CHANGE_PASSWORD_REQUEST,     // 修改密码请求
+    CHANGE_PASSWORD_SUCCESS,     // 修改密码成功
+    CHANGE_PASSWORD_FAILURE,     // 修改密码失败
     
     // 学籍管理模块
     GET_STUDENT_INFO_REQUEST,   // 获取学生信息请求
     GET_STUDENT_INFO_SUCCESS,   // 获取学生信息成功
+    GET_STUDENT_INFO_FAIL,      // 获取学生信息失败
     UPDATE_STUDENT_REQUEST,     // 更新学生信息请求
     UPDATE_STUDENT_SUCCESS,     // 更新学生信息成功
+    UPDATE_STUDENT_FAIL,        // 更新学生信息失败
     CREATE_STUDENT_REQUEST,     // 创建学生请求
     CREATE_STUDENT_SUCCESS,     // 创建学生成功
     DELETE_STUDENT_REQUEST,     // 删除学生请求
@@ -42,11 +50,33 @@ public enum MessageType {
     GET_TRANSCRIPT_SUCCESS,     // 获取成绩单成功
     GET_ALL_STUDENTS_REQUEST,   // 获取所有学生请求
     GET_ALL_STUDENTS_SUCCESS,   // 获取所有学生成功
+    GET_ALL_STUDENTS_FAILURE,   // 获取所有学生失败
+    ADD_STUDENT,                // 添加学生
+    ADD_STUDENT_SUCCESS,        // 添加学生成功
+    ADD_STUDENT_FAILURE,        // 添加学生失败
+    UPDATE_STUDENT,             // 更新学生
+    UPDATE_STUDENT_FAILURE,     // 更新学生失败
+    DELETE_STUDENT,             // 删除学生
+    DELETE_STUDENT_FAILURE,     // 删除学生失败
     
     // 教师管理模块
     GET_TEACHER_INFO_REQUEST,   // 获取教师信息请求
     GET_TEACHER_INFO_SUCCESS,   // 获取教师信息成功
     GET_TEACHER_INFO_FAIL,      // 获取教师信息失败
+    UPDATE_TEACHER_REQUEST,     // 更新教师信息请求
+    UPDATE_TEACHER_SUCCESS,     // 更新教师信息成功
+    UPDATE_TEACHER_FAIL,        // 更新教师信息失败
+    GET_ALL_TEACHERS_REQUEST,   // 获取所有教师请求
+    GET_ALL_TEACHERS_SUCCESS,   // 获取所有教师成功
+    GET_ALL_TEACHERS_FAILURE,   // 获取所有教师失败
+    ADD_TEACHER,                // 添加教师
+    ADD_TEACHER_SUCCESS,        // 添加教师成功
+    ADD_TEACHER_FAILURE,        // 添加教师失败
+    UPDATE_TEACHER,             // 更新教师
+    UPDATE_TEACHER_FAILURE,     // 更新教师失败
+    DELETE_TEACHER,             // 删除教师
+    DELETE_TEACHER_SUCCESS,     // 删除教师成功
+    DELETE_TEACHER_FAILURE,     // 删除教师失败
     
     // 教务管理模块
     GET_ALL_COURSES_REQUEST,    // 获取所有课程请求

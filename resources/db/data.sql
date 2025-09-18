@@ -37,22 +37,22 @@ INSERT INTO admins (user_id, username, permissions) VALUES
 -- ========================================
 
 -- 插入教师详细信息
-INSERT INTO teachers (user_id, name, teacher_no, phone, email, department, research_area) VALUES 
-(2, '张三', 'T001', '13800000001', 'zhangsan@vcampus.edu.cn', '计算机学院', 'Java程序设计,软件工程'),
-(3, '李四', 'T002', '13800000002', 'lisi@vcampus.edu.cn', '计算机学院', '数据结构与算法,算法设计'),
-(4, '王五', 'T003', '13800000003', 'wangwu@vcampus.edu.cn', '计算机学院', '数据库系统,大数据技术');
+INSERT INTO teachers (user_id, name, teacher_no, phone, email, department, research_area, balance) VALUES 
+(2, '张三', 'T001', '13800000001', 'zhangsan@vcampus.edu.cn', '计算机学院', 'Java程序设计,软件工程', 0.00),
+(3, '李四', 'T002', '13800000002', 'lisi@vcampus.edu.cn', '计算机学院', '数据结构与算法,算法设计', 0.00),
+(4, '王五', 'T003', '13800000003', 'wangwu@vcampus.edu.cn', '计算机学院', '数据库系统,大数据技术', 0.00);
 
 -- ========================================
 -- 学生详细信息（students表）
 -- ========================================
 
 -- 插入学生详细信息
-INSERT INTO students (user_id, name, student_no, gender, birth_date, phone, email, address, department, class_name, major, grade_table_key, balance, enrollment_year) VALUES 
-(5, '赵六', '2021001', 'male', '2003-05-15', '13800001001', 'zhaoliu@student.vcampus.edu.cn', '北京市海淀区', '计算机学院', '计科2101班', '计算机科学与技术', 'CS2021001', 1000.00, 2021),
-(6, '钱七', '2021002', 'female', '2003-03-22', '13800001002', 'qianqi@student.vcampus.edu.cn', '上海市浦东新区', '计算机学院', '软工2101班', '软件工程', 'SE2021002', 1000.00, 2021),
-(7, '孙八', '2021003', 'male', '2003-07-08', '13800001003', 'sunba@student.vcampus.edu.cn', '广州市天河区', '计算机学院', '网安2101班', '信息安全', 'IS2021003', 1000.00, 2021),
-(8, '周九', '2021004', 'female', '2003-01-12', '13800001004', 'zhoujiu@student.vcampus.edu.cn', '深圳市南山区', '计算机学院', '计科2101班', '计算机科学与技术', 'CS2021004', 1000.00, 2021),
-(9, '吴十', '2021005', 'male', '2003-09-30', '13800001005', 'wushi@student.vcampus.edu.cn', '杭州市西湖区', '计算机学院', '软工2101班', '软件工程', 'SE2021005', 1000.00, 2021);
+INSERT INTO students (user_id, name, student_no, gender, birth_date, phone, email, address, department, class_name, major, grade, grade_table_key, balance, enrollment_year) VALUES 
+(5, '赵六', '2021001', 'male', '2003-05-15', '13800001001', 'zhaoliu@student.vcampus.edu.cn', '北京市海淀区', '计算机学院', '计科2101班', '计算机科学与技术', '4年级', 'CS2021001', 0.00, 2021),
+(6, '钱七', '2021002', 'female', '2003-03-22', '13800001002', 'qianqi@student.vcampus.edu.cn', '上海市浦东新区', '计算机学院', '软工2101班', '软件工程', '4年级', 'SE2021002', 0.00, 2021),
+(7, '孙八', '2021003', 'male', '2003-07-08', '13800001003', 'sunba@student.vcampus.edu.cn', '广州市天河区', '计算机学院', '信安2101班', '信息安全', '4年级', 'IS2021003', 0.00, 2021),
+(8, '周九', '2021004', 'female', '2003-01-12', '13800001004', 'zhoujiu@student.vcampus.edu.cn', '深圳市南山区', '计算机学院', '计科2101班', '计算机科学与技术', '4年级', 'CS2021004', 0.00, 2021),
+(9, '吴十', '2021005', 'male', '2003-09-30', '13800001005', 'wushi@student.vcampus.edu.cn', '杭州市西湖区', '计算机学院', '软工2101班', '软件工程', '4年级', 'SE2021005', 0.00, 2021);
 
 -- ========================================
 -- 课程信息（courses表）
