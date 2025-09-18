@@ -450,9 +450,8 @@ public class LibraryDocumentManageModule extends JPanel {
     // ===================== 卡片定义 =====================
 
     class DocumentCard extends JPanel {
-        static final int CARD_H = 196;    // 与 documentsearch 对齐，容纳“关键词”等
-        private int cardW = 310;          // 宽度由自适应计算
-
+        static final int CARD_H = 196;    // 保持不变
+        private int cardW = 310;
         private static final int ARC = 14;
 
         private final DocumentVO doc;
@@ -464,7 +463,6 @@ public class LibraryDocumentManageModule extends JPanel {
             this.doc = doc;
             initCard();
         }
-
         public DocumentVO getDoc() { return doc; }
 
         public void setCardSize(int w, int h) {
@@ -483,7 +481,7 @@ public class LibraryDocumentManageModule extends JPanel {
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setFocusable(true);
 
-            // 内容区
+            // 内容区（保持你原来的样式）
             JPanel content = new JPanel();
             content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
             content.setOpaque(false);
@@ -542,19 +540,33 @@ public class LibraryDocumentManageModule extends JPanel {
 
             add(content, BorderLayout.CENTER);
 
-            // 鼠标/键盘交互
-            addMouseListener(new MouseAdapter() {
-                @Override public void mouseClicked(MouseEvent e) {
+            // === 统一的事件桥：安装在卡片及其所有子组件上 ===
+            MouseAdapter bridge = new MouseAdapter() {
+                @Override public void mousePressed(MouseEvent e) {
                     selectCard();
+                    requestFocusInWindow();
+                }
+                @Override public void mouseClicked(MouseEvent e) {
+                    // 双击打开详情（仅左键）
                     if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
                         int id = doc.getDocId();
                         DocumentVO full = controller.getDocumentById(id);
                         if (full != null) showDocumentDetailDialog(full);
                     }
                 }
-                @Override public void mouseEntered(MouseEvent e) { startAnim(true); }
-                @Override public void mouseExited(MouseEvent e)  { startAnim(false); }
-            });
+                @Override public void mouseEntered(MouseEvent e) {
+                    startAnim(true);
+                }
+                @Override public void mouseExited(MouseEvent e) {
+                    // 防止从父到子触发“误离开”而关闭 hover
+                    if (!isMouseStillInsideCard(e)) {
+                        startAnim(false);
+                    }
+                }
+            };
+            installMouseBridgeRecursive(this, bridge);
+
+            // 键盘：Enter 打开详情
             addKeyListener(new KeyAdapter() {
                 @Override public void keyPressed(KeyEvent e) {
                     if (e.getKeyCode() == KeyEvent.VK_ENTER) {
@@ -581,7 +593,7 @@ public class LibraryDocumentManageModule extends JPanel {
             if (selectedCard != null && selectedCard != this) selectedCard.setSelected(false);
             selectedCard = this;
             setSelected(true);
-            requestFocusInWindow();
+            repaint();
         }
 
         public void setSelected(boolean selected) {
@@ -642,7 +654,25 @@ public class LibraryDocumentManageModule extends JPanel {
 
             g2.dispose();
         }
+
+        // 判断鼠标是否仍在卡片区域（用于过滤“父->子”的 mouseExited）
+        private boolean isMouseStillInsideCard(MouseEvent e) {
+            Component src = (Component) e.getSource();
+            Point p = SwingUtilities.convertPoint(src, e.getPoint(), this);
+            return p.x >= 0 && p.y >= 0 && p.x < getWidth() && p.y < getHeight();
+        }
     }
+
+    // === 放在 LibraryDocumentManageModule 内，与 DocumentCard 同级：递归安装鼠标监听 ===
+    private void installMouseBridgeRecursive(Component c, MouseListener ml) {
+        c.addMouseListener(ml);
+        if (c instanceof Container) {
+            for (Component child : ((Container) c).getComponents()) {
+                installMouseBridgeRecursive(child, ml);
+            }
+        }
+    }
+
 
     // ===================== 自适应列宽（与 documentsearch 一致） =====================
 

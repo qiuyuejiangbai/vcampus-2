@@ -454,7 +454,6 @@ public class LibraryBookManageModule extends JPanel {
     class BookCard extends JPanel {
         public static final int CARD_H = 180;  // 固定高度，避免只一条时被拉高
         private int cardW = 310;
-
         private static final int ARC = 14;
 
         private final BookVO book;
@@ -485,6 +484,7 @@ public class LibraryBookManageModule extends JPanel {
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setFocusable(true);
 
+            // === 内容区（保持你原有样式） ===
             JPanel content = new JPanel();
             content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
             content.setOpaque(false);
@@ -550,21 +550,30 @@ public class LibraryBookManageModule extends JPanel {
 
             add(content, BorderLayout.CENTER);
 
-            addMouseListener(new MouseAdapter() {
-                @Override public void mouseClicked(MouseEvent e) {
+            // === 统一事件桥（关键修复）：递归安装到卡片及其所有子组件 ===
+            MouseAdapter bridge = new MouseAdapter() {
+                @Override public void mousePressed(MouseEvent e) {
                     selectCard();
-                    // 管理页：双击默认走“编辑”比较顺手
+                    requestFocusInWindow(); // 便于键盘交互
+                }
+                @Override public void mouseClicked(MouseEvent e) {
+                    // 双击左键 → 触发编辑（保持你原有交互）
                     if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
-                        editButton.doClick();
+                        if (editButton != null) editButton.doClick();
                     }
                 }
                 @Override public void mouseEntered(MouseEvent e) { startAnim(true); }
-                @Override public void mouseExited(MouseEvent e)  { startAnim(false); }
-            });
+                @Override public void mouseExited(MouseEvent e)  {
+                    // 从父到子时不算真正离开，避免悬停动画抖动
+                    if (!isMouseStillInsideCard(e)) startAnim(false);
+                }
+            };
+            installMouseBridgeRecursive(this, bridge);
 
+            // 键盘：Enter 也走编辑
             addKeyListener(new KeyAdapter() {
                 @Override public void keyPressed(KeyEvent e) {
-                    if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    if (e.getKeyCode() == KeyEvent.VK_ENTER && editButton != null) {
                         editButton.doClick();
                     }
                 }
@@ -575,7 +584,7 @@ public class LibraryBookManageModule extends JPanel {
             if (selectedCard != null && selectedCard != this) selectedCard.setSelected(false);
             selectedCard = this;
             setSelected(true);
-            requestFocusInWindow();
+            repaint();
         }
 
         public void setSelected(boolean selected) {
@@ -599,6 +608,23 @@ public class LibraryBookManageModule extends JPanel {
             });
             animTimer.setCoalesce(true);
             animTimer.start();
+        }
+
+        // 递归安装鼠标监听到所有子组件（核心修复点）
+        private void installMouseBridgeRecursive(Component c, MouseListener ml) {
+            c.addMouseListener(ml);
+            if (c instanceof Container) {
+                for (Component child : ((Container) c).getComponents()) {
+                    installMouseBridgeRecursive(child, ml);
+                }
+            }
+        }
+
+        // 判断鼠标是否仍在卡片区域（防止父→子触发误离开）
+        private boolean isMouseStillInsideCard(MouseEvent e) {
+            Component src = (Component) e.getSource();
+            Point p = SwingUtilities.convertPoint(src, e.getPoint(), this);
+            return p.x >= 0 && p.y >= 0 && p.x < getWidth() && p.y < getHeight();
         }
 
         @Override
@@ -638,6 +664,7 @@ public class LibraryBookManageModule extends JPanel {
             g2.dispose();
         }
     }
+
 
     // ---------------------- WrapFlowLayout，与 booksearch 等效 ----------------------
     class WrapFlowLayout extends FlowLayout {
