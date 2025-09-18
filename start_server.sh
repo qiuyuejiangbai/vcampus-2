@@ -21,7 +21,7 @@ if [ ! -d "bin" ]; then
 fi
 
 echo "复制配置文件..."
-cp resources/config.properties bin/ >/dev/null 2>&1
+cp resources/config.local.properties bin/ >/dev/null 2>&1
 
 # 检查端口是否占用
 PID=$(lsof -ti:$PORT)

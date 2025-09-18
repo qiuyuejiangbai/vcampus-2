@@ -51,7 +51,7 @@ fi
 # 复制配置文件
 echo
 echo "复制配置文件到 classpath..."
-cp resources/config.properties bin/ >/dev/null 2>&1
+cp resources/config.local.properties bin/ >/dev/null 2>&1
 
 echo
 echo "================================"
