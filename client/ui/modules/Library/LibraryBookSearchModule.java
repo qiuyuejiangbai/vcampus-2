@@ -104,10 +104,6 @@ public class LibraryBookSearchModule extends JPanel {
         return button;
     }
 
-
-
-    // ★ 新增：圆角输入框（仅 UI）
-    // ★ 圆角输入框（浅绿底 + 左侧icon位 + hover效果）
     // ★ 圆角输入框（浅绿底 + 左侧icon位 + hover效果 + 完全圆角）
     private static class RoundedTextField extends JTextField {
         private final int arc = 16;
@@ -308,7 +304,7 @@ public class LibraryBookSearchModule extends JPanel {
         // 清空按钮
         clearButton.addActionListener(e -> refreshCards());
 
-        // 借阅按钮（保持原有逻辑）
+        // 借阅按钮
         borrowButton.addActionListener(e -> {
             if (selectedCard == null) {
                 JOptionPane.showMessageDialog(this, "请先选择一本书！");
@@ -346,7 +342,6 @@ public class LibraryBookSearchModule extends JPanel {
     }
 
     private void showBookDetails(BookVO book) {
-        // 创建一个更美观的详情对话框（保持原逻辑）
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "图书详情", true);
         dialog.setLayout(new BorderLayout());
 
@@ -445,12 +440,6 @@ public class LibraryBookSearchModule extends JPanel {
         requestFocusInWindow(); // 便于键盘交互
     }
 
-    /** 根据可用宽度计算列数，只调整卡片宽度；高度固定为 BookCard.CARD_H */
-    /**
-     * 以 scrollPane 的总宽度为基准，固定预留竖向滚动条宽度，
-     * 避免因滚动条出现/消失导致的 viewport 宽度变化引发列数抖动。
-     * 不使用防抖，只做重入保护以防 revalidate 链路递归进入。
-     */
     /** 根据可用宽度计算列数，只调整卡片宽度；高度固定为 BookCard.CARD_H
      * 口径与 WrapFlowLayout 完全一致，避免右侧“空一列”
      */
@@ -556,17 +545,15 @@ public class LibraryBookSearchModule extends JPanel {
     }
 
     // 图书卡片组件
-    // 图书卡片组件（完整替换）
     class BookCard extends JPanel {
         public static final int CARD_H = 180; // 固定高度，避免只搜到一本时被拉高
-        private int cardW = 310;              // 宽度可调（由外部均分计算）
-
+        private int cardW = 310;              // 宽度由外部均分计算
         private static final int ARC = 14;
 
         private final BookVO book;
         private boolean isSelected = false;
-        private boolean isHovered = false;
 
+        // 悬停动画
         private float hoverProgress = 0f; // 0~1（用于平滑过渡）
         private Timer animTimer;
 
@@ -574,6 +561,8 @@ public class LibraryBookSearchModule extends JPanel {
             this.book = book;
             initCard();
         }
+
+        public BookVO getBook() { return book; }
 
         /** 只改宽度，不改高度，避免纵向被拉伸 */
         public void setCardSize(int w, int h) {
@@ -588,12 +577,11 @@ public class LibraryBookSearchModule extends JPanel {
         private void initCard() {
             setLayout(new BorderLayout());
             setOpaque(false);
-            setCardSize(cardW, CARD_H); // ★ 用我们的方法来设置尺寸（固定高，可调宽）
+            setCardSize(cardW, CARD_H);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setFocusable(true);
-            //setToolTipText("单击选中；双击查看详情；Enter 查看详情");
 
-            // 内容区
+            // ===== 内容区（保持你原有的 UI 风格）=====
             JPanel contentPanel = new JPanel();
             contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
             contentPanel.setOpaque(false);
@@ -630,8 +618,8 @@ public class LibraryBookSearchModule extends JPanel {
             stockPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
             JLabel stockLabel = new JLabel("可借: " + book.getAvailableStock() + " 本");
             stockLabel.setFont(new Font("微软雅黑", Font.BOLD, 12));
-            stockLabel.setForeground(book.getAvailableStock() > 0 ?
-                    new Color(34, 139, 34) : new Color(220, 53, 69));
+            stockLabel.setForeground(book.getAvailableStock() > 0
+                    ? new Color(34, 139, 34) : new Color(220, 53, 69));
             stockPanel.add(stockLabel);
 
             contentPanel.add(titleLabel);
@@ -646,22 +634,51 @@ public class LibraryBookSearchModule extends JPanel {
 
             add(contentPanel, BorderLayout.CENTER);
 
-            // 交互
-            addMouseListener(new MouseAdapter() {
-                @Override public void mouseClicked(MouseEvent e) {
+            // ===== 统一事件桥（关键修复）=====
+            MouseAdapter bridge = new MouseAdapter() {
+                @Override public void mousePressed(MouseEvent e) {
+                    // 第一次点击就选中，不等 mouseClicked，避免子组件吞掉点击
                     selectCard();
+                    requestFocusInWindow();
+                }
+                @Override public void mouseClicked(MouseEvent e) {
                     if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                        // 双击打开详情
                         showBookDetails(book);
                     }
                 }
-                @Override public void mouseEntered(MouseEvent e) { isHovered = true; startAnim(true); }
-                @Override public void mouseExited(MouseEvent e) { isHovered = false; startAnim(false); }
-            });
+                @Override public void mouseEntered(MouseEvent e) {
+                    startAnim(true);
+                }
+                @Override public void mouseExited(MouseEvent e) {
+                    // 仅当鼠标真正离开卡片区域时才结束 hover
+                    if (!isMouseStillInsideCard(e)) {
+                        startAnim(false);
+                    }
+                }
+            };
+            installMouseBridgeRecursive(this, bridge); // 递归安装到所有子组件
+
+            // 键盘：Enter 打开详情
             addKeyListener(new KeyAdapter() {
                 @Override public void keyPressed(KeyEvent e) {
-                    if (e.getKeyCode() == KeyEvent.VK_ENTER) showBookDetails(book);
+                    if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                        showBookDetails(book);
+                    }
                 }
             });
+        }
+
+        private void selectCard() {
+            if (selectedCard != null && selectedCard != this) selectedCard.setSelected(false);
+            selectedCard = this;
+            setSelected(true);
+            repaint();
+        }
+
+        public void setSelected(boolean selected) {
+            this.isSelected = selected;
+            repaint();
         }
 
         private void startAnim(boolean hoverIn) {
@@ -671,7 +688,7 @@ public class LibraryBookSearchModule extends JPanel {
             final int duration = 160; // 140~200ms 均可
             final long t0 = System.currentTimeMillis();
 
-            animTimer = new Timer(10, e -> { // 10ms ≈ ~100 FPS
+            animTimer = new Timer(10, e -> { // ~100 FPS，保持你之前的顺滑感
                 float t = Math.min(1f, (System.currentTimeMillis() - t0) / (float) duration);
                 float eased = 1f - (float) Math.pow(1 - t, 3);
                 hoverProgress = start + (end - start) * eased;
@@ -682,19 +699,22 @@ public class LibraryBookSearchModule extends JPanel {
             animTimer.start();
         }
 
-        private void selectCard() {
-            if (selectedCard != null && selectedCard != this) selectedCard.setSelected(false);
-            selectedCard = this;
-            setSelected(true);
-            requestFocusInWindow();
+        // 递归安装鼠标监听，避免子组件吞掉点击与进入/离开事件
+        private void installMouseBridgeRecursive(Component c, MouseListener ml) {
+            c.addMouseListener(ml);
+            if (c instanceof Container) {
+                for (Component child : ((Container) c).getComponents()) {
+                    installMouseBridgeRecursive(child, ml);
+                }
+            }
         }
 
-        public void setSelected(boolean selected) {
-            this.isSelected = selected;
-            repaint();
+        // 判断鼠标是否仍在卡片区域（用于过滤“父->子”的 mouseExited）
+        private boolean isMouseStillInsideCard(MouseEvent e) {
+            Component src = (Component) e.getSource();
+            Point p = SwingUtilities.convertPoint(src, e.getPoint(), this);
+            return p.x >= 0 && p.y >= 0 && p.x < getWidth() && p.y < getHeight();
         }
-
-        public BookVO getBook() { return book; }
 
         @Override
         protected void paintComponent(Graphics g) {
@@ -714,7 +734,7 @@ public class LibraryBookSearchModule extends JPanel {
             g2.setColor(new Color(220, 220, 220));
             g2.drawRoundRect(0, 0, w - 1, h - 1, ARC, ARC);
 
-            // 悬浮浅绿色边框（仅 hover 时显示）
+            // 悬浮浅绿色边框（仅 hover 时显示，保持原有动画）
             if (!isSelected && hoverProgress > 0f) {
                 Color glow = new Color(0, 128, 0, Math.min(200, (int) (140 + 80 * hoverProgress)));
                 g2.setColor(glow);
@@ -732,8 +752,8 @@ public class LibraryBookSearchModule extends JPanel {
 
             g2.dispose();
         }
-
     }
+
 
 
     /** WrapFlowLayout：在 JScrollPane 中也能尊重 preferredSize 的换行 FlowLayout */

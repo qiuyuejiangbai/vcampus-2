@@ -9,10 +9,6 @@ import common.vo.UserVO;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * 图书馆模块包装器，实现 IModuleView 接口
- * 可在 Student/Teacher/Admin Dashboard 中复用
- */
 public class LibraryModule implements IModuleView {
     private final String key;
     private final String displayName;
@@ -23,9 +19,6 @@ public class LibraryModule implements IModuleView {
     private ServerConnection connection;
     private LibraryMainFrameModule frame;
 
-    /**
-     * 构造函数（可以在不同 Dashboard 使用不同的 key/name/icon）
-     */
     public LibraryModule(String key, String displayName, String iconPath) {
         this.key = key;
         this.displayName = displayName;

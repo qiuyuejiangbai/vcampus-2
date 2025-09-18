@@ -136,6 +136,13 @@ public class LibraryDocumentManageModule extends JPanel {
         subjectWrapper.add(subjectPanel);
         topContainer.add(subjectWrapper);
 
+        // —— 主题分隔线（介于学科与类别复选框之间）——
+        JPanel sepWrap = new JPanel(new BorderLayout());
+        sepWrap.setOpaque(false);
+        sepWrap.setBorder(BorderFactory.createEmptyBorder(6, 24, 6, 24)); // 左右留白与顶部风格一致
+        sepWrap.add(new LibraryDocumentManageModule.ThemedSeparator(new Color(0, 100, 0), new Color(234, 247, 238)), BorderLayout.CENTER);
+        topContainer.add(sepWrap);
+
         String[] categories = {
                 "期刊","会议","教材","报告","专利",
                 "标准","学位论文","技术文档","白皮书","数据集"
@@ -213,6 +220,50 @@ public class LibraryDocumentManageModule extends JPanel {
         JLabel lab = new JLabel(new ImageIcon(scaled));
         lab.setBorder(BorderFactory.createEmptyBorder(0, padLR, 0, padLR));
         return lab;
+    }
+
+    class ThemedSeparator extends JComponent {
+        private final Color line;
+        private final Color bg;
+
+        public ThemedSeparator(Color line, Color bg) {
+            this.line = line;
+            this.bg = bg;
+            setOpaque(false);
+            setPreferredSize(new Dimension(1, 1)); // 总高度：含上下留白
+            setMinimumSize(new Dimension(1, 1));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int midY = getHeight() / 2;
+
+            // 轻微阴影（上浅下深），显得更“浮”
+            g2.setColor(new Color(0, 0, 0, 20));
+            g2.drawLine(0, midY + 1, w, midY + 1);
+
+            // 主线：主题绿
+            g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.setColor(line);
+            g2.drawLine(0, midY, w, midY);
+
+            // 两端做一点点渐隐，避免太硬
+            GradientPaint leftFade = new GradientPaint(0, midY, new Color(line.getRed(), line.getGreen(), line.getBlue(), 0),
+                    Math.min(28, w / 6), midY, line);
+            g2.setPaint(leftFade);
+            g2.drawLine(0, midY, Math.min(28, w / 6), midY);
+
+            GradientPaint rightFade = new GradientPaint(w - Math.min(28, w / 6), midY, line,
+                    w, midY, new Color(line.getRed(), line.getGreen(), line.getBlue(), 0));
+            g2.setPaint(rightFade);
+            g2.drawLine(w - Math.min(28, w / 6), midY, w, midY);
+
+            g2.dispose();
+        }
     }
 
     /** 实心主色按钮（与 documentsearch 一致） */
@@ -450,9 +501,8 @@ public class LibraryDocumentManageModule extends JPanel {
     // ===================== 卡片定义 =====================
 
     class DocumentCard extends JPanel {
-        static final int CARD_H = 196;    // 与 documentsearch 对齐，容纳“关键词”等
-        private int cardW = 310;          // 宽度由自适应计算
-
+        static final int CARD_H = 196;    // 保持不变
+        private int cardW = 310;
         private static final int ARC = 14;
 
         private final DocumentVO doc;
@@ -464,7 +514,6 @@ public class LibraryDocumentManageModule extends JPanel {
             this.doc = doc;
             initCard();
         }
-
         public DocumentVO getDoc() { return doc; }
 
         public void setCardSize(int w, int h) {
@@ -483,7 +532,7 @@ public class LibraryDocumentManageModule extends JPanel {
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setFocusable(true);
 
-            // 内容区
+            // 内容区（保持你原来的样式）
             JPanel content = new JPanel();
             content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
             content.setOpaque(false);
@@ -542,19 +591,33 @@ public class LibraryDocumentManageModule extends JPanel {
 
             add(content, BorderLayout.CENTER);
 
-            // 鼠标/键盘交互
-            addMouseListener(new MouseAdapter() {
-                @Override public void mouseClicked(MouseEvent e) {
+            // === 统一的事件桥：安装在卡片及其所有子组件上 ===
+            MouseAdapter bridge = new MouseAdapter() {
+                @Override public void mousePressed(MouseEvent e) {
                     selectCard();
+                    requestFocusInWindow();
+                }
+                @Override public void mouseClicked(MouseEvent e) {
+                    // 双击打开详情（仅左键）
                     if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
                         int id = doc.getDocId();
                         DocumentVO full = controller.getDocumentById(id);
                         if (full != null) showDocumentDetailDialog(full);
                     }
                 }
-                @Override public void mouseEntered(MouseEvent e) { startAnim(true); }
-                @Override public void mouseExited(MouseEvent e)  { startAnim(false); }
-            });
+                @Override public void mouseEntered(MouseEvent e) {
+                    startAnim(true);
+                }
+                @Override public void mouseExited(MouseEvent e) {
+                    // 防止从父到子触发“误离开”而关闭 hover
+                    if (!isMouseStillInsideCard(e)) {
+                        startAnim(false);
+                    }
+                }
+            };
+            installMouseBridgeRecursive(this, bridge);
+
+            // 键盘：Enter 打开详情
             addKeyListener(new KeyAdapter() {
                 @Override public void keyPressed(KeyEvent e) {
                     if (e.getKeyCode() == KeyEvent.VK_ENTER) {
@@ -581,7 +644,7 @@ public class LibraryDocumentManageModule extends JPanel {
             if (selectedCard != null && selectedCard != this) selectedCard.setSelected(false);
             selectedCard = this;
             setSelected(true);
-            requestFocusInWindow();
+            repaint();
         }
 
         public void setSelected(boolean selected) {
@@ -642,7 +705,25 @@ public class LibraryDocumentManageModule extends JPanel {
 
             g2.dispose();
         }
+
+        // 判断鼠标是否仍在卡片区域（用于过滤“父->子”的 mouseExited）
+        private boolean isMouseStillInsideCard(MouseEvent e) {
+            Component src = (Component) e.getSource();
+            Point p = SwingUtilities.convertPoint(src, e.getPoint(), this);
+            return p.x >= 0 && p.y >= 0 && p.x < getWidth() && p.y < getHeight();
+        }
     }
+
+    // === 放在 LibraryDocumentManageModule 内，与 DocumentCard 同级：递归安装鼠标监听 ===
+    private void installMouseBridgeRecursive(Component c, MouseListener ml) {
+        c.addMouseListener(ml);
+        if (c instanceof Container) {
+            for (Component child : ((Container) c).getComponents()) {
+                installMouseBridgeRecursive(child, ml);
+            }
+        }
+    }
+
 
     // ===================== 自适应列宽（与 documentsearch 一致） =====================
 
