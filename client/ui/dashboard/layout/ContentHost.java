@@ -120,7 +120,6 @@ public class ContentHost extends JPanel {
         animationPanel.setPreferredSize(size);
         animationPanel.setSize(size);
         
-        // 临时添加动画面板
         add(animationPanel, "animation");
         cardLayout.show(this, "animation");
         

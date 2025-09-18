@@ -590,3 +590,13 @@ CREATE TABLE IF NOT EXISTS system_configs (
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) COMMENT='系统配置表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ========================================
+-- 全文搜索索引（用于论坛搜索功能优化）
+-- ========================================
+
+-- 为 forum_threads 表的 title 和 content 字段添加全文索引
+ALTER TABLE forum_threads ADD FULLTEXT INDEX ft_title_content (title, content);
+
+-- 为 forum_posts 表的 content 字段添加全文索引  
+ALTER TABLE forum_posts ADD FULLTEXT INDEX ft_content (content);

@@ -22,7 +22,7 @@ import java.text.SimpleDateFormat;
  * 学生学籍管理模块
  * 实现学生个人档案的查询和修改功能
  */
-public class StudentProfileModule implements IModuleView {
+public class StudentProfileModule implements IModuleView, client.ui.dashboard.layout.SideNav.AvatarUpdateListener {
     private JPanel root;
     private CardLayout cardLayout;
     private JPanel mainPanel;
@@ -1055,20 +1055,32 @@ public class StudentProfileModule implements IModuleView {
                         if (icon.getIconWidth() > 0 && icon.getIconHeight() > 0) {
                             avatarLabel.setAvatarImage(icon.getImage());
                             System.out.println("[DEBUG][StudentProfileModule] 头像图片加载成功");
+                            
+                            // 强制刷新UI
+                            avatarLabel.revalidate();
+                            avatarLabel.repaint();
                         } else {
                             throw new Exception("图片尺寸无效");
                         }
                     } else {
                         throw new Exception("头像文件不存在: " + fullAvatarPath);
                     }
-                } catch (Exception e) {
-                    System.err.println("[DEBUG][StudentProfileModule] 头像图片加载失败: " + e.getMessage());
-                    loadDefaultAvatarImage();
-                    System.out.println("[DEBUG][StudentProfileModule] 使用默认头像图片");
-                }
+        } catch (Exception e) {
+            System.err.println("[DEBUG][StudentProfileModule] 头像图片加载失败: " + e.getMessage());
+            loadDefaultAvatarImage();
+            System.out.println("[DEBUG][StudentProfileModule] 使用默认头像图片");
+            
+            // 强制刷新UI
+            avatarLabel.revalidate();
+            avatarLabel.repaint();
+        }
             } else {
                 loadDefaultAvatarImage();
                 System.out.println("[DEBUG][StudentProfileModule] 使用默认头像图片");
+                
+                // 强制刷新UI
+                avatarLabel.revalidate();
+                avatarLabel.repaint();
             }
             
             // 强制刷新UI
@@ -1076,6 +1088,12 @@ public class StudentProfileModule implements IModuleView {
             viewPanel.repaint();
             root.revalidate();
             root.repaint();
+            
+            // 强制刷新头像组件
+            if (avatarLabel != null) {
+                avatarLabel.revalidate();
+                avatarLabel.repaint();
+            }
             
             // 启动淡入动画
             startFadeInAnimation();
@@ -1173,6 +1191,10 @@ public class StudentProfileModule implements IModuleView {
                     Image scaledImg = img.getScaledInstance(120, 120, Image.SCALE_SMOOTH);
                     avatarLabel.setAvatarImage(scaledImg);
                     System.out.println("[StudentProfileModule] 成功加载默认头像图片");
+                    
+                    // 强制刷新UI
+                    avatarLabel.revalidate();
+                    avatarLabel.repaint();
                     return;
                 }
             }
@@ -1184,6 +1206,10 @@ public class StudentProfileModule implements IModuleView {
         System.out.println("[StudentProfileModule] 使用文字默认头像");
         avatarLabel.setDefaultText(currentStudent != null && currentStudent.getName() != null && !currentStudent.getName().isEmpty() 
             ? currentStudent.getName().substring(0, 1) : "U");
+        
+        // 强制刷新UI
+        avatarLabel.revalidate();
+        avatarLabel.repaint();
     }
 
     @Override
@@ -1212,5 +1238,88 @@ public class StudentProfileModule implements IModuleView {
 
         // 初始化时加载学生信息
         SwingUtilities.invokeLater(this::refreshStudentInfo);
+    }
+    
+    /**
+     * 头像更新回调方法
+     * 当SideNav中的头像更新后，会调用此方法刷新本模块的头像显示
+     */
+    @Override
+    public void onAvatarUpdated(String avatarPath) {
+        System.out.println("[StudentProfileModule] 收到头像更新通知: " + avatarPath);
+        
+        // 在EDT线程中更新头像显示
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // 更新当前用户对象的头像路径
+                if (currentUser != null && avatarPath != null) {
+                    currentUser.setAvatarPath(avatarPath);
+                    System.out.println("[StudentProfileModule] 已更新当前用户头像路径: " + avatarPath);
+                }
+                
+                // 同时更新当前学生对象的头像路径
+                if (currentStudent != null && currentStudent.getUser() != null && avatarPath != null) {
+                    currentStudent.getUser().setAvatarPath(avatarPath);
+                    System.out.println("[StudentProfileModule] 已更新当前学生头像路径: " + avatarPath);
+                }
+                
+                // 直接更新头像显示，无论当前处于什么模式
+                updateAvatarDisplay(avatarPath);
+                
+            } catch (Exception e) {
+                System.err.println("[StudentProfileModule] 更新头像显示失败: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+    
+    /**
+     * 更新头像显示
+     */
+    private void updateAvatarDisplay(String avatarPath) {
+        if (avatarLabel == null) {
+            return;
+        }
+        
+        try {
+            // 先清除之前的头像
+            avatarLabel.setAvatarImage(null);
+            
+            if (avatarPath != null && !avatarPath.trim().isEmpty()) {
+                // 修复头像路径：如果路径不以resources/开头，则添加resources/前缀
+                String fullAvatarPath = avatarPath;
+                if (!avatarPath.startsWith("resources/")) {
+                    fullAvatarPath = "resources/" + avatarPath;
+                    System.out.println("[StudentProfileModule] 修正头像路径: " + fullAvatarPath);
+                }
+                
+                // 检查文件是否存在
+                java.io.File avatarFile = new java.io.File(fullAvatarPath);
+                if (avatarFile.exists() && avatarFile.isFile()) {
+                    ImageIcon icon = new ImageIcon(fullAvatarPath);
+                    if (icon.getIconWidth() > 0 && icon.getIconHeight() > 0) {
+                        avatarLabel.setAvatarImage(icon.getImage());
+                        System.out.println("[StudentProfileModule] 头像更新成功: " + fullAvatarPath);
+                        
+                        // 强制刷新UI
+                        avatarLabel.revalidate();
+                        avatarLabel.repaint();
+                        return;
+                    }
+                }
+            }
+            
+            // 如果头像路径为空或文件不存在，使用默认头像
+            loadDefaultAvatarImage();
+            
+            // 强制刷新UI
+            avatarLabel.revalidate();
+            avatarLabel.repaint();
+            
+        } catch (Exception e) {
+            System.err.println("[StudentProfileModule] 更新头像显示失败: " + e.getMessage());
+            e.printStackTrace();
+            loadDefaultAvatarImage();
+        }
     }
 }

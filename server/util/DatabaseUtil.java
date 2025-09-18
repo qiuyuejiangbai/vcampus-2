@@ -207,7 +207,6 @@ public class DatabaseUtil {
             System.out.println(getConfigInfo());
             System.out.println();
             
-            // 测试数据库连接
             System.out.println("正在测试数据库连接...");
             if (testConnection()) {
                 System.out.println("✓ 数据库连接成功！");

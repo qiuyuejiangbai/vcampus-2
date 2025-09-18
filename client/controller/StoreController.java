@@ -193,8 +193,7 @@ public class StoreController {
 
      // 添加订单状态更新方法
     public boolean updateOrderStatus(String orderId, String newStatus) {
-        // TODO: 实现订单状态更新逻辑，返回true表示成功，false表示失败
-        // 例如：调用后端服务或数据库更新订单状态
+        // 实现订单状态更新逻辑
         return false;
     }
     

@@ -26,6 +26,11 @@ import javax.swing.Timer;
 /** 左侧可折叠导航，包含Logo、个人信息和导航菜单，使用墨绿色配色方案。 */
 public class SideNav extends JPanel {
     public interface NavListener { void onNavSelected(String key); }
+    
+    // 头像更新通知接口
+    public interface AvatarUpdateListener { 
+        void onAvatarUpdated(String avatarPath); 
+    }
 
     private int expandedWidth = 240;
     private int collapsedWidth = 80;
@@ -33,6 +38,9 @@ public class SideNav extends JPanel {
     private final Map<String, NavButton> keyToButton = new LinkedHashMap<String, NavButton>();
     private NavListener listener;
     private String selectedKey = null;
+    
+    // 头像更新监听器列表
+    private final java.util.List<AvatarUpdateListener> avatarUpdateListeners = new java.util.ArrayList<>();
     // 可变强调色：默认墨绿色，点击标题栏“主题”按钮后可切换为灰色
     private Color accentColor = new Color(0x2C, 0x4F, 0x3D);
     private final Color textDefault = Color.BLACK;
@@ -99,6 +107,37 @@ public class SideNav extends JPanel {
     }
     
     public void setNavListener(SideNav.NavListener l) { this.listener = l; }
+    
+    /**
+     * 添加头像更新监听器
+     */
+    public void addAvatarUpdateListener(AvatarUpdateListener listener) {
+        if (listener != null && !avatarUpdateListeners.contains(listener)) {
+            avatarUpdateListeners.add(listener);
+        }
+    }
+    
+    /**
+     * 移除头像更新监听器
+     */
+    public void removeAvatarUpdateListener(AvatarUpdateListener listener) {
+        avatarUpdateListeners.remove(listener);
+    }
+    
+    /**
+     * 通知所有监听器头像已更新
+     */
+    private void notifyModulesAvatarUpdated(String avatarPath) {
+        System.out.println("[SideNav] 通知模块头像已更新: " + avatarPath);
+        for (AvatarUpdateListener listener : avatarUpdateListeners) {
+            try {
+                listener.onAvatarUpdated(avatarPath);
+            } catch (Exception e) {
+                System.err.println("[SideNav] 通知头像更新失败: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
 
     /** 设置顶部需要跳过绘制阴影的像素高度（通常为 AppBar 的高度）。 */
     public void setTopShadowSkipPx(int px) {
@@ -286,6 +325,9 @@ public class SideNav extends JPanel {
                 if (currentUser != null && avatarPath != null) {
                     currentUser.setAvatarPath(avatarPath);
                     System.out.println("已更新当前用户头像路径: " + avatarPath);
+                    
+                    // 通知相关模块刷新头像显示
+                    notifyModulesAvatarUpdated(avatarPath);
                 }
             }
         });

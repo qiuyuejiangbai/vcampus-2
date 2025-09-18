@@ -13,7 +13,7 @@ import java.util.List;
 
 public class LibraryServiceImpl implements LibraryService {
 
-    // ✅ 项目根目录下的 resources 文件夹
+    // 项目根目录下的 resources 文件夹
     private static final String BASE_PATH =
             System.getProperty("user.dir") + File.separator + "resources" + File.separator;
 

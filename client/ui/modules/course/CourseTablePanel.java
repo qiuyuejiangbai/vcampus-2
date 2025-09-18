@@ -486,7 +486,6 @@ public class CourseTablePanel extends JPanel {
             }
         }
         
-        // 临时替换课程列表
         List<CourseVO> originalList = new ArrayList<>(courseList);
         courseList = filteredCourses;
         updateTableData();
@@ -510,7 +509,6 @@ public class CourseTablePanel extends JPanel {
             }
         }
         
-        // 临时替换课程列表
         List<CourseVO> originalList = new ArrayList<>(courseList);
         courseList = filteredCourses;
         updateTableData();

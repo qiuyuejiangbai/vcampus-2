@@ -12,10 +12,7 @@ import client.ui.dialog.CreateThreadDialog;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.awt.geom.RoundRectangle2D;
-import java.awt.image.BufferedImage;
 import java.awt.RenderingHints;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -1698,46 +1695,16 @@ public class StudentForumModule implements IModuleView {
                 try {
                     @SuppressWarnings("unchecked")
                     java.util.List<common.vo.ThreadVO> list = (java.util.List<common.vo.ThreadVO>) message.getData();
-                    System.out.println("[Forum][Client] 收到成功响应: GET_ALL_THREADS_SUCCESS, 条数=" + (list != null ? list.size() : -1));
-                    System.out.println("[DEBUG] ========== 客户端接收到服务器数据 ==========");
-                    System.out.println("[DEBUG] 消息状态码: " + message.getStatusCode());
-                    System.out.println("[DEBUG] 消息内容: " + message.getMessage());
-                    
-                    // 详细调试输出接收到的数据
-                    if (list != null) {
-                        System.out.println("[DEBUG] 接收到的ThreadVO列表大小: " + list.size());
-                        if (list.size() == 0) {
-                            System.out.println("[DEBUG] 警告：服务器返回的帖子列表为空！");
-                        }
-                        for (int i = 0; i < list.size(); i++) {
-                            ThreadVO vo = list.get(i);
-                            System.out.println("[DEBUG] 帖子[" + i + "] - ID=" + vo.getThreadId() + 
-                                             ", 标题=" + (vo.getTitle() != null ? vo.getTitle() : "null") + 
-                                             ", 作者=" + (vo.getAuthorName() != null ? vo.getAuthorName() : "null") + 
-                                             ", 是否公告=" + vo.getIsAnnouncement() + 
-                                             ", 回复数=" + vo.getReplyCount() + 
-                                             ", 分区ID=" + vo.getSectionId() +
-                                             ", 状态=" + vo.getStatus() +
-                                             ", 创建时间=" + vo.getCreatedTime());
-                        }
-                    } else {
-                        System.out.println("[DEBUG] 错误：接收到的数据为null！");
-                    }
+                    System.out.println("[Forum] 收到帖子列表，条数=" + (list != null ? list.size() : 0));
                     
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override public void run() {
                             try { if (timeoutTimer.isRunning()) timeoutTimer.stop(); } catch (Exception ignore) {}
                             isFetchingThreads = false;
-                            System.out.println("[DEBUG] 开始处理接收到的数据...");
                             threads.clear();
-                            System.out.println("[DEBUG] 已清空本地threads列表");
                             if (list != null) {
                                 threads.addAll(list);
-                                System.out.println("[DEBUG] 数据已添加到本地threads列表，当前大小: " + threads.size());
-                            } else {
-                                System.out.println("[DEBUG] 警告：list为null，无法添加到本地列表");
                             }
-                            System.out.println("[DEBUG] 开始调用refreshThreadList()...");
                             refreshThreadList();
                             // 同步刷新热门板块
                             try { refreshHotSections(); } catch (Exception ignore) {}
@@ -2624,8 +2591,15 @@ public class StudentForumModule implements IModuleView {
     private void refreshReplyList() {
         replyListPanel.removeAll();
         
+        System.out.println("[DEBUG] refreshReplyList - currentThread: " + (currentThread != null ? currentThread.getThreadId() : "null"));
+        System.out.println("[DEBUG] refreshReplyList - replies总数: " + replies.size());
+        
         if (currentThread != null) {
+            int addedCount = 0;
             for (PostVO reply : replies) {
+                System.out.println("[DEBUG] 检查回复 - PostID: " + reply.getPostId() + 
+                                 ", ThreadID: " + reply.getThreadId() + 
+                                 ", 当前ThreadID: " + currentThread.getThreadId());
                 if (reply.getThreadId().equals(currentThread.getThreadId())) {
                     JPanel replyItem = createReplyItem(reply);
                     
@@ -2639,8 +2613,10 @@ public class StudentForumModule implements IModuleView {
                     ));
                     
                     replyListPanel.add(replyItem);
+                    addedCount++;
                 }
             }
+            System.out.println("[DEBUG] 实际添加到界面的回复数: " + addedCount);
         }
         
         replyListPanel.revalidate();
@@ -2658,14 +2634,21 @@ public class StudentForumModule implements IModuleView {
                 try {
                     @SuppressWarnings("unchecked")
                     java.util.List<common.vo.PostVO> list = (java.util.List<common.vo.PostVO>) message.getData();
+                    System.out.println("[DEBUG] 收到评论数据: " + (list != null ? list.size() : -1) + " 条");
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override public void run() {
                             replies.clear();
-                            if (list != null) replies.addAll(list);
+                            if (list != null) {
+                                replies.addAll(list);
+                                System.out.println("[DEBUG] 添加到replies列表: " + replies.size() + " 条");
+                            }
                             refreshReplyList();
                         }
                     });
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    System.err.println("[ERROR] 处理评论数据时发生异常: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         });
         conn.sendMessage(new common.protocol.Message(common.protocol.MessageType.GET_POSTS_REQUEST, threadId));

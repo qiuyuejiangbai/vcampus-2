@@ -158,6 +158,12 @@ public class StudentDashboardUI extends JFrame {
             contentHost.addPage(m.getKey(), m.getComponent());
             Icon icon = loadIcon(m.getIconPath());
             sideNav.addItem(m.getKey(), m.getDisplayName(), icon);
+            
+            // 如果模块实现了AvatarUpdateListener接口，注册为头像更新监听器
+            if (m instanceof client.ui.dashboard.layout.SideNav.AvatarUpdateListener) {
+                sideNav.addAvatarUpdateListener((client.ui.dashboard.layout.SideNav.AvatarUpdateListener) m);
+                System.out.println("[StudentDashboardUI] 已注册头像更新监听器: " + m.getDisplayName());
+            }
         }
         // 默认显示学籍管理模块
         String defaultModuleKey = ModuleKeys.STUDENT_PROFILE;

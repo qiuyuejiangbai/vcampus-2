@@ -79,43 +79,12 @@ public class TeacherCourseCardPanel extends JPanel {
         // 可以添加其他事件处理
     }
 
-    /**
-     * 创建测试卡片，确保界面能够显示
-     */
-    private TeacherCourseCard createTestCard() {
-        System.out.println("=== 创建测试卡片 ===");
-        
-        // 创建一个测试课程
-        CourseVO testCourse = new CourseVO();
-        testCourse.setCourseId(999);
-        testCourse.setCourseCode("TEST001");
-        testCourse.setCourseName("测试课程");
-        testCourse.setCredits(3);
-        testCourse.setDepartment("计算机学院");
-        testCourse.setTeacherId(1);
-        testCourse.setTeacherName("测试教师");
-        testCourse.setSemester("2024春");
-        testCourse.setAcademicYear("2023-2024");
-        testCourse.setClassTime("周一 1-2节");
-        testCourse.setLocation("测试教室");
-        testCourse.setCapacity(50);
-        testCourse.setEnrolledCount(0);
-        testCourse.setStatus("active");
-        testCourse.setDescription("这是一个测试课程");
-        
-        // 创建测试卡片
-        TeacherCourseCard testCard = new TeacherCourseCard(testCourse, this, currentUser, connection);
-        
-        System.out.println("测试卡片创建完成");
-        return testCard;
-    }
     
     /**
      * 设置消息监听器
      */
     private void setupMessageListener() {
         if (connection != null) {
-            System.out.println("设置教师课程消息监听器");
             // 设置课程列表响应监听器
             connection.setMessageListener(MessageType.GET_ALL_COURSES_SUCCESS, message -> {
                 SwingUtilities.invokeLater(() -> {
@@ -295,10 +264,10 @@ public class TeacherCourseCardPanel extends JPanel {
             emptyLabel.setVisible(false);
             scrollPane.setVisible(true);
             
-            // 重新添加测试卡片
-            TeacherCourseCard testCard = createTestCard();
-            cardContainer.add(testCard);
-            courseCards.add(testCard);
+            // 显示空状态
+            JLabel emptyLabel = new JLabel("暂无课程数据");
+            emptyLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            cardContainer.add(emptyLabel);
             revalidate();
             repaint();
             return;

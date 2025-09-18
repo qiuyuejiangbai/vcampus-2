@@ -12,10 +12,7 @@ import client.ui.dialog.CreateThreadDialog;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.awt.geom.RoundRectangle2D;
-import java.awt.image.BufferedImage;
 import java.awt.RenderingHints;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -215,23 +212,10 @@ public class AdminForumModule implements IModuleView {
                 JButton src = (JButton) e.getSource();
                 if (src == latestCategoryButton) {
                     currentSortMode = SortMode.LATEST;
-                    System.out.println("[DEBUG][精华功能] 切换到最新模式");
                 } else if (src == hotCategoryButton) {
                     currentSortMode = SortMode.HOT;
-                    System.out.println("[DEBUG][精华功能] 切换到热门模式");
                 } else if (src == essenceCategoryButton) {
                     currentSortMode = SortMode.ESSENCE;
-                    System.out.println("[DEBUG][精华功能] *** 用户点击精华按钮 *** 切换到精华模式，开始筛选精华帖子");
-                    System.out.println("[DEBUG][精华功能] 当前帖子总数: " + (threads != null ? threads.size() : 0));
-                    if (threads != null) {
-                        int essenceCount = 0;
-                        for (ThreadVO t : threads) {
-                            if (t.getIsEssence() != null && t.getIsEssence()) {
-                                essenceCount++;
-                            }
-                        }
-                        System.out.println("[DEBUG][精华功能] 可用精华帖子数量: " + essenceCount);
-                    }
                 }
                 updateCategorySelection(src);
                 refreshThreadList();
@@ -625,14 +609,8 @@ public class AdminForumModule implements IModuleView {
         announcementContentPanel.removeAll();
         int shown = 0;
         if (threads != null) {
-            System.out.println("[DEBUG] 检查公告帖子，总帖子数: " + threads.size());
             for (ThreadVO t : threads) {
-                if (t != null) {
-                    System.out.println("[DEBUG] 检查帖子 - ID=" + t.getThreadId() + 
-                                     ", 标题=" + t.getTitle() + 
-                                     ", 是否公告=" + t.getIsAnnouncement());
-                    if (t.getIsAnnouncement()) {
-                        System.out.println("[DEBUG] 找到公告帖子，添加到公告区域: " + t.getTitle());
+                if (t != null && t.getIsAnnouncement()) {
                         JLabel label = new JLabel("• " + (t.getTitle() != null ? t.getTitle() : "(无标题)"));
                         label.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 14f));
                         label.setForeground(new Color(107, 114, 128));
@@ -646,21 +624,15 @@ public class AdminForumModule implements IModuleView {
                         });
                         announcementContentPanel.add(label);
                         shown++;
-                    }
                 }
             }
-        } else {
-            System.out.println("[DEBUG] threads列表为null");
         }
         if (shown == 0) {
-            System.out.println("[DEBUG] 没有找到公告帖子，显示'暂无公告'");
             JLabel empty = new JLabel("暂无公告");
             empty.setFont(UIManager.getFont("Label.font").deriveFont(Font.PLAIN, 13f));
             empty.setForeground(new Color(156, 163, 175));
             empty.setBorder(new EmptyBorder(4, 0, 4, 0));
             announcementContentPanel.add(empty);
-        } else {
-            System.out.println("[DEBUG] 公告区域刷新完成，显示公告数: " + shown);
         }
         announcementContentPanel.revalidate();
         announcementContentPanel.repaint();
@@ -1559,31 +1531,14 @@ public class AdminForumModule implements IModuleView {
         refreshThreadList();
     }
     
-    private void initMockData() { }
     
     private void refreshThreadList() {
         JPanel threadItemsPanel = (JPanel) threadScrollPane.getViewport().getView();
         if (threadItemsPanel == null) {
-            System.out.println("[Forum][Client] 刷新列表时发现视图为空(view==null)");
+            System.out.println("[Forum] 刷新列表时发现视图为空");
             return;
         }
-        System.out.println("[Forum][Client] 清空帖子列表并准备渲染，当前数据条数=" + (threads != null ? threads.size() : 0));
-        System.out.println("[DEBUG] ========== 客户端开始刷新帖子列表 ==========");
-        
-        // 调试输出：检查接收到的所有帖子数据
-        if (threads != null) {
-            System.out.println("[DEBUG] 接收到的帖子总数: " + threads.size());
-            for (ThreadVO thread : threads) {
-                if (thread != null) {
-                    System.out.println("[DEBUG] 帖子数据 - ID=" + thread.getThreadId() + 
-                                     ", 标题=" + thread.getTitle() + 
-                                     ", 作者=" + thread.getAuthorName() + 
-                                     ", 是否公告=" + thread.getIsAnnouncement() + 
-                                      ", 回复数=" + thread.getReplyCount() + 
-                                      ", 分区ID=" + thread.getSectionId());
-                }
-            }
-        }
+        System.out.println("[Forum] 刷新帖子列表，数据条数=" + (threads != null ? threads.size() : 0));
         
         threadItemsPanel.removeAll();
         // 每次刷新先按当前模式排序
@@ -2691,8 +2646,15 @@ public class AdminForumModule implements IModuleView {
     private void refreshReplyList() {
         replyListPanel.removeAll();
         
+        System.out.println("[DEBUG] refreshReplyList - currentThread: " + (currentThread != null ? currentThread.getThreadId() : "null"));
+        System.out.println("[DEBUG] refreshReplyList - replies总数: " + replies.size());
+        
         if (currentThread != null) {
+            int addedCount = 0;
             for (PostVO reply : replies) {
+                System.out.println("[DEBUG] 检查回复 - PostID: " + reply.getPostId() + 
+                                 ", ThreadID: " + reply.getThreadId() + 
+                                 ", 当前ThreadID: " + currentThread.getThreadId());
                 if (reply.getThreadId().equals(currentThread.getThreadId())) {
                     JPanel replyItem = createReplyItem(reply);
                     
@@ -2706,8 +2668,10 @@ public class AdminForumModule implements IModuleView {
                     ));
                     
                     replyListPanel.add(replyItem);
+                    addedCount++;
                 }
             }
+            System.out.println("[DEBUG] 实际添加到界面的回复数: " + addedCount);
         }
         
         replyListPanel.revalidate();

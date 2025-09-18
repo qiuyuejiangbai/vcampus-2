@@ -12,10 +12,7 @@ import client.ui.dialog.CreateThreadDialog;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.awt.geom.RoundRectangle2D;
-import java.awt.image.BufferedImage;
 import java.awt.RenderingHints;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -812,7 +809,7 @@ public class TeacherForumModule implements IModuleView {
                 hotSectionsContentPanel.add(empty);
             } else {
                 java.util.List<java.util.Map.Entry<String, Integer>> list = new java.util.ArrayList<java.util.Map.Entry<String, Integer>>(sectionToCount.entrySet());
-                java.util.Collections.sort(list, new java.util.Comparator<java.util.Map.Entry<String, Integer>>() {
+                java.util.Collections.sort(list, new java.util.Comparator<java.util.Map.Entry<String, Integer>>(){
                     @Override public int compare(java.util.Map.Entry<String, Integer> o1, java.util.Map.Entry<String, Integer> o2) {
                         return o2.getValue().compareTo(o1.getValue());
                     }
@@ -1554,31 +1551,14 @@ public class TeacherForumModule implements IModuleView {
         refreshThreadList();
     }
     
-    private void initMockData() { }
     
     private void refreshThreadList() {
         JPanel threadItemsPanel = (JPanel) threadScrollPane.getViewport().getView();
         if (threadItemsPanel == null) {
-            System.out.println("[Forum][Client] 刷新列表时发现视图为空(view==null)");
+            System.out.println("[Forum] 刷新列表时发现视图为空");
             return;
         }
-        System.out.println("[Forum][Client] 清空帖子列表并准备渲染，当前数据条数=" + (threads != null ? threads.size() : 0));
-        System.out.println("[DEBUG] ========== 客户端开始刷新帖子列表 ==========");
-        
-        // 调试输出：检查接收到的所有帖子数据
-        if (threads != null) {
-            System.out.println("[DEBUG] 接收到的帖子总数: " + threads.size());
-            for (ThreadVO thread : threads) {
-                if (thread != null) {
-                    System.out.println("[DEBUG] 帖子数据 - ID=" + thread.getThreadId() + 
-                                     ", 标题=" + thread.getTitle() + 
-                                     ", 作者=" + thread.getAuthorName() + 
-                                     ", 是否公告=" + thread.getIsAnnouncement() + 
-                                      ", 回复数=" + thread.getReplyCount() + 
-                                      ", 分区ID=" + thread.getSectionId());
-                }
-            }
-        }
+        System.out.println("[Forum] 刷新帖子列表，数据条数=" + (threads != null ? threads.size() : 0));
         
         threadItemsPanel.removeAll();
         // 每次刷新先按当前模式排序
@@ -1590,7 +1570,6 @@ public class TeacherForumModule implements IModuleView {
             if (currentSectionIdFilter != null) {
                 Integer sid = thread != null ? thread.getSectionId() : null;
                 if (sid == null || !currentSectionIdFilter.equals(sid)) {
-                    System.out.println("[DEBUG] 帖子ID=" + (thread != null ? thread.getThreadId() : "null") + " 被分区筛选过滤掉");
                     continue;
                 }
             }
@@ -1598,18 +1577,11 @@ public class TeacherForumModule implements IModuleView {
             // 精华模式筛选：只显示精华帖子
             if (currentSortMode == SortMode.ESSENCE) {
                 boolean isEssence = thread.getIsEssence() != null && thread.getIsEssence();
-                System.out.println("[DEBUG][精华功能] 精华模式筛选检查: 帖子ID=" + thread.getThreadId() + 
-                                 ", 标题=" + thread.getTitle() + ", isEssence=" + isEssence);
                 if (!isEssence) {
-                    System.out.println("[DEBUG][精华功能] 非精华帖子被过滤掉，帖子ID=" + thread.getThreadId());
                     continue;
                 }
-                System.out.println("[DEBUG][精华功能] 精华帖子通过筛选，帖子ID=" + thread.getThreadId());
             }
             
-            System.out.println("[DEBUG] 准备创建帖子项 - ID=" + thread.getThreadId() + 
-                             ", 标题=" + thread.getTitle() + 
-                             ", 是否公告=" + thread.getIsAnnouncement());
             
             JPanel threadItem = createThreadItem(thread);
             threadItemsPanel.add(threadItem);
@@ -2628,8 +2600,15 @@ public class TeacherForumModule implements IModuleView {
     private void refreshReplyList() {
         replyListPanel.removeAll();
         
+        System.out.println("[DEBUG] refreshReplyList - currentThread: " + (currentThread != null ? currentThread.getThreadId() : "null"));
+        System.out.println("[DEBUG] refreshReplyList - replies总数: " + replies.size());
+        
         if (currentThread != null) {
+            int addedCount = 0;
             for (PostVO reply : replies) {
+                System.out.println("[DEBUG] 检查回复 - PostID: " + reply.getPostId() + 
+                                 ", ThreadID: " + reply.getThreadId() + 
+                                 ", 当前ThreadID: " + currentThread.getThreadId());
                 if (reply.getThreadId().equals(currentThread.getThreadId())) {
                     JPanel replyItem = createReplyItem(reply);
                     
@@ -2643,8 +2622,10 @@ public class TeacherForumModule implements IModuleView {
                     ));
                     
                     replyListPanel.add(replyItem);
+                    addedCount++;
                 }
             }
+            System.out.println("[DEBUG] 实际添加到界面的回复数: " + addedCount);
         }
         
         replyListPanel.revalidate();
@@ -2662,14 +2643,21 @@ public class TeacherForumModule implements IModuleView {
                 try {
                     @SuppressWarnings("unchecked")
                     java.util.List<common.vo.PostVO> list = (java.util.List<common.vo.PostVO>) message.getData();
+                    System.out.println("[DEBUG] 收到评论数据: " + (list != null ? list.size() : -1) + " 条");
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override public void run() {
                             replies.clear();
-                            if (list != null) replies.addAll(list);
+                            if (list != null) {
+                                replies.addAll(list);
+                                System.out.println("[DEBUG] 添加到replies列表: " + replies.size() + " 条");
+                            }
                             refreshReplyList();
                         }
                     });
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    System.err.println("[ERROR] 处理评论数据时发生异常: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         });
         conn.sendMessage(new common.protocol.Message(common.protocol.MessageType.GET_POSTS_REQUEST, threadId));
