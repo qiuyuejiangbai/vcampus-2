@@ -108,7 +108,8 @@ public class AdminDashboardUI extends JFrame {
     private void initStructure() {
         sideNav.setNavListener(new SideNav.NavListener() {
             @Override public void onNavSelected(String key) {
-                contentHost.showPage(key);
+                // 使用淡入淡出动画切换页面
+                contentHost.showPageAnimated(key, ContentHost.TransitionType.FADE);
                 client.ui.api.IModuleView m = ModuleRegistry.findByKey(key);
                 if (m != null) appBar.setModuleName(m.getDisplayName());
             }

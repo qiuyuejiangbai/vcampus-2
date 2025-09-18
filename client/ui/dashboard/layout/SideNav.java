@@ -10,6 +10,8 @@ import common.vo.TeacherVO;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.LinkedHashMap;
@@ -599,16 +601,75 @@ public class SideNav extends JPanel {
     }
 
     public void setExpanded(boolean expanded) {
-        this.expanded = expanded;
+        if (this.expanded == expanded) return;
+        
+        // 启动动画
+        startExpandAnimation(expanded);
+    }
+    
+    /**
+     * 启动展开/折叠动画
+     */
+    private void startExpandAnimation(final boolean targetExpanded) {
+        final int startWidth = expanded ? expandedWidth : collapsedWidth;
+        final int endWidth = targetExpanded ? expandedWidth : collapsedWidth;
+        
+        Timer expandTimer = new Timer(16, new ActionListener() { // 60fps
+            private int frame = 0;
+            private final int totalFrames = 20; // 约333ms动画
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frame++;
+                float progress = (float) frame / totalFrames;
+                
+                if (progress >= 1.0f) {
+                    progress = 1.0f;
+                    ((Timer) e.getSource()).stop();
+                    
+                    // 动画完成，设置最终状态
+                    SideNav.this.expanded = targetExpanded;
+                    updateButtonStates(targetExpanded);
+                    return;
+                }
+                
+                // 使用缓动函数
+                float easedProgress = easeOutCubic(progress);
+                
+                // 计算当前宽度
+                int currentWidth = (int) (startWidth + (endWidth - startWidth) * easedProgress);
+                
+                // 更新尺寸
+                Dimension size = new Dimension(currentWidth, getHeight());
+                setPreferredSize(size);
+                
+                // 更新按钮状态（基于进度）
+                boolean buttonExpanded = easedProgress > 0.5f;
+                updateButtonStates(buttonExpanded);
+                
+                revalidate();
+                repaint();
+            }
+        });
+        expandTimer.start();
+    }
+    
+    /**
+     * 更新按钮状态
+     */
+    private void updateButtonStates(boolean expanded) {
         for (JButton b : keyToButton.values()) {
             b.setHorizontalTextPosition(SwingConstants.RIGHT);
             b.setIconTextGap(expanded ? 12 : 0);
             b.setText(expanded ? b.getText() : "");
         }
-        Dimension size = new Dimension(expanded ? expandedWidth : collapsedWidth, getHeight());
-        setPreferredSize(size);
-        revalidate();
-        repaint();
+    }
+    
+    /**
+     * 缓动函数：三次方缓出
+     */
+    private float easeOutCubic(float t) {
+        return 1 - (float) Math.pow(1 - t, 3);
     }
 
     public boolean isExpanded() { return expanded; }

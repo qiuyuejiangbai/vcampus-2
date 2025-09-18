@@ -11,7 +11,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.geom.RoundRectangle2D;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
@@ -412,12 +411,18 @@ public class LoginFrame extends JFrame {
         // 创建登录卡片面板
         loginCardPanel = createLoginCard();
         
-        // 将卡片添加到背景面板中央
+        // 创建动画包装容器
+        JPanel animationWrapper = new JPanel();
+        animationWrapper.setLayout(new BorderLayout());
+        animationWrapper.setOpaque(false);
+        animationWrapper.add(loginCardPanel, BorderLayout.CENTER);
+        
+        // 将动画包装容器添加到背景面板中央
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER;
-        backgroundPanel.add(loginCardPanel, gbc);
+        backgroundPanel.add(animationWrapper, gbc);
         
         // 创建状态栏
         JPanel statusPanel = createStatusPanel();
@@ -459,13 +464,27 @@ public class LoginFrame extends JFrame {
      */
     private JPanel createLoginCard() {
         JPanel card = new JPanel() {
+            private float alpha = 0.0f; // 透明度，用于动画
+            
+            public void setAlpha(float alpha) {
+                this.alpha = Math.max(0.0f, Math.min(1.0f, alpha));
+                repaint();
+            }
+            
+            public float getAlpha() {
+                return alpha;
+            }
+            
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                // 只在需要时启用高质量渲染
+                if (alpha < 1.0f) {
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                }
                 
                 int width = getWidth();
                 int height = getHeight();
@@ -474,22 +493,24 @@ public class LoginFrame extends JFrame {
                     return;
                 }
                 
-                // 绘制完全不透明的白色卡片背景
+                // 设置透明度
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+                
+                // 绘制白色卡片背景 - 使用更简单的绘制
                 g2d.setColor(WHITE);
-                g2d.fill(new RoundRectangle2D.Float(0, 0, width - 2, height - 2, 24, 24)); // 圆角24px
+                g2d.fillRoundRect(0, 0, width - 2, height - 2, 24, 24);
                 
-                // 添加微妙的渐变边框
-                GradientPaint borderGradient = new GradientPaint(
-                    0, 0, new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 80),
-                    width, height, new Color(SECONDARY_COLOR.getRed(), SECONDARY_COLOR.getGreen(), SECONDARY_COLOR.getBlue(), 80)
-                );
-                g2d.setPaint(borderGradient);
+                // 简化边框绘制 - 使用单色而不是渐变
+                g2d.setColor(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 80));
                 g2d.setStroke(new BasicStroke(1.5f));
-                g2d.drawRoundRect(1, 1, width - 4, height - 4, 24, 24); // 圆角24px
+                g2d.drawRoundRect(1, 1, width - 4, height - 4, 24, 24);
                 
-                // 添加高光效果
-                g2d.setColor(new Color(255, 255, 255, 80));
-                g2d.fill(new RoundRectangle2D.Float(2, 2, width - 6, height / 2 - 10, 22, 22)); // 圆角22px
+                // 简化高光效果
+                g2d.setColor(new Color(255, 255, 255, 60));
+                g2d.fillRoundRect(2, 2, width - 6, height / 2 - 10, 22, 22);
+                
+                // 恢复默认透明度
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
             }
         };
         
@@ -1057,8 +1078,123 @@ public class LoginFrame extends JFrame {
      * 启动淡入动画
      */
     private void startFadeInAnimation() {
-        // 简化处理：移除透明度动画，避免兼容性问题
-        // 直接显示窗口，保持良好的用户体验
+        // 启动卡片淡入动画
+        startCardFadeInAnimation();
+    }
+    
+    /**
+     * 卡片淡入动画
+     */
+    private void startCardFadeInAnimation() {
+        // 获取卡片的父容器（动画包装容器）
+        Container animationWrapper = loginCardPanel.getParent();
+        if (animationWrapper == null) return;
+        
+        // 获取卡片在包装容器中的原始位置
+        final int originalX = loginCardPanel.getX();
+        final int originalY = loginCardPanel.getY();
+        final int startY = originalY + 50;
+        
+        // 设置初始状态：卡片在下方，透明度为0
+        loginCardPanel.setLocation(originalX, startY);
+        loginCardPanel.setOpaque(false);
+        
+        // 缓存setAlpha方法引用，避免重复反射调用
+        java.lang.reflect.Method setAlphaMethod = null;
+        try {
+            setAlphaMethod = loginCardPanel.getClass().getMethod("setAlpha", float.class);
+            setAlphaMethod.invoke(loginCardPanel, 0.0f);
+        } catch (Exception e) {
+            // 如果无法设置透明度，继续执行其他动画
+        }
+        
+        final java.lang.reflect.Method cachedSetAlphaMethod = setAlphaMethod;
+        
+        // 使用16ms间隔（60fps）获得更流畅的动画
+        Timer fadeInTimer = new Timer(16, new ActionListener() {
+            private float progress = 0.0f;
+            private final int totalFrames = 30; // 约500ms动画 (30 * 16ms = 480ms)
+            private float lastEasedProgress = -1.0f; // 用于避免不必要的重绘
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                progress += 1.0f / totalFrames;
+                
+                if (progress >= 1.0f) {
+                    progress = 1.0f;
+                    ((Timer) e.getSource()).stop();
+                    // 动画完成，确保位置正确
+                    loginCardPanel.setLocation(originalX, originalY);
+                    loginCardPanel.setOpaque(false);
+                    return;
+                }
+                
+                // 使用快速缓动函数实现平滑动画
+                float easedProgress = fastEaseOutCubic(progress);
+                
+                // 只有当进度变化足够大时才更新UI，减少重绘频率
+                if (Math.abs(easedProgress - lastEasedProgress) < 0.01f) {
+                    return;
+                }
+                lastEasedProgress = easedProgress;
+                
+                // 位置动画：从下方滑入到原始位置
+                int currentY = (int) (startY + (originalY - startY) * easedProgress);
+                loginCardPanel.setLocation(originalX, currentY);
+                
+                // 透明度动画 - 使用缓存的方法引用
+                if (cachedSetAlphaMethod != null) {
+                    try {
+                        cachedSetAlphaMethod.invoke(loginCardPanel, easedProgress);
+                    } catch (Exception ex) {
+                        // 忽略异常，继续动画
+                    }
+                }
+            }
+        });
+        fadeInTimer.start();
+    }
+    
+    /**
+     * 缓动函数：三次方缓出
+     * 优化版本，避免重复的Math.pow计算
+     */
+    private float easeOutCubic(float t) {
+        // 使用查表法或简化计算来提高性能
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        
+        // 简化计算：使用多项式展开而不是Math.pow
+        float oneMinusT = 1 - t;
+        return 1 - oneMinusT * oneMinusT * oneMinusT;
+    }
+    
+    /**
+     * 预计算的缓动值数组，用于更快的动画
+     */
+    private static final float[] EASE_OUT_CUBIC_TABLE = new float[101];
+    static {
+        for (int i = 0; i <= 100; i++) {
+            float t = i / 100.0f;
+            EASE_OUT_CUBIC_TABLE[i] = 1 - (1 - t) * (1 - t) * (1 - t);
+        }
+    }
+    
+    /**
+     * 快速缓动函数：使用查表法
+     */
+    private float fastEaseOutCubic(float t) {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        
+        int index = (int) (t * 100);
+        float fraction = t * 100 - index;
+        
+        if (index >= 100) return EASE_OUT_CUBIC_TABLE[100];
+        
+        // 线性插值
+        return EASE_OUT_CUBIC_TABLE[index] + 
+               (EASE_OUT_CUBIC_TABLE[index + 1] - EASE_OUT_CUBIC_TABLE[index]) * fraction;
     }
     
     /**
