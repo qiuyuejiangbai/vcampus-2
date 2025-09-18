@@ -6,6 +6,7 @@ import client.controller.StudentController;
 import common.vo.StudentVO;
 import common.vo.UserVO;
 import client.ui.dashboard.components.CircularAvatar;
+import client.ui.util.AnimationUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -135,13 +136,12 @@ public class StudentProfileModule implements IModuleView {
             private final int arc = 20;
             private final int pad = 12; // 与 setBorder 对齐，保证外部留白足够
 
-            // 双层投影参数（Material 风格）
-            // Ambient：大半径、低透明、稍大偏移；Key：小半径、较高透明、轻微偏移
-            private final ShadowSpec AMBIENT = new ShadowSpec(10, 0f, 4f, 0.18f);
-            private final ShadowSpec KEY     = new ShadowSpec(4,  0f, 1.5f, 0.22f);
+            // 简化阴影参数，提高性能（参考登录界面的简洁阴影）
+            // 只使用单层阴影，减少计算负担
+            private final ShadowSpec SIMPLE_SHADOW = new ShadowSpec(6, 0f, 2f, 0.15f);
 
-            // 缓存以减少重复模糊计算
-            private BufferedImage ambientCache, keyCache;
+            // 缓存以减少重复模糊计算（简化版本）
+            private BufferedImage shadowCache;
             private Dimension cacheSize;
 
             @Override
@@ -152,9 +152,8 @@ public class StudentProfileModule implements IModuleView {
 
                 ensureShadowCache();
 
-                // 1) 先画阴影层（在卡片下）
-                if (ambientCache != null) g2d.drawImage(ambientCache, 0, 0, null);
-                if (keyCache != null)     g2d.drawImage(keyCache, 0, 0, null);
+                // 1) 先画阴影层（在卡片下）- 简化版本
+                if (shadowCache != null) g2d.drawImage(shadowCache, 0, 0, null);
 
                 // 2) 画卡片本体
                 int x = pad;
@@ -200,14 +199,13 @@ public class StudentProfileModule implements IModuleView {
                 if (w <= 0 || h <= 0) return;
 
                 if (cacheSize != null && cacheSize.width == w && cacheSize.height == h
-                        && ambientCache != null && keyCache != null) {
+                        && shadowCache != null) {
                     return;
                 }
                 cacheSize = new Dimension(w, h);
 
-                // 生成两层阴影缓存
-                ambientCache = createShadowLayer(w, h, arc, pad, AMBIENT);
-                keyCache     = createShadowLayer(w, h, arc, pad, KEY);
+                // 生成单层阴影缓存（简化版本）
+                shadowCache = createShadowLayer(w, h, arc, pad, SIMPLE_SHADOW);
             }
 
             private BufferedImage createShadowLayer(int width, int height, int arc, int pad, ShadowSpec spec) {
@@ -243,6 +241,10 @@ public class StudentProfileModule implements IModuleView {
 
             private BufferedImage gaussianBlur(BufferedImage src, int radius) {
                 if (radius < 1) return src;
+                
+                // 进一步优化：限制最大模糊半径，提高性能
+                radius = Math.min(radius, 4); // 从8减少到4，提高性能
+                
                 float sigma = radius / 3f;
                 int size = radius * 2 + 1;
                 float[] k = createGaussianKernel(size, sigma);
@@ -333,7 +335,7 @@ public class StudentProfileModule implements IModuleView {
             }
         };
         avatarContainer.setOpaque(false);
-        avatarContainer.setPreferredSize(new Dimension(0, 50)); // 给头像留出空间
+        avatarContainer.setPreferredSize(new Dimension(0, 100)); // 增加高度以完全显示头像
 
         avatarLabel = new CircularAvatar(100);
         // 移除白色边框，设置为无边框
@@ -350,7 +352,7 @@ public class StudentProfileModule implements IModuleView {
     private JPanel createBottomSection() {
         JPanel bottomSection = new JPanel(new BorderLayout());
         bottomSection.setBackground(Color.WHITE);
-        bottomSection.setBorder(new EmptyBorder(80, 40, 30, 40)); // 增加顶部留白给头像更多空间
+        bottomSection.setBorder(new EmptyBorder(60, 40, 30, 40)); // 调整顶部留白，为头像留出足够空间
 
         // 创建个人信息展示区域
         JPanel infoPanel = createInfoDisplayPanel();
@@ -428,7 +430,7 @@ public class StudentProfileModule implements IModuleView {
         public InfoLabel(String label, String value, int fontSize) {
             setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
             setBackground(Color.WHITE);
-            setOpaque(true);
+            setOpaque(false); // 改为透明以支持动画
 
             labelComponent = new JLabel(label + ": ");
             labelComponent.setFont(new Font("微软雅黑", Font.BOLD, fontSize));
@@ -446,6 +448,25 @@ public class StudentProfileModule implements IModuleView {
 
             add(labelComponent);
             add(valueComponent);
+        }
+        
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            
+            // 获取透明度
+            Float alpha = (Float) getClientProperty("alpha");
+            if (alpha != null && alpha < 1.0f) {
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            }
+            
+            // 启用抗锯齿渲染
+            g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+            
+            super.paintComponent(g2d);
+            g2d.dispose();
         }
         
         public void setText(String text) {
@@ -1056,6 +1077,9 @@ public class StudentProfileModule implements IModuleView {
             root.revalidate();
             root.repaint();
             
+            // 启动淡入动画
+            startFadeInAnimation();
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1068,6 +1092,31 @@ public class StudentProfileModule implements IModuleView {
         } else {
             statusLabel.setForeground(new Color(0x66, 0x66, 0x66));
         }
+    }
+    
+    /**
+     * 启动淡入动画效果（优化版本）
+     */
+    private void startFadeInAnimation() {
+        // 确保头像组件处于正确的初始状态
+        avatarLabel.clearAnimationState();
+        
+        // 头像和文字同时开始动画，更加丝滑
+        // 头像淡入动画（延迟0ms，持续600ms，稍微减慢动画速度）
+        AnimationUtil.fadeIn(avatarLabel, 600, 0);
+        
+        // 使用批量动画优化信息标签的淡入效果
+        JComponent[] infoLabels = {
+            nameLabel, studentNoLabel, genderLabel, birthDateLabel,
+            phoneLabel, emailLabel, addressLabel, departmentLabel,
+            classNameLabel, majorLabel, gradeLabel, enrollmentYearLabel, balanceLabel
+        };
+        
+        // 批量淡入动画：延迟0ms开始，持续600ms，每个组件间隔25ms（增加间隔，使动画更舒缓）
+        AnimationUtil.fadeInBatch(infoLabels, 600, 0, 25);
+        
+        // 编辑按钮淡入动画（延迟400ms，持续350ms，稍微减慢动画速度）
+        AnimationUtil.fadeIn(editButton, 350, 400);
     }
     
     /**

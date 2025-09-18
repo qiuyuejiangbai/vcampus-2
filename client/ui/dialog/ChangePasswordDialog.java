@@ -25,11 +25,13 @@ public class ChangePasswordDialog extends JDialog {
     
     private final ServerConnection connection;
     private final Integer userId;
+    private final Frame parentFrame;
     
     public ChangePasswordDialog(Frame parent, ServerConnection connection, Integer userId) {
         super(parent, "修改密码", true);
         this.connection = connection;
         this.userId = userId;
+        this.parentFrame = parent;
         
         initComponents();
         layoutComponents();
@@ -213,14 +215,17 @@ public class ChangePasswordDialog extends JDialog {
                 SwingUtilities.invokeLater(() -> {
                     confirmButton.setEnabled(true);
                     cancelButton.setEnabled(true);
-                    showStatus("密码修改成功！", false);
+                    showStatus("密码修改成功！正在登出...", false);
                     statusLabel.setForeground(new Color(0x2E, 0x7D, 0x32));
                     
-                    // 延迟关闭对话框
-                    Timer timer = new Timer(1500, e -> {
+                    // 延迟关闭对话框并登出
+                    Timer timer = new Timer(2000, e -> {
                         connection.removeMessageListener(MessageType.CHANGE_PASSWORD_SUCCESS);
                         connection.removeMessageListener(MessageType.CHANGE_PASSWORD_FAILURE);
                         dispose();
+                        
+                        // 执行登出操作
+                        performLogout();
                     });
                     timer.setRepeats(false);
                     timer.start();
@@ -256,6 +261,45 @@ public class ChangePasswordDialog extends JDialog {
             statusLabel.setForeground(Color.RED);
         } else {
             statusLabel.setForeground(new Color(0x2E, 0x7D, 0x32));
+        }
+    }
+    
+    /**
+     * 执行登出操作
+     */
+    private void performLogout() {
+        try {
+            // 发送登出请求
+            Message logoutRequest = new Message();
+            logoutRequest.setType(MessageType.LOGOUT_REQUEST);
+            connection.sendMessage(logoutRequest);
+            
+            // 关闭当前父窗口（仪表板）
+            if (parentFrame != null) {
+                parentFrame.dispose();
+            }
+            
+            // 创建新的登录界面并显示密码修改提示
+            SwingUtilities.invokeLater(() -> {
+                client.ui.LoginFrame loginFrame = new client.ui.LoginFrame();
+                loginFrame.setVisible(true);
+                loginFrame.showPasswordChangeNotification();
+            });
+            
+        } catch (Exception e) {
+            System.err.println("登出操作失败: " + e.getMessage());
+            e.printStackTrace();
+            
+            // 即使登出失败，也要关闭当前窗口并显示登录界面
+            if (parentFrame != null) {
+                parentFrame.dispose();
+            }
+            
+            SwingUtilities.invokeLater(() -> {
+                client.ui.LoginFrame loginFrame = new client.ui.LoginFrame();
+                loginFrame.setVisible(true);
+                loginFrame.showPasswordChangeNotification();
+            });
         }
     }
 }

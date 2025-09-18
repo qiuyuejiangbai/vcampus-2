@@ -201,13 +201,11 @@ public class TeacherDashboardUI extends JFrame {
 
     private void logoutImpl() {
         try {
-            // 确认登出
-            int result = JOptionPane.showConfirmDialog(
+            // 使用主题化确认对话框
+            int result = client.ui.dialog.ThemedConfirmDialog.showConfirmDialog(
                 this,
-                "确定要登出吗？",
                 "确认登出",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE
+                "确定要登出吗？"
             );
             
             if (result == JOptionPane.YES_OPTION) {

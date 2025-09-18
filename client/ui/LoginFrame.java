@@ -97,6 +97,20 @@ public class LoginFrame extends JFrame {
     }
     
     /**
+     * 显示密码修改通知
+     */
+    public void showPasswordChangeNotification() {
+        SwingUtilities.invokeLater(() -> {
+            // 显示密码修改成功的提示信息
+            showConnectionToast("密码已修改，请重新登录", true);
+            
+            // 在状态标签中显示提示信息
+            statusLabel.setText("密码已修改，请重新登录");
+            statusLabel.setForeground(SUCCESS_GREEN);
+        });
+    }
+    
+    /**
      * 加载背景图片
      */
     private void loadBackgroundImage() {
@@ -1064,6 +1078,41 @@ public class LoginFrame extends JFrame {
         
         // 2-3秒后自动消失
         Timer hideTimer = new Timer(2500, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                connectionToast.setVisible(false);
+                ((Timer) e.getSource()).stop();
+            }
+        });
+        hideTimer.setRepeats(false);
+        hideTimer.start();
+    }
+    
+    /**
+     * 显示自定义消息的Toast提示
+     * @param message 要显示的消息
+     * @param isSuccess 是否为成功消息
+     */
+    private void showConnectionToast(String message, boolean isSuccess) {
+        connectionToast.setText(message);
+        if (isSuccess) {
+            connectionToast.setBackground(SUCCESS_GREEN);
+            connectionToast.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(SUCCESS_GREEN, 1),
+                BorderFactory.createEmptyBorder(8, 16, 8, 16)
+            ));
+        } else {
+            connectionToast.setBackground(ERROR_RED);
+            connectionToast.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ERROR_RED, 1),
+                BorderFactory.createEmptyBorder(8, 16, 8, 16)
+            ));
+        }
+        
+        connectionToast.setVisible(true);
+        
+        // 3秒后自动消失
+        Timer hideTimer = new Timer(3000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 connectionToast.setVisible(false);

@@ -6,6 +6,7 @@ import client.controller.TeacherController;
 import common.vo.TeacherVO;
 import common.vo.UserVO;
 import client.ui.dashboard.components.CircularAvatar;
+import client.ui.util.AnimationUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -413,7 +414,7 @@ public class TeacherProfileModule implements IModuleView {
         public InfoLabel(String label, String value, int fontSize) {
             setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
             setBackground(Color.WHITE);
-            setOpaque(true);
+            setOpaque(false); // 改为透明以支持动画
 
             labelComponent = new JLabel(label + ": ");
             labelComponent.setFont(new Font("微软雅黑", Font.BOLD, fontSize));
@@ -431,6 +432,25 @@ public class TeacherProfileModule implements IModuleView {
 
             add(labelComponent);
             add(valueComponent);
+        }
+        
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            
+            // 获取透明度
+            Float alpha = (Float) getClientProperty("alpha");
+            if (alpha != null && alpha < 1.0f) {
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            }
+            
+            // 启用抗锯齿渲染
+            g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+            
+            super.paintComponent(g2d);
+            g2d.dispose();
         }
         
         public void setText(String text) {
@@ -995,6 +1015,9 @@ public class TeacherProfileModule implements IModuleView {
             root.revalidate();
             root.repaint();
             
+            // 启动淡入动画
+            startFadeInAnimation();
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1007,6 +1030,28 @@ public class TeacherProfileModule implements IModuleView {
         } else {
             statusLabel.setForeground(new Color(0x66, 0x66, 0x66));
         }
+    }
+    
+    /**
+     * 启动淡入动画效果
+     */
+    private void startFadeInAnimation() {
+        // 头像淡入动画（延迟0ms，持续800ms）
+        AnimationUtil.fadeIn(avatarLabel, 800, 0);
+        
+        // 信息标签淡入动画（延迟200ms，持续600ms）
+        AnimationUtil.fadeIn(nameLabel, 600, 200);
+        AnimationUtil.fadeIn(teacherNoLabel, 600, 250);
+        AnimationUtil.fadeIn(phoneLabel, 600, 300);
+        AnimationUtil.fadeIn(emailLabel, 600, 350);
+        AnimationUtil.fadeIn(departmentLabel, 600, 400);
+        AnimationUtil.fadeIn(titleLabel, 600, 450);
+        AnimationUtil.fadeIn(officeLabel, 600, 500);
+        AnimationUtil.fadeIn(researchAreaLabel, 600, 550);
+        AnimationUtil.fadeIn(balanceLabel, 600, 600);
+        
+        // 编辑按钮淡入动画（延迟700ms，持续400ms）
+        AnimationUtil.fadeIn(editButton, 400, 700);
     }
     
     /**

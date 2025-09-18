@@ -4,266 +4,226 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.geom.AffineTransform;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 动画工具类
- * 提供常用的动画效果和缓动函数
+ * 提供各种UI动画效果
+ * 参考登录界面的优化技术，提供丝滑的动画体验
  */
 public class AnimationUtil {
     
+    // 预计算的缓动值数组，用于更快的动画（参考登录界面）
+    private static final float[] EASE_OUT_CUBIC_TABLE = new float[101];
+    static {
+        for (int i = 0; i <= 100; i++) {
+            float t = i / 100.0f;
+            EASE_OUT_CUBIC_TABLE[i] = 1 - (1 - t) * (1 - t) * (1 - t);
+        }
+    }
+    
+    // 缓存缓动函数计算结果，避免重复计算
+    private static final ConcurrentHashMap<Float, Float> easeOutCache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Float, Float> easeOutCubicCache = new ConcurrentHashMap<>();
+    private static final int CACHE_SIZE = 1000;
+    
     /**
-     * 缓动函数类型
+     * 淡入动画效果（优化版本，参考登录界面的丝滑动画）
+     * @param component 要添加动画的组件
+     * @param duration 动画持续时间（毫秒）
+     * @param delay 动画延迟时间（毫秒）
      */
-    public enum EasingType {
-        LINEAR, EASE_OUT_CUBIC, EASE_IN_OUT_CUBIC, EASE_OUT_BACK, EASE_OUT_ELASTIC
+    public static void fadeIn(JComponent component, int duration, int delay) {
+        if (component == null) return;
+        
+        // 设置初始透明度为0
+        component.setVisible(false);
+        
+        // 使用16ms间隔（60fps）获得更流畅的动画，参考登录界面
+        Timer timer = new Timer(16, new ActionListener() {
+            private long startTime = System.currentTimeMillis() + delay;
+            private boolean hasStarted = false;
+            private float lastAlpha = 0f;
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                long currentTime = System.currentTimeMillis();
+                
+                if (!hasStarted && currentTime >= startTime) {
+                    hasStarted = true;
+                    component.setVisible(true);
+                }
+                
+                if (hasStarted) {
+                    long elapsed = currentTime - startTime;
+                    float progress = Math.min((float) elapsed / duration, 1.0f);
+                    
+                    // 使用快速缓动函数实现平滑动画，参考登录界面
+                    float alpha = fastEaseOutCubic(progress);
+                    
+                    // 只有当进度变化足够大时才更新UI，减少重绘频率
+                    if (Math.abs(alpha - lastAlpha) > 0.01f) {
+                        // 设置组件透明度
+                        component.setOpaque(false);
+                        component.putClientProperty("alpha", alpha);
+                        
+                        // 优化：只重绘组件区域，而不是整个容器
+                        Rectangle bounds = component.getBounds();
+                        if (bounds.width > 0 && bounds.height > 0) {
+                            component.getParent().repaint(bounds.x, bounds.y, bounds.width, bounds.height);
+                        }
+                        
+                        lastAlpha = alpha;
+                    }
+                    
+                    // 动画完成
+                    if (progress >= 1.0f) {
+                        ((Timer) e.getSource()).stop();
+                        component.putClientProperty("alpha", 1.0f);
+                    }
+                }
+            }
+        });
+        
+        timer.start();
     }
     
     /**
-     * 线性插值
+     * 缓动函数 - ease-out（带缓存优化）
+     * @param t 进度值 (0-1)
+     * @return 缓动后的值
      */
-    public static float linear(float t) {
-        return t;
+    private static float easeOutCached(float t) {
+        // 使用缓存避免重复计算
+        Float cached = easeOutCache.get(t);
+        if (cached != null) {
+            return cached;
+        }
+        
+        // 使用更平滑的缓动函数
+        float result = 1 - (float) Math.pow(1 - t, 3);
+        
+        // 限制缓存大小
+        if (easeOutCache.size() < CACHE_SIZE) {
+            easeOutCache.put(t, result);
+        }
+        
+        return result;
     }
     
     /**
-     * 三次方缓出
+     * 缓动函数 - ease-out-cubic（带缓存优化，更加丝滑）
+     * @param t 进度值 (0-1)
+     * @return 缓动后的值
      */
-    public static float easeOutCubic(float t) {
-        return 1 - (float) Math.pow(1 - t, 3);
+    private static float easeOutCubicCached(float t) {
+        // 使用缓存避免重复计算
+        Float cached = easeOutCubicCache.get(t);
+        if (cached != null) {
+            return cached;
+        }
+        
+        // 使用更平滑的缓动函数：ease-out-cubic
+        float result = 1 - (float) Math.pow(1 - t, 3);
+        
+        // 限制缓存大小
+        if (easeOutCubicCache.size() < CACHE_SIZE) {
+            easeOutCubicCache.put(t, result);
+        }
+        
+        return result;
     }
     
     /**
-     * 三次方缓入缓出
+     * 快速缓动函数：使用查表法（参考登录界面）
+     * @param t 进度值 (0-1)
+     * @return 缓动后的值
      */
-    public static float easeInOutCubic(float t) {
-        return t < 0.5f ? 4 * t * t * t : 1 - (float) Math.pow(-2 * t + 2, 3) / 2;
+    private static float fastEaseOutCubic(float t) {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        
+        int index = (int) (t * 100);
+        float fraction = t * 100 - index;
+        
+        if (index >= 100) return EASE_OUT_CUBIC_TABLE[100];
+        
+        // 线性插值
+        return EASE_OUT_CUBIC_TABLE[index] + 
+               (EASE_OUT_CUBIC_TABLE[index + 1] - EASE_OUT_CUBIC_TABLE[index]) * fraction;
     }
     
     /**
-     * 回弹缓出
+     * 清理缓存
      */
-    public static float easeOutBack(float t) {
-        float c1 = 1.70158f;
-        float c3 = c1 + 1;
-        return 1 + c3 * (float) Math.pow(t - 1, 3) + c1 * (float) Math.pow(t - 1, 2);
-    }
-    
-    /**
-     * 弹性缓出
-     */
-    public static float easeOutElastic(float t) {
-        float c4 = (2 * (float) Math.PI) / 3;
-        return t == 0 ? 0 : t == 1 ? 1 : (float) Math.pow(2, -10 * t) * (float) Math.sin((t * 10 - 0.75) * c4) + 1;
-    }
-    
-    /**
-     * 根据类型获取缓动函数
-     */
-    public static float getEasing(EasingType type, float t) {
-        switch (type) {
-            case LINEAR: return linear(t);
-            case EASE_OUT_CUBIC: return easeOutCubic(t);
-            case EASE_IN_OUT_CUBIC: return easeInOutCubic(t);
-            case EASE_OUT_BACK: return easeOutBack(t);
-            case EASE_OUT_ELASTIC: return easeOutElastic(t);
-            default: return linear(t);
+    private static void clearCache() {
+        if (easeOutCache.size() > CACHE_SIZE / 2) {
+            easeOutCache.clear();
+        }
+        if (easeOutCubicCache.size() > CACHE_SIZE / 2) {
+            easeOutCubicCache.clear();
         }
     }
     
     /**
-     * 创建淡入动画
+     * 为组件添加自定义绘制支持透明度
+     * @param component 要添加透明度支持的组件
      */
-    public static Timer createFadeInAnimation(JComponent component, int duration, ActionListener onComplete) {
-        return createOpacityAnimation(component, 0.0f, 1.0f, duration, EasingType.EASE_OUT_CUBIC, onComplete);
+    public static void enableAlphaSupport(JComponent component) {
+        component.addPropertyChangeListener("alpha", evt -> {
+            component.repaint();
+        });
     }
     
     /**
-     * 创建淡出动画
+     * 创建支持透明度的面板（优化版本）
+     * @return 支持透明度的JPanel
      */
-    public static Timer createFadeOutAnimation(JComponent component, int duration, ActionListener onComplete) {
-        return createOpacityAnimation(component, 1.0f, 0.0f, duration, EasingType.EASE_OUT_CUBIC, onComplete);
-    }
-    
-    /**
-     * 创建透明度动画
-     */
-    public static Timer createOpacityAnimation(JComponent component, float startAlpha, float endAlpha, 
-                                            int duration, EasingType easingType, ActionListener onComplete) {
-        Timer timer = new Timer(16, new ActionListener() {
-            private int frame = 0;
-            private final int totalFrames = duration / 16; // 60fps
+    public static JPanel createAlphaPanel() {
+        return new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                
+                // 获取透明度
+                Float alpha = (Float) getClientProperty("alpha");
+                if (alpha != null && alpha < 1.0f) {
+                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+                }
+                
+                // 启用抗锯齿和硬件加速
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                super.paintComponent(g2d);
+                g2d.dispose();
+            }
             
             @Override
-            public void actionPerformed(ActionEvent e) {
-                frame++;
-                float progress = (float) frame / totalFrames;
-                
-                if (progress >= 1.0f) {
-                    progress = 1.0f;
-                    ((Timer) e.getSource()).stop();
-                    if (onComplete != null) {
-                        onComplete.actionPerformed(e);
-                    }
-                    return;
-                }
-                
-                float easedProgress = getEasing(easingType, progress);
-                float currentAlpha = startAlpha + (endAlpha - startAlpha) * easedProgress;
-                
-                // 设置透明度
-                if (component instanceof JComponent) {
-                    try {
-                        java.lang.reflect.Method setAlphaMethod = component.getClass().getMethod("setAlpha", float.class);
-                        setAlphaMethod.invoke(component, currentAlpha);
-                    } catch (Exception ex) {
-                        // 如果组件不支持透明度，使用重绘
-                        component.repaint();
-                    }
-                }
+            public boolean isOpaque() {
+                return false; // 确保支持透明度
             }
-        });
-        timer.start();
-        return timer;
+        };
     }
     
     /**
-     * 创建缩放动画
+     * 批量淡入动画（优化版本，参考登录界面的丝滑效果）
+     * @param components 要添加动画的组件数组
+     * @param duration 动画持续时间（毫秒）
+     * @param delay 动画延迟时间（毫秒）
+     * @param stagger 组件间延迟时间（毫秒）
      */
-    public static Timer createScaleAnimation(JComponent component, float startScale, float endScale, 
-                                           int duration, EasingType easingType, ActionListener onComplete) {
-        Timer timer = new Timer(16, new ActionListener() {
-            private int frame = 0;
-            private final int totalFrames = duration / 16;
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                frame++;
-                float progress = (float) frame / totalFrames;
-                
-                if (progress >= 1.0f) {
-                    progress = 1.0f;
-                    ((Timer) e.getSource()).stop();
-                    if (onComplete != null) {
-                        onComplete.actionPerformed(e);
-                    }
-                    return;
-                }
-                
-                float easedProgress = getEasing(easingType, progress);
-                float currentScale = startScale + (endScale - startScale) * easedProgress;
-                
-                // 应用缩放变换
-                component.setSize((int)(component.getWidth() * currentScale), (int)(component.getHeight() * currentScale));
-                component.revalidate();
-                component.repaint();
+    public static void fadeInBatch(JComponent[] components, int duration, int delay, int stagger) {
+        if (components == null || components.length == 0) return;
+        
+        // 优化：减少组件间延迟，使动画更加连贯
+        int optimizedStagger = Math.max(10, stagger); // 最小10ms间隔
+        
+        for (int i = 0; i < components.length; i++) {
+            if (components[i] != null) {
+                fadeIn(components[i], duration, delay + (i * optimizedStagger));
             }
-        });
-        timer.start();
-        return timer;
-    }
-    
-    /**
-     * 创建位移动画
-     */
-    public static Timer createMoveAnimation(JComponent component, Point startPos, Point endPos, 
-                                          int duration, EasingType easingType, ActionListener onComplete) {
-        Timer timer = new Timer(16, new ActionListener() {
-            private int frame = 0;
-            private final int totalFrames = duration / 16;
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                frame++;
-                float progress = (float) frame / totalFrames;
-                
-                if (progress >= 1.0f) {
-                    progress = 1.0f;
-                    ((Timer) e.getSource()).stop();
-                    if (onComplete != null) {
-                        onComplete.actionPerformed(e);
-                    }
-                    return;
-                }
-                
-                float easedProgress = getEasing(easingType, progress);
-                int currentX = (int) (startPos.x + (endPos.x - startPos.x) * easedProgress);
-                int currentY = (int) (startPos.y + (endPos.y - startPos.y) * easedProgress);
-                
-                component.setLocation(currentX, currentY);
-            }
-        });
-        timer.start();
-        return timer;
-    }
-    
-    /**
-     * 创建摇摆动画
-     */
-    public static Timer createShakeAnimation(JComponent component, int intensity, int duration, ActionListener onComplete) {
-        Point originalPos = component.getLocation();
-        Timer timer = new Timer(16, new ActionListener() {
-            private int frame = 0;
-            private final int totalFrames = duration / 16;
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                frame++;
-                float progress = (float) frame / totalFrames;
-                
-                if (progress >= 1.0f) {
-                    component.setLocation(originalPos);
-                    ((Timer) e.getSource()).stop();
-                    if (onComplete != null) {
-                        onComplete.actionPerformed(e);
-                    }
-                    return;
-                }
-                
-                // 摇摆效果：使用正弦波
-                float shakeIntensity = intensity * (1.0f - progress); // 逐渐减弱
-                int offsetX = (int) (Math.sin(frame * 0.5) * shakeIntensity);
-                int offsetY = (int) (Math.cos(frame * 0.3) * shakeIntensity * 0.5);
-                
-                component.setLocation(originalPos.x + offsetX, originalPos.y + offsetY);
-            }
-        });
-        timer.start();
-        return timer;
-    }
-    
-    /**
-     * 创建脉冲动画
-     */
-    public static Timer createPulseAnimation(JComponent component, float minScale, float maxScale, 
-                                           int duration, ActionListener onComplete) {
-        Timer timer = new Timer(16, new ActionListener() {
-            private int frame = 0;
-            private final int totalFrames = duration / 16;
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                frame++;
-                float progress = (float) frame / totalFrames;
-                
-                if (progress >= 1.0f) {
-                    ((Timer) e.getSource()).stop();
-                    if (onComplete != null) {
-                        onComplete.actionPerformed(e);
-                    }
-                    return;
-                }
-                
-                // 脉冲效果：使用正弦波
-                float pulseScale = minScale + (maxScale - minScale) * (float) Math.sin(progress * Math.PI);
-                
-                // 应用缩放
-                component.setSize((int)(component.getWidth() * pulseScale), (int)(component.getHeight() * pulseScale));
-                component.revalidate();
-                component.repaint();
-            }
-        });
-        timer.start();
-        return timer;
+        }
     }
 }
