@@ -15,7 +15,6 @@ public class LibraryMainPageModule extends JPanel {
 
         // 加载背景图片
         try {
-            // 请确保 "background.jpg" 文件位于项目的根目录或资源路径下
             ImageIcon imageIcon = new ImageIcon("resources/images/LibraryBackgroundImage.jpg");
             this.backgroundImage = imageIcon.getImage();
         } catch (Exception e) {

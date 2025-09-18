@@ -81,7 +81,6 @@ public class LibraryMainFrameModule extends JFrame {
         ButtonGroup navGroup = new ButtonGroup();
 
         // ========= 带下划线动画的按钮 =========
-        // ========= 带下划线动画的按钮 =========
         class AnimatedUnderlineButton extends JToggleButton {
             private float progress = 0f;
             private boolean expanding = false;

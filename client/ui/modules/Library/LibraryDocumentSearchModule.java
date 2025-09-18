@@ -18,10 +18,6 @@ import java.util.Set;
 
 /**
  * 文献检索 - 卡片式 UI（与 LibraryBookSearchModule 统一风格）
- * 变更：
- * 1) 卡片新增“关键词”一行
- * 2) “清空筛选”按钮改为白底绿字（悬停浅绿底）
- * 后端调用保持不变：controller.searchDocuments/getDocumentById/downloadDocument
  */
 public class LibraryDocumentSearchModule extends JPanel {
     // 顶部搜索控件
@@ -138,6 +134,13 @@ public class LibraryDocumentSearchModule extends JPanel {
         subjectWrapper.add(subjectPanel);
         topContainer.add(subjectWrapper);
 
+        // —— 主题分隔线（介于学科与类别复选框之间）——
+        JPanel sepWrap = new JPanel(new BorderLayout());
+        sepWrap.setOpaque(false);
+        sepWrap.setBorder(BorderFactory.createEmptyBorder(6, 24, 6, 24)); // 左右留白与顶部风格一致
+        sepWrap.add(new ThemedSeparator(new Color(0, 100, 0), new Color(234, 247, 238)), BorderLayout.CENTER);
+        topContainer.add(sepWrap);
+
         // 类别
         String[] categories = {
                 "期刊","会议","教材","报告","专利",
@@ -213,6 +216,51 @@ public class LibraryDocumentSearchModule extends JPanel {
         JLabel lab = new JLabel(new ImageIcon(scaled));
         lab.setBorder(BorderFactory.createEmptyBorder(0, padLR, 0, padLR));
         return lab;
+    }
+
+    /** 主题分隔线：细绿色线条，融入浅绿背景 */
+    class ThemedSeparator extends JComponent {
+        private final Color line;
+        private final Color bg;
+
+        public ThemedSeparator(Color line, Color bg) {
+            this.line = line;
+            this.bg = bg;
+            setOpaque(false);
+            setPreferredSize(new Dimension(1, 1)); // 总高度：含上下留白
+            setMinimumSize(new Dimension(1, 1));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int midY = getHeight() / 2;
+
+            // 轻微阴影（上浅下深），显得更“浮”
+            g2.setColor(new Color(0, 0, 0, 20));
+            g2.drawLine(0, midY + 1, w, midY + 1);
+
+            // 主线：主题绿
+            g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.setColor(line);
+            g2.drawLine(0, midY, w, midY);
+
+            // 两端做一点点渐隐，避免太硬
+            GradientPaint leftFade = new GradientPaint(0, midY, new Color(line.getRed(), line.getGreen(), line.getBlue(), 0),
+                    Math.min(28, w / 6), midY, line);
+            g2.setPaint(leftFade);
+            g2.drawLine(0, midY, Math.min(28, w / 6), midY);
+
+            GradientPaint rightFade = new GradientPaint(w - Math.min(28, w / 6), midY, line,
+                    w, midY, new Color(line.getRed(), line.getGreen(), line.getBlue(), 0));
+            g2.setPaint(rightFade);
+            g2.drawLine(w - Math.min(28, w / 6), midY, w, midY);
+
+            g2.dispose();
+        }
     }
 
     /** 实心主色按钮（与 booksearch 一致） */
@@ -630,7 +678,6 @@ public class LibraryDocumentSearchModule extends JPanel {
     class DocumentCard extends JPanel {
         static final int CARD_H = 196;    // 稍微加高以容纳“关键词”
         private int cardW = 310;          // 宽度由自适应计算
-
         private static final int ARC = 14;
 
         private final DocumentVO doc;
@@ -661,7 +708,7 @@ public class LibraryDocumentSearchModule extends JPanel {
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setFocusable(true);
 
-            // 内容区
+            // ===== 内容区 =====
             JPanel content = new JPanel();
             content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
             content.setOpaque(false);
@@ -682,7 +729,7 @@ public class LibraryDocumentSearchModule extends JPanel {
             year.setForeground(new Color(102, 102, 102));
             year.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-            // 关键词（新增）
+            // 关键词
             String kwText = (doc.getKeywords() == null || doc.getKeywords().trim().isEmpty()) ? "-" : doc.getKeywords();
             JLabel keywords = new JLabel("关键词: " + kwText);
             keywords.setFont(new Font("微软雅黑", Font.PLAIN, 12));
@@ -715,7 +762,7 @@ public class LibraryDocumentSearchModule extends JPanel {
             content.add(Box.createVerticalStrut(4));
             content.add(year);
             content.add(Box.createVerticalStrut(4));
-            content.add(keywords); // ← 新增一行
+            content.add(keywords);
             content.add(Box.createVerticalStrut(8));
             content.add(tags);
             content.add(Box.createVerticalGlue());
@@ -723,19 +770,33 @@ public class LibraryDocumentSearchModule extends JPanel {
 
             add(content, BorderLayout.CENTER);
 
-            // 鼠标/键盘交互
-            addMouseListener(new MouseAdapter() {
-                @Override public void mouseClicked(MouseEvent e) {
+            // ===== 事件桥（关键修复）：把同一个 MouseAdapter 递归挂到卡片及其所有子组件 =====
+            MouseAdapter bridge = new MouseAdapter() {
+                @Override public void mousePressed(MouseEvent e) {
                     selectCard();
+                    requestFocusInWindow();
+                }
+                @Override public void mouseClicked(MouseEvent e) {
+                    // 双击打开详情（仅左键）
                     if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
                         int id = doc.getDocId();
                         DocumentVO full = controller.getDocumentById(id);
                         if (full != null) showDocumentDetailDialog(full);
                     }
                 }
-                @Override public void mouseEntered(MouseEvent e) { startAnim(true); }
-                @Override public void mouseExited(MouseEvent e)  { startAnim(false); }
-            });
+                @Override public void mouseEntered(MouseEvent e) {
+                    startAnim(true);
+                }
+                @Override public void mouseExited(MouseEvent e) {
+                    // 父 -> 子 移动会触发 mouseExited，这里做命中测试避免误关 hover
+                    if (!isMouseStillInsideCard(e)) {
+                        startAnim(false);
+                    }
+                }
+            };
+            installMouseBridgeRecursive(this, bridge);  // 递归挂载（写在类内）
+
+            // 键盘：Enter 打开详情
             addKeyListener(new KeyAdapter() {
                 @Override public void keyPressed(KeyEvent e) {
                     if (e.getKeyCode() == KeyEvent.VK_ENTER) {
@@ -762,7 +823,7 @@ public class LibraryDocumentSearchModule extends JPanel {
             if (selectedCard != null && selectedCard != this) selectedCard.setSelected(false);
             selectedCard = this;
             setSelected(true);
-            requestFocusInWindow();
+            repaint();
         }
 
         public void setSelected(boolean selected) {
@@ -785,6 +846,33 @@ public class LibraryDocumentSearchModule extends JPanel {
             });
             animTimer.setCoalesce(true);
             animTimer.start();
+        }
+
+        // 命中测试：鼠标是否仍在卡片区域内（过滤父->子的“误离开”）
+        private boolean isMouseStillInsideCard(MouseEvent e) {
+            Component src = (Component) e.getSource();
+            Point p = SwingUtilities.convertPoint(src, e.getPoint(), this);
+            return p.x >= 0 && p.y >= 0 && p.x < getWidth() && p.y < getHeight();
+        }
+
+        // 递归把同一个监听器挂到所有子组件（避免子组件吃掉点击/进入/离开事件）
+        private void installMouseBridgeRecursive(Component c, MouseListener ml) {
+            c.addMouseListener(ml);
+            if (c instanceof Container) {
+                for (Component child : ((Container) c).getComponents()) {
+                    installMouseBridgeRecursive(child, ml);
+                }
+            }
+        }
+
+        // 本类自带的文件大小格式化（不依赖外层方法，便于单独替换类）
+        private String formatFileSize(long size) {
+            if (size <= 0) return "";
+            if (size < 1024) return size + " B";
+            int z = (63 - Long.numberOfLeadingZeros(size)) / 10;
+            return String.format("%.1f %sB",
+                    (double) size / (1L << (z * 10)),
+                    " KMGTPE".charAt(z));
         }
 
         @Override
@@ -824,6 +912,7 @@ public class LibraryDocumentSearchModule extends JPanel {
             g2.dispose();
         }
     }
+
 
     // =============== 圆角输入框（左侧 icon 位 + 悬浮/聚焦边框） ===============
 
@@ -942,7 +1031,6 @@ public class LibraryDocumentSearchModule extends JPanel {
         }
     }
 
-    // ===============（可选）圆角边框：若你想给某些容器加边框可用 ===============
     class RoundedBorder extends AbstractBorder {
         private final int radius;
         private final Color color;
