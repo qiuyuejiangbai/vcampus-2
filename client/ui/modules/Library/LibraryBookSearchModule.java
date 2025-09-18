@@ -5,107 +5,198 @@ import common.vo.UserVO;
 import client.controller.LibraryController;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
+import javax.swing.border.AbstractBorder;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.RoundRectangle2D;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Objects;
 
 public class LibraryBookSearchModule extends JPanel {
     private JTextField searchField;
     private JButton searchButton;
     private JButton clearButton;
-    private JTable table;
-    private JButton borrowButton;
-    private JButton viewButton;
-
+    private JPanel cardsPanel;
+    private JScrollPane scrollPane;
     private JCheckBox[] categoryChecks;
 
     private final LibraryController Controller;
     private final UserVO currentUser;
 
-    // 鼠标悬停行索引
-    private int hoverRow = -1;
+    // 当前选中的书籍卡片
+    private BookCard selectedCard = null;
+
+    // ★ 新增：自适应列数（仅 UI）
+    private int minCardWidth = 240;
+    private int columnGap = 15;
+    private int rowGap = 15;
+
+    private boolean applyingLayout = false;
 
     public LibraryBookSearchModule(LibraryController Controller, UserVO currentUser) {
         this.Controller = Controller;
         this.currentUser = currentUser;
         initUI();
-        refreshTable(); // 初始化时加载所有书籍
+        refreshCards(); // 初始化时加载所有书籍
     }
 
-    /** 创建现代化按钮（圆角 + hover 效果） */
+    /** 创建现代化按钮（圆角 + hover/press 效果） */
     private JButton createModernButton(String text, Color themeColor, Color hoverColor) {
+        final boolean outline = (text != null && text.contains("清空")); // 不改调用，靠文案判断
         JButton button = new JButton(text) {
+            private boolean pressed = false;
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth(), h = getHeight(), r = 18;
 
-                // 背景色（hover 时变浅）
-                if (getModel().isRollover()) {
-                    g2.setColor(hoverColor);
+                boolean hover = getModel().isRollover();
+                Color lightMint = new Color(234, 247, 238);   // 浅绿色底
+                Color deepGreen = new Color(0, 120, 0);       // 悬停时更深的描边
+
+                if (!outline) {
+                    // 实体款（用于“搜索”等）
+                    g2.setColor(hover ? hoverColor : themeColor);
+                    g2.fillRoundRect(0, 0, w, h, r, r);
                 } else {
-                    g2.setColor(themeColor);
+                    // 描边款（用于“清空筛选”）
+                    // 悬停：浅绿填充 + 深绿描边；默认：白底 + 绿描边
+                    g2.setColor(hover ? lightMint : Color.WHITE);
+                    g2.fillRoundRect(0, 0, w, h, r, r);
+
+                    g2.setColor(hover ? deepGreen : themeColor);
+                    g2.setStroke(new BasicStroke(2f));
+                    g2.drawRoundRect(1, 1, w - 2, h - 2, r - 2, r - 2);
                 }
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
 
-                // 文字
+                if (pressed) {
+                    g2.setColor(new Color(0, 0, 0, 40));
+                    g2.fillRoundRect(0, 0, w, h, r, r);
+                }
+
+                // 文案
                 FontMetrics fm = g2.getFontMetrics();
-                Rectangle rect = new Rectangle(0, 0, getWidth(), getHeight());
-                int textHeight = fm.getAscent();
-                int textY = rect.y + (rect.height - fm.getHeight()) / 2 + textHeight;
-                g2.setColor(Color.WHITE);
-                g2.drawString(getText(), (getWidth() - fm.stringWidth(getText())) / 2, textY);
-
+                int textY = (h - fm.getHeight()) / 2 + fm.getAscent();
+                g2.setColor(outline ? new Color(0, 80, 0) : Color.WHITE);
+                g2.drawString(getText(), (w - fm.stringWidth(getText())) / 2, textY);
                 g2.dispose();
+            }
+            {
+                // 保持按下态反馈
+                addMouseListener(new MouseAdapter() {
+                    @Override public void mousePressed(MouseEvent e)  { pressed = true;  repaint(); }
+                    @Override public void mouseReleased(MouseEvent e) { pressed = false; repaint(); }
+                    @Override public void mouseExited(MouseEvent e)   { pressed = false; repaint(); }
+                });
             }
         };
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
-        button.setForeground(Color.WHITE);
-        button.setPreferredSize(new Dimension(90, 30));
+        button.setPreferredSize(new Dimension(98, 34));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        button.setRolloverEnabled(true); // 确保能拿到 hover 状态
         return button;
     }
+
+
+
+    // ★ 新增：圆角输入框（仅 UI）
+    // ★ 圆角输入框（浅绿底 + 左侧icon位 + hover效果）
+    // ★ 圆角输入框（浅绿底 + 左侧icon位 + hover效果 + 完全圆角）
+    private static class RoundedTextField extends JTextField {
+        private final int arc = 16;
+        private boolean hovered = false;
+        private final Image searchIcon;
+
+        public RoundedTextField(String placeholder, int columns) {
+            super(placeholder, columns);
+            setOpaque(false); // 关闭默认背景
+            setBorder(BorderFactory.createEmptyBorder(8, 40, 8, 12)); // 左边留 40px
+            searchIcon = new ImageIcon("resources/icons/LibrarySearch.png").getImage();
+
+            addMouseListener(new MouseAdapter() {
+                @Override public void mouseEntered(MouseEvent e) { hovered = true;  repaint(); }
+                @Override public void mouseExited(MouseEvent e)  { hovered = false; repaint(); }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // ★ 设置圆角裁剪区，保证文字背景也是圆角
+            Shape clip = new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), arc, arc);
+            g2.setClip(clip);
+
+            // 浅绿色底
+            Color lightMint = new Color(234, 247, 238);
+            g2.setColor(lightMint);
+            g2.fill(clip);
+
+            // 悬浮/聚焦时加深边框 + 阴影
+            if (isFocusOwner() || hovered) {
+                g2.setColor(new Color(0, 120, 0));
+                g2.setStroke(new BasicStroke(2.5f));
+                g2.draw(clip);
+            } else {
+                g2.setColor(new Color(200, 220, 200));
+                g2.draw(clip);
+            }
+
+            // 左侧 icon
+            int iconY = (getHeight() - 16) / 2;
+            g2.drawImage(searchIcon, 12, iconY, 16, 16, null);
+
+            g2.dispose();
+
+            // ★ super 要最后画，让文字出现在圆角内
+            super.paintComponent(g);
+        }
+    }
+
 
     private void initUI() {
         setLayout(new BorderLayout());
 
         Color themeColor = new Color(0, 64, 0);        // 深墨绿色（按钮主色）
         Color hoverColor = new Color(0, 100, 0);       // hover 墨绿色
-        Color headerColor = new Color(0, 100, 0);      // 表头绿色（介于深墨绿和森林绿之间）
-        Color rowAltColor = new Color(220, 245, 220);  // 表格斑马纹浅绿色
-        Color rowHoverColor = new Color(255, 250, 205); // 浅黄色（鼠标悬停行）
+        Color lightMint = new Color(234, 247, 238);
 
         // --- 顶部搜索栏 ---
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        searchField = new JTextField("请输入关键词（书名/作者/ISBN/分类）", 25);
-        searchField.setForeground(Color.GRAY);
+        searchPanel.setOpaque(false);
 
+        // 圆角输入框 + placeholder
+        searchField = new RoundedTextField("请输入关键词（书名/作者/ISBN/分类）", 25);
+        searchField.setForeground(Color.GRAY);
+        searchField.setFont(new Font("微软雅黑", Font.PLAIN, 13));
         searchField.addFocusListener(new FocusAdapter() {
             public void focusGained(FocusEvent e) {
-                if (searchField.getText().equals("请输入关键词（书名/作者/ISBN/分类）")) {
+                if (Objects.equals(searchField.getText(), "请输入关键词（书名/作者/ISBN/分类）")) {
                     searchField.setText("");
                     searchField.setForeground(Color.BLACK);
                 }
+                searchField.repaint();
             }
             public void focusLost(FocusEvent e) {
                 if (searchField.getText().isEmpty()) {
                     searchField.setText("请输入关键词（书名/作者/ISBN/分类）");
                     searchField.setForeground(Color.GRAY);
                 }
+                searchField.repaint();
             }
         });
-
-        // 绑定回车触发搜索
         searchField.addActionListener(e -> doSearch());
 
         searchButton = createModernButton("搜索", themeColor, hoverColor);
-        clearButton = createModernButton("清空筛选", themeColor, hoverColor);
+        clearButton  = createModernButton("清空筛选", themeColor, hoverColor);
 
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
@@ -113,6 +204,7 @@ public class LibraryBookSearchModule extends JPanel {
 
         JPanel topContainer = new JPanel();
         topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
+        topContainer.setOpaque(false);
         topContainer.add(searchPanel);
 
         // 分类复选框
@@ -123,185 +215,594 @@ public class LibraryBookSearchModule extends JPanel {
                 "工程", "心理学", "宗教", "军事", "体育"
         };
         JPanel categoryPanel = new JPanel(new GridLayout(0, 10, 8, 5));
+        categoryPanel.setOpaque(true);
         categoryChecks = new JCheckBox[categories.length];
+        categoryPanel.setBackground(lightMint);
         for (int i = 0; i < categories.length; i++) {
             categoryChecks[i] = new JCheckBox(categories[i]);
+            categoryChecks[i].setOpaque(true);
+            categoryChecks[i].setBackground(lightMint);
             categoryPanel.add(categoryChecks[i]);
             categoryChecks[i].addItemListener(e -> doSearch());
         }
         JPanel categoryWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        categoryWrapper.setOpaque(false);
         categoryWrapper.add(categoryPanel);
         topContainer.add(categoryWrapper);
 
-        add(topContainer, BorderLayout.NORTH);
+        // 顶部浅色背景 + 左右装饰 icon
+        JPanel topBg = new JPanel(new BorderLayout());
+        topBg.setBackground(lightMint);
+        topBg.add(topContainer, BorderLayout.CENTER);
 
-        // 表格
-        String[] columnNames = {"ID", "书名", "作者", "ISBN", "出版社", "分类", "可借"};
-        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
-        table = new JTable(model) {
-            @Override
-            public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
-                Component c = super.prepareRenderer(renderer, row, column);
-                if (!isRowSelected(row)) {
-                    if (row == hoverRow) {
-                        c.setBackground(rowHoverColor); // 鼠标悬停高亮
-                    } else {
-                        c.setBackground(row % 2 == 0 ? rowAltColor : Color.WHITE); // 斑马纹
-                    }
-                }
-                return c;
-            }
-        };
+        JLabel leftTopIcon  = makeIconLabel("resources/icons/LibrarySearchLeft.png", 60, 60, 12);
+        JLabel rightTopIcon = makeIconLabel("resources/icons/LibrarySearchRight.png", 60, 60, 12);
 
-        table.setRowHeight(28);
-        table.setShowGrid(true);
-        table.setGridColor(new Color(180, 180, 180)); // 分割线颜色
+        topBg.add(leftTopIcon, BorderLayout.WEST);
+        topBg.add(rightTopIcon, BorderLayout.EAST);
 
-        // 鼠标移动事件：更新 hoverRow
-        table.addMouseMotionListener(new MouseMotionAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                int row = table.rowAtPoint(e.getPoint());
-                if (row != hoverRow) {
-                    hoverRow = row;
-                    table.repaint();
-                }
-            }
-        });
+        add(topBg, BorderLayout.NORTH);
 
-        // 鼠标移出表格时取消高亮
-        table.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseExited(MouseEvent e) {
-                hoverRow = -1;
-                table.repaint();
-            }
-        });
+        // --- 卡片容器 ---
+        cardsPanel = new JPanel();
+        cardsPanel.setLayout(new WrapFlowLayout(FlowLayout.LEFT, 15, 15));
+        cardsPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        cardsPanel.setBackground(new Color(248, 250, 252));
 
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
-        for (int i = 0; i < table.getColumnCount(); i++) {
-            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-        }
-
-        JTableHeader header = table.getTableHeader();
-        header.setBackground(headerColor);
-        header.setForeground(Color.WHITE);
-        header.setFont(new Font("微软雅黑", Font.BOLD, 13));
-        ((DefaultTableCellRenderer) header.getDefaultRenderer()).setHorizontalAlignment(JLabel.CENTER);
-
-        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane = new JScrollPane(cardsPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(new Color(248, 250, 252));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
 
-        // 底部按钮
+        scrollPane.addComponentListener(new ComponentAdapter() {
+            @Override public void componentResized(ComponentEvent e) {
+                resizeCardsByWidthStable();
+            }
+        });
+        SwingUtilities.invokeLater(this::resizeCardsByWidthStable);
+
+        // --- 底部按钮 ---
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        viewButton = createModernButton("查看", themeColor, hoverColor);
-        borrowButton = createModernButton("借阅", themeColor, hoverColor);
+        bottomPanel.setOpaque(false);
+        JButton viewButton   = createModernButton("查看详情", themeColor, hoverColor);
+        JButton borrowButton = createModernButton("借阅图书", themeColor, hoverColor);
         bottomPanel.add(viewButton);
         bottomPanel.add(borrowButton);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        bindEvents();
+        bindEvents(viewButton, borrowButton);
+
+        // 初始加载
+        refreshCards();
     }
 
-    private void bindEvents() {
+    /** 缩放并包装一个 JLabel 图标 */
+    private JLabel makeIconLabel(String path, int w, int h, int padLR) {
+        Image src = new ImageIcon(path).getImage();
+        Image scaled = src.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        JLabel lab = new JLabel(new ImageIcon(scaled));
+        lab.setBorder(BorderFactory.createEmptyBorder(0, padLR, 0, padLR));
+        return lab;
+    }
+
+    // ★ 自适应列数：根据可视宽度动态计算列数（2~5列）
+    private GridLayout makeGridLayoutByWidth() {
+        int width = (scrollPane != null && scrollPane.getViewport() != null)
+                ? scrollPane.getViewport().getWidth() : getWidth();
+        int columns = 3;
+        if (width > 0) {
+            int usable = Math.max(0, width - 40); // 左右内边距估算
+            int per = minCardWidth + columnGap;
+            columns = Math.max(2, Math.min(5, usable / per));
+        }
+        return new GridLayout(0, columns, columnGap, rowGap);
+    }
+
+    private void bindEvents(JButton viewButton, JButton borrowButton) {
         // 搜索按钮
         searchButton.addActionListener(e -> doSearch());
 
         // 清空按钮
-        clearButton.addActionListener(e -> refreshTable());
+        clearButton.addActionListener(e -> refreshCards());
 
-        // 借阅按钮
+        // 借阅按钮（保持原有逻辑）
         borrowButton.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row == -1) {
+            if (selectedCard == null) {
                 JOptionPane.showMessageDialog(this, "请先选择一本书！");
                 return;
             }
-            int bookId = (int) table.getValueAt(row, 0);
-            boolean success = Controller.requestBorrow(bookId);
+            boolean success = Controller.requestBorrow(selectedCard.getBook().getBookId());
             JOptionPane.showMessageDialog(this,
                     success ? "借阅成功！" : "借阅失败！");
-            refreshTable();
+            refreshCards();
         });
 
-        // 查看按钮
+        // 查看按钮（保持原有逻辑）
         viewButton.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row == -1) {
+            if (selectedCard == null) {
                 JOptionPane.showMessageDialog(this, "请先选择一本书！");
                 return;
             }
-            int bookId = (int) table.getValueAt(row, 0);
-            BookVO book = Controller.getBookById(bookId);
-            if (book != null) {
-                JOptionPane.showMessageDialog(this,
-                        "书名: " + book.getTitle() + "\n" +
-                                "作者: " + book.getAuthor() + "\n" +
-                                "ISBN: " + book.getIsbn() + "\n" +
-                                "出版社: " + book.getPublisher() + "\n" +
-                                "分类: " + book.getCategory() + "\n" +
-                                "馆藏总数: " + book.getTotalStock() + "\n" +
-                                "可借数量: " + book.getAvailableStock() + "\n" +
-                                "状态: " + book.getStatus() + "\n" +
-                                "位置: " + book.getLocation()
-                );
+            BookVO book = selectedCard.getBook();
+            showBookDetails(book);
+        });
+
+        // ★ 键盘快捷键：Enter 查看，Delete 取消选择
+        setFocusable(true);
+        addKeyListener(new KeyAdapter() {
+            @Override public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER && selectedCard != null) {
+                    showBookDetails(selectedCard.getBook());
+                } else if (e.getKeyCode() == KeyEvent.VK_DELETE && selectedCard != null) {
+                    selectedCard.setSelected(false);
+                    selectedCard = null;
+                    repaint();
+                }
             }
         });
     }
 
+    private void showBookDetails(BookVO book) {
+        // 创建一个更美观的详情对话框（保持原逻辑）
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "图书详情", true);
+        dialog.setLayout(new BorderLayout());
+
+        JPanel detailPanel = new JPanel(new GridBagLayout());
+        detailPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        detailPanel.setBackground(Color.WHITE);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(8, 8, 8, 8);
+
+        // ---- 新增：格式化出版日期（null 安全）----
+        String pubDateStr = "未知";
+        java.util.Date pubDate = (book.getPublicationDate() != null) ? book.getPublicationDate() : null;
+        if (pubDate != null) {
+            pubDateStr = new java.text.SimpleDateFormat("yyyy-MM-dd").format(pubDate);
+        }
+
+        String[] labels = {
+                "书名:", "作者:", "ISBN:", "出版社:", "分类:",
+                "馆藏总数:", "可借数量:", "状态:", "位置:", "出版日期:"   // 新增一项
+        };
+        String[] values = {
+                book.getTitle(),
+                book.getAuthor(),
+                book.getIsbn(),
+                book.getPublisher(),
+                book.getCategory(),
+                String.valueOf(book.getTotalStock()),
+                String.valueOf(book.getAvailableStock()),
+                book.getStatus(),
+                book.getLocation(),
+                pubDateStr                                        // 对应新增项
+        };
+
+        for (int i = 0; i < labels.length; i++) {
+            gbc.gridx = 0; gbc.gridy = i;
+            JLabel label = new JLabel(labels[i]);
+            label.setFont(new Font("微软雅黑", Font.BOLD, 12));
+            detailPanel.add(label, gbc);
+
+            gbc.gridx = 1;
+            JLabel value = new JLabel(values[i]);
+            value.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+            detailPanel.add(value, gbc);
+        }
+
+        dialog.add(detailPanel, BorderLayout.CENTER);
+        dialog.setSize(420, 320);               // 若显示略拥挤，可适当调大，如 440x360
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+
     /** 统一的搜索方法（关键词 + 分类，模糊匹配） */
     private void doSearch() {
         String keyword = searchField.getText().trim();
-        if (keyword.equals("请输入关键词（书名/作者/ISBN/分类）")) {
+        if ("请输入关键词（书名/作者/ISBN/分类）".equals(keyword)) {
             keyword = "";
         }
 
         // 收集选中的分类
         Set<String> selectedCategories = new HashSet<>();
         for (JCheckBox cb : categoryChecks) {
-            if (cb.isSelected()) {
-                selectedCategories.add(cb.getText());
-            }
+            if (cb.isSelected()) selectedCategories.add(cb.getText());
         }
 
-        // 调用后端搜索，只用关键字
+        // 调用后端搜索（关键词）
         List<BookVO> books = Controller.searchBooks(keyword);
 
-        // 更新表格
-        DefaultTableModel model = (DefaultTableModel) table.getModel();
-        model.setRowCount(0);
+        // 更新卡片
+        cardsPanel.removeAll();
+        selectedCard = null;
 
-        for (BookVO b : books) {
-            // 前端只过滤分类
+        for (BookVO book : books) {
+            // 前端过滤分类
             boolean categoryMatch = selectedCategories.isEmpty();
             for (String cat : selectedCategories) {
-                if (b.getCategory() != null && b.getCategory().contains(cat)) {
+                if (book.getCategory() != null && book.getCategory().contains(cat)) {
                     categoryMatch = true;
                     break;
                 }
             }
-
             if (categoryMatch) {
-                model.addRow(new Object[]{
-                        b.getBookId(),
-                        b.getTitle(),
-                        b.getAuthor(),
-                        b.getIsbn(),
-                        b.getPublisher(),
-                        b.getCategory(),
-                        b.getAvailableStock()
-                        //
-                });
+                BookCard card = new BookCard(book);
+                cardsPanel.add(card);
             }
+        }
+
+        cardsPanel.revalidate();
+        cardsPanel.repaint();
+
+        // ★ 新增：数据更新后，按当前可用宽度均分卡片“宽度”（固定高度），减少右侧空白
+        resizeCardsByWidthStable();
+
+        requestFocusInWindow(); // 便于键盘交互
+    }
+
+    /** 根据可用宽度计算列数，只调整卡片宽度；高度固定为 BookCard.CARD_H */
+    /**
+     * 以 scrollPane 的总宽度为基准，固定预留竖向滚动条宽度，
+     * 避免因滚动条出现/消失导致的 viewport 宽度变化引发列数抖动。
+     * 不使用防抖，只做重入保护以防 revalidate 链路递归进入。
+     */
+    /** 根据可用宽度计算列数，只调整卡片宽度；高度固定为 BookCard.CARD_H
+     * 口径与 WrapFlowLayout 完全一致，避免右侧“空一列”
+     */
+    private void resizeCardsByWidthStable() {
+        if (applyingLayout || scrollPane == null || cardsPanel == null) return;
+
+        applyingLayout = true;
+        try {
+            // —— 1) 拿到容器宽度：优先用 cardsPanel 的当前宽度（与 WrapFlowLayout 一致）
+            int containerW = cardsPanel.getWidth();
+            if (containerW <= 0) {
+                // 退化：取 viewport 宽度
+                JViewport vp = scrollPane.getViewport();
+                if (vp != null) containerW = vp.getWidth();
+            }
+            if (containerW <= 0) return;
+
+            // —— 2) 取 insets 与水平间距（与 WrapFlowLayout 逻辑一致）
+            Insets insets = cardsPanel.getInsets();
+            int hgap = 15;
+            LayoutManager lm = cardsPanel.getLayout();
+            if (lm instanceof FlowLayout) hgap = ((FlowLayout) lm).getHgap();
+
+            int insetsLR = (insets != null ? insets.left + insets.right : 0);
+
+            // —— 3) 如果竖滚动条此时是可见的，减去其宽度（避免列数抖动）
+            int sbW = 0;
+            JScrollBar vsb = scrollPane.getVerticalScrollBar();
+            if (vsb != null && vsb.isShowing()) {
+                sbW = vsb.getWidth(); // 一般 14~18px
+            }
+
+            // —— 4) WrapFlowLayout 的可用宽度 = 容器宽 - insets - hgap*2 - 可见滚动条
+            int available = containerW - insetsLR - (hgap * 2) - sbW;
+            if (available <= 0) return;
+
+            // —— 5) 算列数与单卡宽度（确保 >= 最小宽度）
+            int minW = Math.max(220, minCardWidth);
+            int maxCols = 5; // 需要更多列可放大
+            int bestCols = 1;
+            int bestW = available; // 兜底全宽
+
+            for (int cols = maxCols; cols >= 1; cols--) {
+                int totalGaps = (cols - 1) * hgap;
+                int w = (available - totalGaps) / cols; // 与 WrapFlowLayout 的排布口径一致
+                if (w >= minW) {
+                    bestCols = cols;
+                    bestW = w;
+                    break;
+                }
+            }
+
+            // —— 6) 应用到每张卡片（固定高不拉长）
+            int fixedH = BookCard.CARD_H;
+            Dimension d = new Dimension(bestW, fixedH);
+            for (Component c : cardsPanel.getComponents()) {
+                c.setPreferredSize(d);
+                c.setMinimumSize(d);
+                // 最大高度不限制，宽度固定
+                c.setMaximumSize(new Dimension(bestW, Integer.MAX_VALUE));
+            }
+
+            // —— 7) 重新布局
+            cardsPanel.revalidate();
+            cardsPanel.repaint();
+        } finally {
+            applyingLayout = false;
         }
     }
 
 
-    public void refreshTable() {
+    public void refreshCards() {
         searchField.setText("请输入关键词（书名/作者/ISBN/分类）");
         searchField.setForeground(Color.GRAY);
         for (JCheckBox cb : categoryChecks) cb.setSelected(false);
         doSearch(); // 默认查询全部
     }
+
+    // 自定义圆角边框
+    class RoundedBorder extends AbstractBorder {
+        private final int radius;
+        private final Color color;
+
+        public RoundedBorder(int radius, Color color) {
+            this.radius = radius;
+            this.color = color;
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setColor(color);
+            g2d.setStroke(new BasicStroke(1.0f));
+            g2d.draw(new RoundRectangle2D.Double(x, y, width - 1, height - 1, radius, radius));
+            g2d.dispose();
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return new Insets(radius/2, radius/2, radius/2, radius/2);
+        }
+    }
+
+    // 图书卡片组件
+    // 图书卡片组件（完整替换）
+    class BookCard extends JPanel {
+        public static final int CARD_H = 180; // 固定高度，避免只搜到一本时被拉高
+        private int cardW = 310;              // 宽度可调（由外部均分计算）
+
+        private static final int ARC = 14;
+
+        private final BookVO book;
+        private boolean isSelected = false;
+        private boolean isHovered = false;
+
+        private float hoverProgress = 0f; // 0~1（用于平滑过渡）
+        private Timer animTimer;
+
+        public BookCard(BookVO book) {
+            this.book = book;
+            initCard();
+        }
+
+        /** 只改宽度，不改高度，避免纵向被拉伸 */
+        public void setCardSize(int w, int h) {
+            this.cardW = w;
+            Dimension d = new Dimension(w, h);
+            setPreferredSize(d);
+            setMinimumSize(d);
+            setMaximumSize(d);
+            revalidate();
+        }
+
+        private void initCard() {
+            setLayout(new BorderLayout());
+            setOpaque(false);
+            setCardSize(cardW, CARD_H); // ★ 用我们的方法来设置尺寸（固定高，可调宽）
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setFocusable(true);
+            //setToolTipText("单击选中；双击查看详情；Enter 查看详情");
+
+            // 内容区
+            JPanel contentPanel = new JPanel();
+            contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+            contentPanel.setOpaque(false);
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(15, 18, 15, 18));
+
+            JLabel titleLabel = new JLabel(book.getTitle());
+            titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
+            titleLabel.setForeground(new Color(51, 51, 51));
+            titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JLabel authorLabel = new JLabel("作者: " + book.getAuthor());
+            authorLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+            authorLabel.setForeground(new Color(102, 102, 102));
+            authorLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JLabel isbnLabel = new JLabel("ISBN: " + book.getIsbn());
+            isbnLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+            isbnLabel.setForeground(new Color(102, 102, 102));
+            isbnLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+            JPanel categoryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            categoryPanel.setOpaque(false);
+            categoryPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            JLabel categoryTag = new JLabel(book.getCategory());
+            categoryTag.setFont(new Font("微软雅黑", Font.PLAIN, 10));
+            categoryTag.setForeground(Color.WHITE);
+            categoryTag.setBackground(new Color(0, 100, 0));
+            categoryTag.setOpaque(true);
+            categoryTag.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
+            categoryPanel.add(categoryTag);
+
+            JPanel stockPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            stockPanel.setOpaque(false);
+            stockPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            JLabel stockLabel = new JLabel("可借: " + book.getAvailableStock() + " 本");
+            stockLabel.setFont(new Font("微软雅黑", Font.BOLD, 12));
+            stockLabel.setForeground(book.getAvailableStock() > 0 ?
+                    new Color(34, 139, 34) : new Color(220, 53, 69));
+            stockPanel.add(stockLabel);
+
+            contentPanel.add(titleLabel);
+            contentPanel.add(Box.createVerticalStrut(8));
+            contentPanel.add(authorLabel);
+            contentPanel.add(Box.createVerticalStrut(4));
+            contentPanel.add(isbnLabel);
+            contentPanel.add(Box.createVerticalStrut(8));
+            contentPanel.add(categoryPanel);
+            contentPanel.add(Box.createVerticalGlue());
+            contentPanel.add(stockPanel);
+
+            add(contentPanel, BorderLayout.CENTER);
+
+            // 交互
+            addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent e) {
+                    selectCard();
+                    if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                        showBookDetails(book);
+                    }
+                }
+                @Override public void mouseEntered(MouseEvent e) { isHovered = true; startAnim(true); }
+                @Override public void mouseExited(MouseEvent e) { isHovered = false; startAnim(false); }
+            });
+            addKeyListener(new KeyAdapter() {
+                @Override public void keyPressed(KeyEvent e) {
+                    if (e.getKeyCode() == KeyEvent.VK_ENTER) showBookDetails(book);
+                }
+            });
+        }
+
+        private void startAnim(boolean hoverIn) {
+            if (animTimer != null && animTimer.isRunning()) animTimer.stop();
+            final float start = hoverProgress;
+            final float end = hoverIn ? 1f : 0f;
+            final int duration = 160; // 140~200ms 均可
+            final long t0 = System.currentTimeMillis();
+
+            animTimer = new Timer(10, e -> { // 10ms ≈ ~100 FPS
+                float t = Math.min(1f, (System.currentTimeMillis() - t0) / (float) duration);
+                float eased = 1f - (float) Math.pow(1 - t, 3);
+                hoverProgress = start + (end - start) * eased;
+                repaint();
+                if (t >= 1f) ((Timer) e.getSource()).stop();
+            });
+            animTimer.setCoalesce(true);
+            animTimer.start();
+        }
+
+        private void selectCard() {
+            if (selectedCard != null && selectedCard != this) selectedCard.setSelected(false);
+            selectedCard = this;
+            setSelected(true);
+            requestFocusInWindow();
+        }
+
+        public void setSelected(boolean selected) {
+            this.isSelected = selected;
+            repaint();
+        }
+
+        public BookVO getBook() { return book; }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth(), h = getHeight();
+
+            // 底色：选中浅绿；未选白色
+            g2.setColor(isSelected ? new Color(240, 248, 240) : Color.WHITE);
+            g2.fillRoundRect(0, 0, w - 1, h - 1, ARC, ARC);
+
+            // 普通描边
+            g2.setStroke(new BasicStroke(1.0f));
+            g2.setColor(new Color(220, 220, 220));
+            g2.drawRoundRect(0, 0, w - 1, h - 1, ARC, ARC);
+
+            // 悬浮浅绿色边框（仅 hover 时显示）
+            if (!isSelected && hoverProgress > 0f) {
+                Color glow = new Color(0, 128, 0, Math.min(200, (int) (140 + 80 * hoverProgress)));
+                g2.setColor(glow);
+                g2.setStroke(new BasicStroke(2.0f));
+                g2.drawRoundRect(2, 2, w - 5, h - 5, ARC - 2, ARC - 2);
+            }
+
+            // 选中态高亮边框 + 左侧细条
+            if (isSelected) {
+                g2.setColor(new Color(0, 100, 0));
+                g2.setStroke(new BasicStroke(2.2f));
+                g2.drawRoundRect(1, 1, w - 3, h - 3, ARC - 2, ARC - 2);
+                g2.fillRoundRect(0, 0, 6, h - 1, ARC, ARC);
+            }
+
+            g2.dispose();
+        }
+
+    }
+
+
+    /** WrapFlowLayout：在 JScrollPane 中也能尊重 preferredSize 的换行 FlowLayout */
+    class WrapFlowLayout extends FlowLayout {
+        public WrapFlowLayout() { super(); }
+        public WrapFlowLayout(int align) { super(align); }
+        public WrapFlowLayout(int align, int hgap, int vgap) { super(align, hgap, vgap); }
+
+        @Override public Dimension preferredLayoutSize(Container target) { return layoutSize(target, true); }
+        @Override public Dimension minimumLayoutSize(Container target) {
+            Dimension d = layoutSize(target, false);
+            d.width -= (getHgap() + 1);
+            return d;
+        }
+
+        private Dimension layoutSize(Container target, boolean preferred) {
+            synchronized (target.getTreeLock()) {
+                int hgap = getHgap(), vgap = getVgap();
+                Insets insets = target.getInsets();
+                int maxWidth = target.getWidth();
+                if (maxWidth <= 0) {
+                    Container p = target.getParent();
+                    if (p instanceof JViewport) maxWidth = ((JViewport) p).getWidth();
+                }
+                if (maxWidth <= 0) maxWidth = Integer.MAX_VALUE;
+                int available = maxWidth - (insets.left + insets.right + hgap * 2);
+
+                int x = 0, y = insets.top + vgap, rowHeight = 0, reqWidth = 0;
+                for (Component m : target.getComponents()) {
+                    if (!m.isVisible()) continue;
+                    Dimension d = preferred ? m.getPreferredSize() : m.getMinimumSize();
+                    if (x == 0 || x + d.width <= available) {
+                        if (x > 0) x += hgap;
+                        x += d.width;
+                        rowHeight = Math.max(rowHeight, d.height);
+                    } else {
+                        y += rowHeight + vgap;
+                        reqWidth = Math.max(reqWidth, x);
+                        x = d.width;
+                        rowHeight = d.height;
+                    }
+                }
+                y += rowHeight;
+                reqWidth = Math.max(reqWidth, x);
+                return new Dimension(reqWidth + insets.left + insets.right + hgap * 2,
+                        y + insets.bottom + vgap);
+            }
+        }
+
+        @Override public void layoutContainer(Container target) {
+            synchronized (target.getTreeLock()) {
+                Insets insets = target.getInsets();
+                int max = target.getWidth() - (insets.left + insets.right + getHgap() * 2);
+                int x = insets.left + getHgap(), y = insets.top + getVgap(), rowH = 0;
+                for (Component m : target.getComponents()) {
+                    if (!m.isVisible()) continue;
+                    Dimension d = m.getPreferredSize();
+                    if (x > insets.left + getHgap() && x + d.width > max + insets.left + getHgap()) {
+                        x = insets.left + getHgap();
+                        y += rowH + getVgap();
+                        rowH = 0;
+                    }
+                    m.setBounds(x, y, d.width, d.height);
+                    x += d.width + getHgap();
+                    rowH = Math.max(rowH, d.height);
+                }
+            }
+        }
+    }
+
+
 }

@@ -14,17 +14,13 @@ public class LibraryMainFrameModule extends JFrame {
     private final UserVO currentUser;
     private final LibraryController controller;
 
-    // 各个子模块
+    // 子模块
     private LibraryBookSearchModule libraryBookSearchModule;
     private LibraryBorrowHistoryModule libraryBorrowHistoryModule;
     private LibraryBookManageModule libraryBookManageModule;
     private LibraryMainPageModule libraryMainPageModule;
-
-    // 新增的文献模块
-
     private LibraryDocumentSearchModule libraryDocumentSearchModule;
     private LibraryDocumentManageModule libraryDocumentManageModule;
-
 
     public LibraryMainFrameModule(UserVO currentUser) {
         this.currentUser = currentUser;
@@ -49,7 +45,6 @@ public class LibraryMainFrameModule extends JFrame {
         setSize(1000, 600);
         setLocationRelativeTo(null);
 
-        // 内容区
         contentPanel = new JPanel();
         cardLayout = new CardLayout();
         contentPanel.setLayout(cardLayout);
@@ -61,10 +56,10 @@ public class LibraryMainFrameModule extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                GradientPaint gp = new GradientPaint(0, 0,
-                        new Color(0x0B, 0x3D, 0x2E),   // 深绿色
-                        getWidth(), getHeight(),
-                        new Color(0x14, 0x66, 0x4E)); // 稍浅绿色
+                GradientPaint gp = new GradientPaint(
+                        0, 0, new Color(0x0B, 0x3D, 0x2E),
+                        getWidth(), getHeight(), new Color(0x14, 0x66, 0x4E)
+                );
                 g2.setPaint(gp);
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.dispose();
@@ -73,48 +68,112 @@ public class LibraryMainFrameModule extends JFrame {
         topBar.setPreferredSize(new Dimension(getWidth(), 56));
         topBar.setBorder(BorderFactory.createMatteBorder(0, 0, 4, 0, new Color(0, 0, 0, 30)));
 
-        // 左侧标题
         JLabel titleLabel = new JLabel("图书馆主页");
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 0));
         topBar.add(titleLabel, BorderLayout.WEST);
 
-        // 右侧导航按钮容器
         JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
         navPanel.setOpaque(false);
         topBar.add(navPanel, BorderLayout.EAST);
 
         ButtonGroup navGroup = new ButtonGroup();
 
-        // 工具方法：创建带圆角背景效果的按钮
-        java.util.function.Function<String, JToggleButton> createNavButton = (text) -> {
-            JToggleButton btn = new JToggleButton(text) {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // ========= 带下划线动画的按钮 =========
+        // ========= 带下划线动画的按钮 =========
+        class AnimatedUnderlineButton extends JToggleButton {
+            private float progress = 0f;
+            private boolean expanding = false;
+            private final javax.swing.Timer anim;
 
-                    if (isSelected()) {
-                        g2.setColor(new Color(0x0B, 0x3D, 0x2E)); // 深绿背景
-                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
-                    } else if (getModel().isRollover()) {
-                        g2.setColor(new Color(20, 100, 80, 120)); // 浅绿透明
-                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+            public AnimatedUnderlineButton(String text) {
+                super(text);
+                setFocusPainted(false);
+                setContentAreaFilled(false);
+                setOpaque(false);
+                setForeground(Color.WHITE);
+                setFont(getFont().deriveFont(Font.BOLD, 14f));
+                setBorder(new EmptyBorder(8, 18, 14, 18));
+                setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+                anim = new javax.swing.Timer(1000 / 60, null);
+                anim.addActionListener(e -> {
+                    float speed = 0.12f;
+                    if (expanding) {
+                        progress = Math.min(1f, progress + speed);
+                    } else {
+                        progress = Math.max(0f, progress - speed);
                     }
-                    super.paintComponent(g2);
-                    g2.dispose();
+                    repaint();
+                    if (progress == 0f || progress == 1f) {
+                        ((javax.swing.Timer) e.getSource()).stop();
+                    }
+                });
+
+                // 悬停驱动的展开/收回
+                addMouseListener(new java.awt.event.MouseAdapter() {
+                    @Override public void mouseEntered(java.awt.event.MouseEvent e) { startAnim(true); }
+                    @Override public void mouseExited (java.awt.event.MouseEvent e) {
+                        // 未选中时才收回；选中保持满宽
+                        if (!isSelected()) startAnim(false);
+                    }
+                });
+
+                // 选中状态变化驱动的展开/收回（修复首次切换不收回的问题）
+                getModel().addChangeListener(ev -> {
+                    if (getModel().isSelected()) {
+                        // 选中：立即满宽并停止动画（避免闪烁）
+                        progress = 1f;
+                        anim.stop();
+                        repaint();
+                    } else {
+                        // 取消选中：若鼠标不在其上，启动收回动画
+                        if (!getModel().isRollover()) {
+                            expanding = false;
+                            if (!anim.isRunning()) anim.start();
+                        }
+                    }
+                });
+            }
+
+            private void startAnim(boolean expand) {
+                expanding = expand;
+                if (!anim.isRunning()) anim.start();
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (isSelected()) {
+                    g2.setColor(new Color(0x0B, 0x3D, 0x2E));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                    // 选中保持满宽（如果外部先置选中，这里确保一致）
+                    progress = 1f;
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(20, 100, 80, 120));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
                 }
-            };
 
-            btn.setFocusPainted(false);
-            btn.setContentAreaFilled(false);
-            btn.setOpaque(false);
-            btn.setForeground(Color.WHITE);
-            btn.setFont(btn.getFont().deriveFont(Font.BOLD, 14f));
-            btn.setBorder(new EmptyBorder(8, 18, 8, 18)); // 增大尺寸
-            btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                super.paintComponent(g2);
 
+                int underlineThickness = 2;
+                int y = getHeight() - 6;
+                int fullW = getWidth() - 24;
+                int w = Math.max(0, Math.round(fullW * progress));
+                int x = (getWidth() - w) / 2;
+
+                g2.setColor(new Color(255, 255, 255, 220));
+                g2.fillRoundRect(x, y, w, underlineThickness, underlineThickness, underlineThickness);
+
+                g2.dispose();
+            }
+        }
+
+        java.util.function.Function<String, JToggleButton> createNavButton = (text) -> {
+            JToggleButton btn = new AnimatedUnderlineButton(text);
             navGroup.add(btn);
             navPanel.add(btn);
             return btn;
@@ -141,19 +200,16 @@ public class LibraryMainFrameModule extends JFrame {
                 cardLayout.show(contentPanel, "mainPage");
                 titleLabel.setText("图书馆主页");
             });
-
             btnSearch.addActionListener(e -> {
-                libraryBookSearchModule.refreshTable();
+                libraryBookSearchModule.refreshCards();
                 cardLayout.show(contentPanel, "search");
                 titleLabel.setText("图书检索");
             });
-
             btnHistory.addActionListener(e -> {
-                libraryBorrowHistoryModule.refreshData();
+                libraryBorrowHistoryModule.refreshCards();
                 cardLayout.show(contentPanel, "history");
                 titleLabel.setText("借阅记录");
             });
-
             btnDocSearch.addActionListener(e -> {
                 libraryDocumentSearchModule.refreshTable();
                 cardLayout.show(contentPanel, "docSearch");
@@ -172,7 +228,6 @@ public class LibraryMainFrameModule extends JFrame {
             contentPanel.add(libraryBookManageModule, "manage");
             contentPanel.add(libraryDocumentManageModule, "docManage");
 
-
             JToggleButton btnManage = createNavButton.apply("图书管理");
             JToggleButton btnDocManage = createNavButton.apply("文献管理");
 
@@ -181,7 +236,6 @@ public class LibraryMainFrameModule extends JFrame {
                 cardLayout.show(contentPanel, "manage");
                 titleLabel.setText("图书管理");
             });
-
             btnDocManage.addActionListener(e -> {
                 libraryDocumentManageModule.refreshTable();
                 cardLayout.show(contentPanel, "docManage");
@@ -192,7 +246,6 @@ public class LibraryMainFrameModule extends JFrame {
             cardLayout.show(contentPanel, "manage");
         }
 
-        // 总布局
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(topBar, BorderLayout.NORTH);
         getContentPane().add(contentPanel, BorderLayout.CENTER);

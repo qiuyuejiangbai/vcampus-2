@@ -41,29 +41,17 @@ public class LibraryController {
      * 统一请求方法
      */
     private Message sendRequest(Message request) {
-        System.out.println("[DEBUG] LibraryController.sendRequest() 开始执行");
         try {
-            System.out.println("[DEBUG] 检查连接状态: socket=" + (socket != null ? "已连接" : "null") + 
-                             ", out=" + (out != null ? "已初始化" : "null") + 
-                             ", in=" + (in != null ? "已初始化" : "null"));
-            
             if (socket == null || out == null || in == null) {
-                System.out.println("[DEBUG] 连接未初始化，尝试重新连接");
                 this.socket = new Socket(ConfigUtil.getServerHost(), ConfigUtil.getServerPort());
                 this.out = new ObjectOutputStream(socket.getOutputStream());
                 this.in = new ObjectInputStream(socket.getInputStream());
-                System.out.println("[DEBUG] 重新连接成功");
             }
-            
-            System.out.println("[DEBUG] 发送请求: " + request.getType());
             out.writeObject(request);
             out.flush();
-            System.out.println("[DEBUG] 等待服务器响应...");
             Message response = (Message) in.readObject();
-            System.out.println("[DEBUG] 收到响应: " + (response != null ? response.getType() : "null"));
             return response;
         } catch (Exception e) {
-            System.out.println("[DEBUG] 请求失败: " + e.getMessage());
             e.printStackTrace();
             return new Message(MessageType.ERROR, StatusCode.INTERNAL_ERROR, null, "请求失败: " + e.getMessage());
         }
@@ -73,19 +61,14 @@ public class LibraryController {
      * 搜索书籍
      */
     public List<BookVO> searchBooks(String keyword) {
-        System.out.println("[DEBUG] LibraryController.searchBooks() 开始执行，关键词: '" + keyword + "'");
         Message request = new Message(MessageType.SEARCH_BOOK_REQUEST, StatusCode.SUCCESS, keyword);
-        System.out.println("[DEBUG] 发送搜索请求到服务器");
         Message response = sendRequest(request);
-        System.out.println("[DEBUG] 收到服务器响应，状态码: " + (response != null ? response.getStatusCode() : "null"));
         if (response != null && response.getStatusCode() == StatusCode.SUCCESS) {
             List<BookVO> books = (List<BookVO>) response.getData();
-            System.out.println("[DEBUG] 搜索成功，返回 " + (books != null ? books.size() : "null") + " 本书");
             return books;
         } else {
-            System.out.println("[DEBUG] 搜索失败，返回空列表");
             if (response != null) {
-                System.out.println("[DEBUG] 错误信息: " + response.getMessage());
+                System.out.println("错误信息: " + response.getMessage());
             }
         }
         return Collections.emptyList();
