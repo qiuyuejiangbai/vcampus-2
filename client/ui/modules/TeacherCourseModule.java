@@ -25,6 +25,8 @@ public class TeacherCourseModule implements IModuleView {
     private StudentListPanel studentListPanel;
     private TeacherEditableGradeTablePanel gradeTablePanel;
     private CardLayout cardLayout;
+    private JLabel courseStatusLabel; // 课程管理状态标签
+    private JLabel gradeStatusLabel;  // 成绩管理状态标签
 
     public TeacherCourseModule() { 
         initComponents();
@@ -255,15 +257,8 @@ public class TeacherCourseModule implements IModuleView {
         statusLabel.setFont(UITheme.CONTENT_FONT);
         statusLabel.setForeground(UITheme.MEDIUM_GRAY);
         
-        // 更新状态标签
-        SwingUtilities.invokeLater(() -> {
-            if (courseCardPanel != null) {
-                int courseCount = courseCardPanel.getCourseCount();
-                statusLabel.setText("课程总数: " + courseCount);
-            } else {
-                statusLabel.setText("课程总数: 0");
-            }
-        });
+        // 存储状态标签引用，用于后续更新
+        this.courseStatusLabel = statusLabel;
         
         rightPanel.add(statusLabel);
         
@@ -338,15 +333,8 @@ public class TeacherCourseModule implements IModuleView {
         statusLabel.setFont(UITheme.CONTENT_FONT);
         statusLabel.setForeground(UITheme.MEDIUM_GRAY);
         
-        // 更新状态标签
-        SwingUtilities.invokeLater(() -> {
-            if (gradeCardPanel != null) {
-                int courseCount = gradeCardPanel.getCourseCount();
-                statusLabel.setText("课程总数: " + courseCount);
-            } else {
-                statusLabel.setText("课程总数: 0");
-            }
-        });
+        // 存储状态标签引用，用于后续更新
+        this.gradeStatusLabel = statusLabel;
         
         rightPanel.add(statusLabel);
         
@@ -413,6 +401,8 @@ public class TeacherCourseModule implements IModuleView {
         SwingUtilities.invokeLater(() -> {
             updateCourseManagementPanelDirectly();
             updateGradeManagementPanelDirectly();
+            // 更新状态标签
+            updateStatusLabels();
         });
         
         System.out.println("=== 教师课程模块初始化完成 ===");
@@ -556,6 +546,23 @@ public class TeacherCourseModule implements IModuleView {
             e.printStackTrace();
         }
         System.out.println("=== 成绩管理面板更新完成 ===");
+    }
+    
+    /**
+     * 更新状态标签
+     */
+    public void updateStatusLabels() {
+        // 更新课程管理状态标签
+        if (courseStatusLabel != null && courseCardPanel != null) {
+            int courseCount = courseCardPanel.getCourseCount();
+            courseStatusLabel.setText("课程总数: " + courseCount);
+        }
+        
+        // 更新成绩管理状态标签
+        if (gradeStatusLabel != null && gradeCardPanel != null) {
+            int courseCount = gradeCardPanel.getCourseCount();
+            gradeStatusLabel.setText("课程总数: " + courseCount);
+        }
     }
 
     /**

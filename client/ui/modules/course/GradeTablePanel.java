@@ -24,6 +24,7 @@ public class GradeTablePanel extends JPanel {
     private DefaultTableModel tableModel; // 表格模型
     private List<GradeVO> gradeList;   // 成绩数据列表
     private final ServerConnection serverConnection; // 服务器连接
+    private JLabel statusLabel; // 状态标签引用
 
     public GradeTablePanel() {
         this.serverConnection = ServerConnection.getInstance();
@@ -243,6 +244,19 @@ public class GradeTablePanel extends JPanel {
         
         // 刷新表格
         tableModel.fireTableDataChanged();
+        
+        // 更新状态标签
+        updateStatusLabel();
+    }
+    
+    /**
+     * 更新状态标签
+     */
+    private void updateStatusLabel() {
+        if (statusLabel != null) {
+            int gradeCount = gradeList.size();
+            statusLabel.setText("成绩记录总数: " + gradeCount);
+        }
     }
     
     /**
@@ -368,5 +382,13 @@ public class GradeTablePanel extends JPanel {
      */
     public JScrollPane getScrollPane() {
         return scrollTablePane;
+    }
+    
+    /**
+     * 设置状态标签引用
+     * @param statusLabel 状态标签
+     */
+    public void setStatusLabel(JLabel statusLabel) {
+        this.statusLabel = statusLabel;
     }
 }

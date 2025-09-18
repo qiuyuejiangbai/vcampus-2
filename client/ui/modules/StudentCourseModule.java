@@ -206,11 +206,8 @@ public class StudentCourseModule implements IModuleView {
         statusLabel.setFont(UITheme.CONTENT_FONT);
         statusLabel.setForeground(UITheme.MEDIUM_GRAY);
         
-        // 更新状态标签
-        SwingUtilities.invokeLater(() -> {
-            int courseCount = courseTablePanel.getCourseTable().getRowCount();
-            statusLabel.setText("课程总数: " + courseCount);
-        });
+        // 设置课程表格面板的统计标签引用，用于后续更新
+        courseTablePanel.setStatusLabel(statusLabel);
         
         rightPanel.add(statusLabel);
         
@@ -294,11 +291,8 @@ public class StudentCourseModule implements IModuleView {
         statusLabel.setFont(UITheme.CONTENT_FONT);
         statusLabel.setForeground(UITheme.MEDIUM_GRAY);
         
-        // 更新状态标签
-        SwingUtilities.invokeLater(() -> {
-            int enrollmentCount = enrollmentTablePanel.getEnrollmentTable().getRowCount();
-            statusLabel.setText("选课记录总数: " + enrollmentCount);
-        });
+        // 设置选课记录表格面板的统计标签引用，用于后续更新
+        enrollmentTablePanel.setStatusLabel(statusLabel);
         
         rightPanel.add(statusLabel);
         
@@ -388,11 +382,8 @@ public class StudentCourseModule implements IModuleView {
         statusLabel.setFont(UITheme.CONTENT_FONT);
         statusLabel.setForeground(UITheme.MEDIUM_GRAY);
         
-        // 更新状态标签
-        SwingUtilities.invokeLater(() -> {
-            int gradeCount = gradeTablePanel.getGradeTable().getRowCount();
-            statusLabel.setText("成绩记录总数: " + gradeCount);
-        });
+        // 设置成绩表格面板的统计标签引用，用于后续更新
+        gradeTablePanel.setStatusLabel(statusLabel);
         
         rightPanel.add(statusLabel);
         

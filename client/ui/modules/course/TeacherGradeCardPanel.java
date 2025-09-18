@@ -5,6 +5,7 @@ import common.vo.UserVO;
 import client.net.ServerConnection;
 import common.protocol.Message;
 import common.protocol.MessageType;
+import client.ui.modules.TeacherCourseModule;
 
 import javax.swing.*;
 import java.awt.*;
@@ -374,8 +375,18 @@ public class TeacherGradeCardPanel extends JPanel {
     public List<TeacherGradeCard> getCourseCards() {
         return courseCards;
     }
-
+    
     /**
+     * 通知父模块更新状态标签
+     */
+    private void notifyParentModuleUpdateStatus() {
+        if (parentModule != null && parentModule instanceof TeacherCourseModule) {
+            TeacherCourseModule module = (TeacherCourseModule) parentModule;
+            module.updateStatusLabels();
+        }
+    }
+
+     /**
      * 设置课程数据（从父模块接收）
      */
     public void setCourseData(List<CourseVO> courses) {
@@ -386,6 +397,9 @@ public class TeacherGradeCardPanel extends JPanel {
             groupCoursesByCode(courses);
             refreshCards();
             System.out.println("成绩管理面板成功接收并处理了 " + courses.size() + " 门课程");
+            
+            // 通知父模块更新状态标签
+            notifyParentModuleUpdateStatus();
         }
     }
 

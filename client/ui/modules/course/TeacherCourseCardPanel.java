@@ -5,6 +5,7 @@ import common.vo.UserVO;
 import client.net.ServerConnection;
 import common.protocol.Message;
 import common.protocol.MessageType;
+import client.ui.modules.TeacherCourseModule;
 
 import javax.swing.*;
 import java.awt.*;
@@ -138,6 +139,9 @@ public class TeacherCourseCardPanel extends JPanel {
                             
                             // 同时更新成绩管理面板的数据
                             updateGradeCardPanelData(courses);
+                            
+                            // 通知父模块更新状态标签
+                            notifyParentModuleUpdateStatus();
                         }
                     } else if (message.getData() instanceof List) {
                         // 兼容旧的响应格式
@@ -154,6 +158,9 @@ public class TeacherCourseCardPanel extends JPanel {
                         
                         // 同时更新成绩管理面板的数据
                         updateGradeCardPanelData(courses);
+                        
+                        // 通知父模块更新状态标签
+                        notifyParentModuleUpdateStatus();
                     } else {
                         System.out.println("课程数据格式错误: " + message.getData());
                     }
@@ -421,6 +428,16 @@ public class TeacherCourseCardPanel extends JPanel {
      */
     public List<TeacherCourseCard> getCourseCards() {
         return courseCards;
+    }
+    
+    /**
+     * 通知父模块更新状态标签
+     */
+    private void notifyParentModuleUpdateStatus() {
+        if (parentModule != null && parentModule instanceof TeacherCourseModule) {
+            TeacherCourseModule module = (TeacherCourseModule) parentModule;
+            module.updateStatusLabels();
+        }
     }
 
     /**

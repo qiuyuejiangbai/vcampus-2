@@ -23,6 +23,7 @@ public class StudentEnrollmentTablePanel extends JPanel {
     private DefaultTableModel tableModel; // 表格模型
     private List<EnrollmentVO> enrollmentList;   // 选课记录数据列表
     private final ServerConnection serverConnection; // 服务器连接
+    private JLabel statusLabel; // 状态标签引用
 
     public StudentEnrollmentTablePanel() {
         this.serverConnection = ServerConnection.getInstance();
@@ -209,6 +210,19 @@ public class StudentEnrollmentTablePanel extends JPanel {
         
         // 刷新表格
         tableModel.fireTableDataChanged();
+        
+        // 更新状态标签
+        updateStatusLabel();
+    }
+    
+    /**
+     * 更新状态标签
+     */
+    private void updateStatusLabel() {
+        if (statusLabel != null) {
+            int enrollmentCount = enrollmentList.size();
+            statusLabel.setText("选课记录总数: " + enrollmentCount);
+        }
     }
     
     /**
@@ -279,5 +293,13 @@ public class StudentEnrollmentTablePanel extends JPanel {
      */
     public List<EnrollmentVO> getEnrollmentList() {
         return enrollmentList;
+    }
+    
+    /**
+     * 设置状态标签引用
+     * @param statusLabel 状态标签
+     */
+    public void setStatusLabel(JLabel statusLabel) {
+        this.statusLabel = statusLabel;
     }
 }

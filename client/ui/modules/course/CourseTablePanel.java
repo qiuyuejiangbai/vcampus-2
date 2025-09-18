@@ -22,6 +22,7 @@ public class CourseTablePanel extends JPanel {
     private List<CourseVO> courseList;   // 课程数据列表
     private final ServerConnection serverConnection; // 服务器连接
     private UserVO currentUser; // 当前用户
+    private JLabel statusLabel; // 状态标签引用
 
     // 课程教学班卡片组件
     private CourseClassCardPanel courseClassCardPanel;  // 教学班卡片面板
@@ -63,6 +64,14 @@ public class CourseTablePanel extends JPanel {
                 showCourseClasses(selectedCourse.getCourseCode());
             }
         }
+    }
+    
+    /**
+     * 设置状态标签引用
+     * @param statusLabel 状态标签
+     */
+    public void setStatusLabel(JLabel statusLabel) {
+        this.statusLabel = statusLabel;
     }
 
     private void setupEventHandlers() {
@@ -430,6 +439,19 @@ public class CourseTablePanel extends JPanel {
         
         // 刷新表格
         tableModel.fireTableDataChanged();
+        
+        // 更新状态标签
+        updateStatusLabel();
+    }
+    
+    /**
+     * 更新状态标签
+     */
+    private void updateStatusLabel() {
+        if (statusLabel != null) {
+            int courseCount = courseList.size();
+            statusLabel.setText("课程总数: " + courseCount);
+        }
     }
     
     /**
