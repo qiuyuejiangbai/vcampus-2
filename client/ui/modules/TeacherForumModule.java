@@ -3467,7 +3467,7 @@ public class TeacherForumModule implements IModuleView, client.ui.dashboard.layo
     private Image downloadAvatarFromServerSync(String avatarPath) {
         try {
             // 创建UserController实例
-            client.controller.UserController userController = new client.controller.UserController();
+            client.controller.UserController userController = client.controller.UserController.getInstance();
             
             // 使用CountDownLatch实现同步等待
             final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
@@ -3584,7 +3584,7 @@ public class TeacherForumModule implements IModuleView, client.ui.dashboard.layo
     private void downloadAvatarFromServer(String avatarPath) {
         try {
             // 创建UserController实例
-            client.controller.UserController userController = new client.controller.UserController();
+            client.controller.UserController userController = client.controller.UserController.getInstance();
             
             // 下载头像
             userController.downloadAvatar(avatarPath, new client.controller.UserController.AvatarDownloadCallback() {

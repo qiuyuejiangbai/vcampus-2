@@ -16,13 +16,13 @@ import java.awt.*;
 
 /** 教师 Dashboard 主容器，复用学生端结构与特效，仅内容与标题不同。 */
 public class TeacherDashboardUI extends JFrame {
-    private final common.vo.UserVO currentUser;
-    private final client.net.ServerConnection connection;
+    private common.vo.UserVO currentUser;
+    private client.net.ServerConnection connection;
     private final client.controller.TeacherController teacherController;
 
-    private final ContentHost contentHost = new ContentHost();
-    private final SideNav sideNav;
-    private final AppBar appBar = new AppBar();
+    private ContentHost contentHost = new ContentHost();
+    private SideNav sideNav;
+    private AppBar appBar = new AppBar();
     private AppTitleBar titleBar;
 
 
@@ -159,9 +159,6 @@ public class TeacherDashboardUI extends JFrame {
                 if (ModuleKeys.TEACHER_FORUM.equals(pageKey)) {
                     // 论坛页面：强制刷新论坛中的头像显示
                     refreshForumAvatars();
-                } else if (ModuleKeys.TEACHER_PROFILE.equals(pageKey)) {
-                    // 个人信息页面：强制刷新个人信息中的头像显示
-                    refreshProfileAvatars();
                 }
                 
             } catch (Exception e) {
@@ -186,27 +183,8 @@ public class TeacherDashboardUI extends JFrame {
         }
     }
     
-    /**
-     * 刷新个人信息页面中的头像
-     */
-    private void refreshProfileAvatars() {
-        try {
-            // 获取个人信息模块并刷新头像
-            client.ui.api.IModuleView profileModule = ModuleRegistry.findByKey(ModuleKeys.TEACHER_PROFILE);
-            if (profileModule instanceof client.ui.modules.TeacherProfileModule) {
-                ((client.ui.modules.TeacherProfileModule) profileModule).refreshAvatarDisplay();
-            }
-        } catch (Exception e) {
-            System.err.println("[TeacherDashboardUI] 刷新个人信息头像失败: " + e.getMessage());
-        }
-    }
 
     private void initModules() {
-        // 注册教师个人信息模块（学籍管理）- 优先注册，确保在第一项
-        client.ui.modules.TeacherProfileModule teacherProfileModule = new client.ui.modules.TeacherProfileModule();
-        teacherProfileModule.setTeacherController(this.teacherController);
-        ModuleRegistry.register(teacherProfileModule);
-
         ModuleRegistry.register(new client.ui.modules.TeacherForumModule());
 
         // 课程管理
@@ -237,8 +215,8 @@ public class TeacherDashboardUI extends JFrame {
                 sideNav.addAvatarUpdateListener((client.ui.dashboard.layout.SideNav.AvatarUpdateListener) m);
             }
         }
-        // 默认显示个人信息模块（学籍管理）
-        String defaultModuleKey = ModuleKeys.TEACHER_PROFILE;
+        // 默认显示论坛模块
+        String defaultModuleKey = ModuleKeys.TEACHER_FORUM;
         contentHost.showPage(defaultModuleKey);
         sideNav.selectKey(defaultModuleKey);
         IModuleView home = ModuleRegistry.findByKey(defaultModuleKey);
@@ -290,17 +268,47 @@ public class TeacherDashboardUI extends JFrame {
             );
             
             if (result == JOptionPane.YES_OPTION) {
-                // 清理模块注册表，确保下次登录时不会显示之前的模块
+                System.out.println("[TeacherDashboardUI] 开始执行登出清理流程...");
+                
+                // 1. 清理ContentHost中的所有页面组件
+                if (contentHost != null) {
+                    contentHost.clearAllPages();
+                    System.out.println("[TeacherDashboardUI] ContentHost页面组件已清理");
+                }
+                
+                // 2. 清理模块注册表，确保下次登录时不会显示之前的模块
                 client.ui.integration.ModuleRegistry.clearAll();
+                System.out.println("[TeacherDashboardUI] 模块注册表已清理");
                 
-                // 关闭当前窗口
+                // 3. 清理用户信息
+                this.currentUser = null;
+                System.out.println("[TeacherDashboardUI] 用户信息已清理");
+                
+                // 4. 清理连接
+                if (connection != null) {
+                    connection.disconnect();
+                    connection = null;
+                    System.out.println("[TeacherDashboardUI] 服务器连接已断开");
+                }
+                
+                // 5. 清理UI组件引用
+                this.sideNav = null;
+                this.appBar = null;
+                this.contentHost = null;
+                System.out.println("[TeacherDashboardUI] UI组件引用已清理");
+                
+                // 6. 关闭当前窗口
                 dispose();
+                System.out.println("[TeacherDashboardUI] 主窗口已关闭");
                 
-                // 显示登录窗口
+                // 7. 显示登录窗口
                 SwingUtilities.invokeLater(() -> {
                     client.ui.LoginFrame loginFrame = new client.ui.LoginFrame();
                     loginFrame.setVisible(true);
+                    System.out.println("[TeacherDashboardUI] 登录窗口已显示");
                 });
+                
+                System.out.println("[TeacherDashboardUI] 登出清理流程完成");
             }
         } catch (Exception e) {
             e.printStackTrace();

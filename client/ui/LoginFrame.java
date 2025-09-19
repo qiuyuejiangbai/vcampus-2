@@ -87,7 +87,7 @@ public class LoginFrame extends JFrame {
         
         // 初始化控制器和连接
         serverConnection = ServerConnection.getInstance();
-        userController = new UserController();
+        userController = UserController.getInstance();
         
         // 启动淡入动画
         startFadeInAnimation();

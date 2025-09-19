@@ -50,6 +50,16 @@ public final class ModuleRegistry {
      * 在用户登出时调用，确保下次登录时不会显示之前的模块
      */
     public static void clearAll() {
+        // 先调用每个模块的dispose方法清理资源
+        for (IModuleView module : MODULES) {
+            try {
+                module.dispose();
+            } catch (Exception e) {
+                System.err.println("清理模块资源时发生错误: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        // 然后清空模块列表
         MODULES.clear();
     }
 }

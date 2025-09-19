@@ -1800,7 +1800,8 @@ private void handleShipOrder(Message request) {
     }
     
     private void handleGetTeacherInfo(Message request) {
-        System.out.println("[DEBUG][ClientHandler] 收到GET_TEACHER_INFO_REQUEST请求");
+        System.out.println("[DEBUG][ClientHandler] ========== 收到GET_TEACHER_INFO_REQUEST请求 ==========");
+        System.out.println("[DEBUG][ClientHandler] 请求数据：" + request.getData());
         
         if (!isLoggedIn()) {
             System.err.println("[DEBUG][ClientHandler] 用户未登录，拒绝请求");
@@ -1824,6 +1825,7 @@ private void handleShipOrder(Message request) {
         System.out.println("[DEBUG][ClientHandler] 准备查询教师信息，userId=" + currentUserId + ", loginId=" + currentUser.getLoginId());
         
         try {
+            System.out.println("[DEBUG][ClientHandler] 创建TeacherService实例");
             server.service.TeacherService teacherService = new server.service.TeacherService();
             System.out.println("[DEBUG][ClientHandler] TeacherService创建成功，调用getTeacherByUserId");
             
@@ -1852,6 +1854,7 @@ private void handleShipOrder(Message request) {
             e.printStackTrace();
             sendErrorMessage("服务器内部错误：" + e.getMessage());
         }
+        System.out.println("[DEBUG][ClientHandler] ========== GET_TEACHER_INFO_REQUEST处理完成 ==========");
     }
     
     /**

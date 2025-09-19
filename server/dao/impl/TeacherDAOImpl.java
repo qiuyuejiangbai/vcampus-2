@@ -567,7 +567,7 @@ public class TeacherDAOImpl implements TeacherDAO {
     private UserVO mapResultSetToUserVO(ResultSet rs) throws SQLException {
         UserVO user = new UserVO();
         user.setUserId(rs.getInt("user_id"));
-        user.setId(rs.getString("login_id"));
+        user.setLoginId(rs.getString("login_id"));
         user.setRole(rs.getInt("role"));
         user.setAvatarPath(rs.getString("avatar_path"));
         user.setCreatedTime(rs.getTimestamp("created_time"));

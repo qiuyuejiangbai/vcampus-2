@@ -369,7 +369,7 @@ public class AvatarUploadDialog extends JDialog {
         showStatus("正在上传头像...", WARNING_ORANGE);
         
         // 使用UserController进行真实的网络上传
-        UserController userController = new UserController();
+        UserController userController = UserController.getInstance();
         userController.uploadAvatar(fileData, selectedFile.getName(), new UserController.AvatarUploadCallback() {
             @Override
             public void onSuccess(String avatarPath) {

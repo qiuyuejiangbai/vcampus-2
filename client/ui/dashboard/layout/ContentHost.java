@@ -37,6 +37,22 @@ public class ContentHost extends JPanel {
         revalidate();
         repaint();
     }
+    
+    /**
+     * 清理所有页面组件
+     * 在用户登出时调用，确保下次登录时不会显示之前的页面
+     */
+    public void clearAllPages() {
+        // 移除所有组件
+        for (JComponent component : keyToComponent.values()) {
+            remove(component);
+        }
+        // 清空映射
+        keyToComponent.clear();
+        currentKey = null;
+        revalidate();
+        repaint();
+    }
 
     /**
      * 使用动画切换到目标页面。

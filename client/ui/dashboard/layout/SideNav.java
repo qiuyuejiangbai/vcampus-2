@@ -333,8 +333,8 @@ public class SideNav extends JPanel {
                 System.err.println("[DEBUG][SideNav] 失败原因: " + error);
                 SwingUtilities.invokeLater(() -> {
                     if (majorLabel != null) {
-                        majorLabel.setText("教师");
-                        System.out.println("[DEBUG][SideNav] 设置默认显示文本：教师");
+                        majorLabel.setText("学院未知");
+                        System.out.println("[DEBUG][SideNav] 设置默认显示文本：学院未知");
                     }
                 });
                 System.err.println("[DEBUG][SideNav] ========== 获取教师信息失败处理完成 ==========");
@@ -348,8 +348,8 @@ public class SideNav extends JPanel {
         if (teacher == null) {
             System.out.println("[DEBUG][SideNav] 教师信息为null，设置默认显示");
             if (majorLabel != null) {
-                majorLabel.setText("教师");
-                System.out.println("[DEBUG][SideNav] 已设置majorLabel为：教师");
+                majorLabel.setText("学院未知");
+                System.out.println("[DEBUG][SideNav] 已设置majorLabel为：学院未知");
             }
             return;
         }
@@ -369,18 +369,11 @@ public class SideNav extends JPanel {
             System.out.println("[DEBUG][SideNav] 教师档案无姓名，设置nameLabel为：" + displayName);
         }
         
-        // 显示学院信息，如果没有学院信息则显示职称或"教师"
+        // 学院为空则显示"学院未知"
         if (majorLabel != null) {
             String department = teacher.getDepartment();
-            if (department != null && !department.trim().isEmpty()) {
-                majorLabel.setText(department);
-                System.out.println("[DEBUG][SideNav] 已设置majorLabel为学院：" + department);
-            } else {
-                String title = teacher.getTitle();
-                String displayText = title != null && !title.trim().isEmpty() ? title : "教师";
-                majorLabel.setText(displayText);
-                System.out.println("[DEBUG][SideNav] 已设置majorLabel为职称/默认：" + displayText);
-            }
+            majorLabel.setText(department != null && !department.trim().isEmpty() ? department : "学院未知");
+            System.out.println("[DEBUG][SideNav] 已设置majorLabel为：" + (department != null && !department.trim().isEmpty() ? department : "学院未知"));
         }
         
         // 强制重新绘制
@@ -504,7 +497,7 @@ public class SideNav extends JPanel {
             }
             System.out.println("[DEBUG][SideNav] 学生用户，第二行显示：" + secondLine);
         } else if (currentUser != null && currentUser.isTeacher()) {
-            // 教师显示学院信息，如果没有则显示"教师"
+            // 教师显示学院信息，如果没有则显示"学院未知"
             secondLine = "正在获取学院…";
             System.out.println("[DEBUG][SideNav] 教师用户，第二行显示：" + secondLine);
         } else if (currentUser != null && currentUser.isAdmin()) {

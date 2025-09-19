@@ -43,7 +43,6 @@ public final class ModuleKeys {
     
     // 学籍管理模块
     public static final String STUDENT_PROFILE = "student_profile";
-    public static final String TEACHER_PROFILE = "teacher_profile";
     
     // 信息管理模块（管理员专用）
     public static final String ADMIN_INFO_MANAGEMENT = "admin_info_management";

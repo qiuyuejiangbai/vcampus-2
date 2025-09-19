@@ -2749,6 +2749,18 @@ public class StudentForumModule implements IModuleView, client.ui.dashboard.layo
                         // 重置回复输入框状态
                         resetReplyInputState();
                         
+                        // 获取服务器返回的新回复数据
+                        PostVO newReply = (PostVO) message.getData();
+                        if (newReply != null && currentThread != null) {
+                            // 设置新回复的用户信息
+                            newReply.setAuthorName(currentUser.getName() != null ? currentUser.getName() : currentUser.getLoginId());
+                            newReply.setAuthorAvatarPath(currentUser.getAvatarPath());
+                            
+                            // 将新回复添加到replies列表中
+                            replies.add(newReply);
+                            System.out.println("[DEBUG] 新回复已添加到列表: postId=" + newReply.getPostId() + ", 当前回复总数=" + replies.size());
+                        }
+                        
                         // 立即更新当前帖子的回复数量（+1）
                         if (currentThread != null) {
                             int currentReplyCount = currentThread.getReplyCount() != null ? currentThread.getReplyCount() : 0;
@@ -2764,7 +2776,7 @@ public class StudentForumModule implements IModuleView, client.ui.dashboard.layo
                             updateThreadInList(currentThread);
                         }
                         
-                        // 直接刷新回复列表，避免重复获取数据
+                        // 刷新回复列表显示
                         refreshReplyList();
                         
                         showToastMessage("回复发布成功！", true);
@@ -3543,7 +3555,7 @@ public class StudentForumModule implements IModuleView, client.ui.dashboard.layo
     private Image downloadAvatarFromServerSync(String avatarPath) {
         try {
             // 创建UserController实例
-            client.controller.UserController userController = new client.controller.UserController();
+            client.controller.UserController userController = client.controller.UserController.getInstance();
             
             // 使用CountDownLatch实现同步等待
             final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
@@ -3660,7 +3672,7 @@ public class StudentForumModule implements IModuleView, client.ui.dashboard.layo
     private void downloadAvatarFromServer(String avatarPath) {
         try {
             // 创建UserController实例
-            client.controller.UserController userController = new client.controller.UserController();
+            client.controller.UserController userController = client.controller.UserController.getInstance();
             
             // 下载头像
             userController.downloadAvatar(avatarPath, new client.controller.UserController.AvatarDownloadCallback() {

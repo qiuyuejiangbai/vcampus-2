@@ -10,7 +10,7 @@ public interface IModuleView {
     /** 全局唯一 key，必须与侧栏导航一致，用于 ContentHost 切换 */
     String getKey();
 
-    /** 侧栏显示名（如“课程”、“成绩”） */
+    /** 侧栏显示名（如"课程"、"成绩"） */
     String getDisplayName();
 
     /** 16~20px 图标路径（仅 PNG） */
@@ -24,6 +24,14 @@ public interface IModuleView {
      */
     void initContext(common.vo.UserVO currentUser,
                      client.net.ServerConnection connection);
+    
+    /**
+     * 清理模块资源，在用户登出时调用
+     * 子类应该重写此方法来清理控制器、连接、缓存等资源
+     */
+    default void dispose() {
+        // 默认实现为空，子类可以重写
+    }
 }
 
 

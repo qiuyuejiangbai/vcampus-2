@@ -14,15 +14,37 @@ import java.util.HashMap;
 public class UserController {
     private ServerConnection serverConnection;
     
+    // 单例实例
+    private static UserController instance;
+    
     public UserController() {
         this.serverConnection = ServerConnection.getInstance();
         setupMessageListeners();
     }
     
     /**
+     * 获取单例实例
+     * @return UserController实例
+     */
+    public static synchronized UserController getInstance() {
+        if (instance == null) {
+            instance = new UserController();
+        }
+        return instance;
+    }
+    
+    // 标记是否已经设置过监听器
+    private static boolean listenersSetup = false;
+    
+    /**
      * 设置消息监听器
      */
     private void setupMessageListeners() {
+        // 避免重复设置监听器
+        if (listenersSetup) {
+            return;
+        }
+        listenersSetup = true;
         // 登录响应监听器
         serverConnection.setMessageListener(MessageType.LOGIN_SUCCESS, message -> {
             if (currentLoginCallback != null) {

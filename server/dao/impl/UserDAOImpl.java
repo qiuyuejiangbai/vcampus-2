@@ -463,7 +463,7 @@ public class UserDAOImpl implements UserDAO {
     private UserVO mapResultSetToUserVO(ResultSet rs) throws SQLException {
         UserVO user = new UserVO();
         user.setUserId(rs.getInt("user_id")); // 设置数据库主键ID
-        user.setId(rs.getString("login_id")); // 设置登录ID
+        user.setLoginId(rs.getString("login_id")); // 设置登录ID
         user.setPassword(rs.getString("password"));
         user.setRole(rs.getInt("role"));
         user.setAvatarPath(rs.getString("avatar_path")); // 设置头像路径

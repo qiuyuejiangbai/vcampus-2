@@ -620,13 +620,13 @@ public class StudentProfileModule implements IModuleView, client.ui.dashboard.la
             birthDateField.setText(sdf.format(currentStudent.getBirthDate()));
         }
         
-        phoneField.setText(currentStudent.getPhone());
-        emailField.setText(currentStudent.getEmail());
-        addressArea.setText(currentStudent.getAddress());
-        departmentField.setText(currentStudent.getDepartment());
-        classNameField.setText(currentStudent.getClassName());
-        majorField.setText(currentStudent.getMajor());
-        gradeField.setText(currentStudent.getGrade());
+        phoneField.setText(currentStudent.getPhone() != null ? currentStudent.getPhone() : "");
+        emailField.setText(currentStudent.getEmail() != null ? currentStudent.getEmail() : "");
+        addressArea.setText(currentStudent.getAddress() != null ? currentStudent.getAddress() : "");
+        departmentField.setText(currentStudent.getDepartment() != null ? currentStudent.getDepartment() : "");
+        classNameField.setText(currentStudent.getClassName() != null ? currentStudent.getClassName() : "");
+        majorField.setText(currentStudent.getMajor() != null ? currentStudent.getMajor() : "");
+        gradeField.setText(currentStudent.getGrade() != null ? currentStudent.getGrade() : "");
         
         if (currentStudent.getEnrollmentYear() != null) {
             enrollmentYearField.setText(currentStudent.getEnrollmentYear().toString());
@@ -765,6 +765,15 @@ public class StudentProfileModule implements IModuleView, client.ui.dashboard.la
         updatedStudent.setPhone(phone);
         updatedStudent.setEmail(email);
         updatedStudent.setAddress(addressArea.getText().trim());
+        
+        // 重要：保留不可修改的字段，防止被清空
+        updatedStudent.setDepartment(currentStudent.getDepartment());
+        updatedStudent.setClassName(currentStudent.getClassName());
+        updatedStudent.setMajor(currentStudent.getMajor());
+        updatedStudent.setGrade(currentStudent.getGrade());
+        updatedStudent.setEnrollmentYear(currentStudent.getEnrollmentYear());
+        updatedStudent.setBalance(currentStudent.getBalance());
+        updatedStudent.setGender(currentStudent.getGender());
 
         // 更新学生信息
         studentController.updateStudent(updatedStudent, new StudentController.UpdateStudentCallback() {
@@ -808,13 +817,13 @@ public class StudentProfileModule implements IModuleView, client.ui.dashboard.la
                 birthDateLabel.setText("未设置");
             }
 
-            phoneLabel.setText(currentStudent.getPhone());
-            emailLabel.setText(currentStudent.getEmail());
-            addressLabel.setText(currentStudent.getAddress());
-            departmentLabel.setText(currentStudent.getDepartment());
-            classNameLabel.setText(currentStudent.getClassName());
-            majorLabel.setText(currentStudent.getMajor());
-            gradeLabel.setText(currentStudent.getGrade());
+            phoneLabel.setText(currentStudent.getPhone() != null ? currentStudent.getPhone() : "未设置");
+            emailLabel.setText(currentStudent.getEmail() != null ? currentStudent.getEmail() : "未设置");
+            addressLabel.setText(currentStudent.getAddress() != null ? currentStudent.getAddress() : "未设置");
+            departmentLabel.setText(currentStudent.getDepartment() != null ? currentStudent.getDepartment() : "未设置");
+            classNameLabel.setText(currentStudent.getClassName() != null ? currentStudent.getClassName() : "未设置");
+            majorLabel.setText(currentStudent.getMajor() != null ? currentStudent.getMajor() : "未设置");
+            gradeLabel.setText(currentStudent.getGrade() != null ? currentStudent.getGrade() : "未设置");
 
             if (currentStudent.getEnrollmentYear() != null) {
                 enrollmentYearLabel.setText(currentStudent.getEnrollmentYear().toString());

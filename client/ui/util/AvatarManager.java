@@ -142,7 +142,7 @@ public class AvatarManager {
      */
     private static Image downloadAvatarFromServerSync(String avatarPath) {
         try {
-            UserController userController = new UserController();
+            UserController userController = UserController.getInstance();
             
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Image> result = new AtomicReference<>();
@@ -197,7 +197,7 @@ public class AvatarManager {
      */
     private static void downloadAvatarFromServerAsync(String avatarPath, UserController.AvatarDownloadCallback callback) {
         try {
-            UserController userController = new UserController();
+            UserController userController = UserController.getInstance();
             userController.downloadAvatar(avatarPath, callback);
         } catch (Exception e) {
             System.err.println("[AvatarManager] 下载头像时发生异常: " + e.getMessage());
